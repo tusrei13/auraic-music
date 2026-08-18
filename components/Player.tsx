@@ -1,23 +1,39 @@
-"use client"; // BẮT BUỘC CÓ: Báo cho Next.js biết file này có tương tác của người dùng (bấm nút)
+"use client";
 
-import { useState } from "react"; // Import công tắc useState
-import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Mic2 } from "lucide-react"; // Đã thêm icon Pause
+import { useState, useRef } from "react"; // Thêm useRef vào thư viện
+import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Mic2 } from "lucide-react";
 
 export default function Player() {
-  // KHỞI TẠO CÔNG TẮC: Mặc định là false (chưa phát nhạc)
   const [isPlaying, setIsPlaying] = useState(false);
+  
+  // 1. TẠO CÁI MÓC (Reference) ĐỂ NẮM LẤY THẺ AUDIO
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Hàm xử lý khi người dùng bấm nút
+  // 2. CẬP NHẬT HÀM XỬ LÝ NÚT PLAY
   const togglePlay = () => {
-    setIsPlaying(!isPlaying); // Đảo ngược trạng thái: true thành false, false thành true
+    if (isPlaying) {
+      // Nếu đang phát nhạc (true) -> Gọi lệnh tạm dừng
+      audioRef.current?.pause();
+    } else {
+      // Nếu đang tắt (false) -> Gọi lệnh phát nhạc
+      audioRef.current?.play();
+    }
+    // Sau khi ra lệnh cho audio xong thì đảo ngược trạng thái UI
+    setIsPlaying(!isPlaying);
   };
 
   return (
     <div className="h-20 bg-white/10 backdrop-blur-2xl border border-white/20 flex items-center justify-between px-6 w-full rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
       
+      {/* 3. THẺ AUDIO BỊ ẨN: Chứa nguồn nhạc thực sự */}
+      <audio 
+        ref={audioRef} 
+        src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" 
+        preload="metadata"
+      />
+
       {/* BÊN TRÁI: Đĩa than */}
       <div className="flex items-center gap-4 w-1/3">
-        {/* NẾU isPlaying = true THÌ thêm class animate-[spin_4s_linear_infinite] để xoay */}
         <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-black/50 shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-500 ${isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
           <img 
             src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=200&auto=format&fit=crop" 
@@ -37,12 +53,11 @@ export default function Player() {
           <button className="text-white/40 hover:text-white transition-all"><Shuffle className="w-4 h-4" /></button>
           <button className="text-white/60 hover:text-white transition-all"><SkipBack className="w-5 h-5 fill-current" /></button>
           
-          {/* NÚT PLAY/PAUSE: Gắn sự kiện onClick */}
+          {/* Nút Play/Pause đã được gắn hàm togglePlay mới */}
           <button 
             onClick={togglePlay}
             className="w-10 h-10 flex items-center justify-center bg-white rounded-full hover:scale-110 shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:shadow-[0_0_25px_rgba(255,255,255,0.8)] transition-all"
           >
-            {/* Nếu đang phát nhạc thì hiện Pause, ngược lại hiện Play */}
             {isPlaying ? (
               <Pause className="w-5 h-5 fill-black text-black" />
             ) : (
