@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Link from 'next/link'; // Import công cụ chuyển trang không tải lại của Next.js
 import { Home, Compass, Library } from 'lucide-react'; // Import các icon
+import Player from '@/components/Player';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -65,9 +66,7 @@ export default function RootLayout({
         </div>
 
         {/* 3. AUDIO PLAYER */}
-        <div className="h-24 bg-black border-t border-white/10 flex items-center px-6">
-          <span className="text-sm text-gray-500">Trình phát nhạc sẽ nằm ở đây...</span>
-        </div>
+        <Player/>
 
       </body>
     </html>
