@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0A0A0A; /* Màu đen sâu (OLED Black) sang trọng */
+  color: #EDEDED; /* Chữ màu xám trắng, không dùng trắng tinh gây chói mắt */
+}
