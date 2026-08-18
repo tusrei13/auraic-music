@@ -1,3 +1,4 @@
+import { MusicProvider } from '@/context/MusicContext';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Link from 'next/link';
@@ -22,7 +23,8 @@ export default function RootLayout({
       {/* NỀN TỔNG: Đổi sang Gradient siêu sâu, tạo cảm giác không gian (Aura) */}
       <body className={`${inter.className} h-screen flex flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-[#050505] to-purple-950 text-white`}>
         
-        {/* Phần thân trên được bọc thêm padding (p-4) để tách khỏi lề màn hình */}
+        {/* BỌC TRẠM PHÁT SÓNG Ở ĐÂY */}
+        <MusicProvider>
         <div className="flex flex-1 overflow-hidden p-4 gap-4 pb-2">
           
           {/* SIDEBAR: Biến thành "Tấm kính nổi" (Glassmorphism) */}
@@ -58,6 +60,7 @@ export default function RootLayout({
         <div className="px-4 pb-4 w-full">
           <Player />
         </div>
+        </MusicProvider>
 
       </body>
     </html>
