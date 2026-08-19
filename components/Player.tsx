@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Mic2, Music } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Shuffle, Repeat, Mic2, Music } from "lucide-react";
 import { useMusic } from "@/context/MusicContext";
 
 export default function Player() {
   const { currentTrack } = useMusic();
   const [isPlaying, setIsPlaying] = useState(false);
-  
-  // 1. Thêm 2 state mới để quản lý thời gian (tính bằng giây)
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.7); // Mặc định 70% âm lượng
   
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -31,7 +30,6 @@ export default function Player() {
     setIsPlaying(!isPlaying);
   };
 
-  // 2. Hàm biến đổi số giây thành định dạng Phút:Giây (VD: 65s -> 1:05)
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
     const minutes = Math.floor(time / 60);
@@ -39,21 +37,36 @@ export default function Player() {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // 3. Hàm cập nhật thời gian chạy liên tục
   const handleTimeUpdate = () => {
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
     }
   };
 
-  // 4. Lấy tổng thời lượng ngay khi bài hát vừa tải xong
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
     }
   };
 
-  // 5. Tính toán % chiều dài của thanh màu
+  // TÍNH NĂNG TUA NHẠC (SEEK)
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = Number(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
+    setCurrentTime(newTime);
+  };
+
+  // TÍNH NĂNG CHỈNH ÂM LƯỢNG
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = Number(e.target.value);
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+  };
+
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   if (!currentTrack) {
@@ -67,16 +80,16 @@ export default function Player() {
   return (
     <div className="h-20 bg-white/10 backdrop-blur-2xl border border-white/20 flex items-center justify-between px-6 w-full rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
       
-      {/* 6. Gắn các hàm lắng nghe sự kiện vào thẻ audio */}
       <audio 
         ref={audioRef} 
         src={currentTrack.audioUrl} 
         preload="metadata"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => setIsPlaying(false)} // Tự động đổi nút Pause thành Play khi hết bài
+        onEnded={() => setIsPlaying(false)}
       />
 
+      {/* BÊN TRÁI: Đĩa than & thông tin */}
       <div className="flex items-center gap-4 w-1/3">
         <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-black/50 shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-500 ${isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
           <img src={currentTrack.image} alt={currentTrack.title} className="w-full h-full object-cover" />
@@ -87,6 +100,7 @@ export default function Player() {
         </div>
       </div>
 
+      {/* Ở GIỮA: Điều khiển & Thanh tua nhạc */}
       <div className="flex flex-col items-center max-w-[400px] w-full">
         <div className="flex items-center gap-8 mb-1">
           <button className="text-white/40 hover:text-white transition-all"><Shuffle className="w-4 h-4" /></button>
@@ -100,26 +114,61 @@ export default function Player() {
           <button className="text-white/40 hover:text-white transition-all"><Repeat className="w-4 h-4" /></button>
         </div>
         
-        {/* 7. Nạp dữ liệu động vào UI thanh tiến trình */}
+        {/* THANH TUA NHẠC INTERACTIVE */}
         <div className="flex items-center gap-3 w-full text-[10px] font-medium text-white/50">
           <span>{formatTime(currentTime)}</span>
-          <div className="h-1 flex-1 bg-black/40 rounded-full group relative overflow-hidden">
+          <div className="flex-1 relative flex items-center group">
+            <input 
+              type="range" 
+              min="0" 
+              max={duration || 100} 
+              value={currentTime} 
+              onChange={handleSeek}
+              className="absolute w-full h-1 opacity-0 z-10 cursor-pointer"
+            />
+            <div className="h-1 w-full bg-black/40 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full transition-all duration-75 relative"
+                style={{ width: `${progressPercent}%` }}
+              ></div>
+            </div>
+            {/* Chấm tròn tua nhạc hiện lên khi hover */}
             <div 
-              className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full transition-all duration-75 relative"
-              style={{ width: `${progressPercent}%` }} // CSS Inline để cập nhật chiều dài theo thời gian thực
+              className="w-3 h-3 bg-white rounded-full absolute -ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md"
+              style={{ left: `${progressPercent}%` }}
             ></div>
           </div>
           <span>{formatTime(duration)}</span>
         </div>
       </div>
 
+      {/* BÊN PHẢI: Thanh âm lượng (Volume) */}
       <div className="flex items-center justify-end gap-4 w-1/3 text-white/50">
         <button className="hover:text-white transition-all"><Mic2 className="w-4 h-4" /></button>
-        <button className="hover:text-white transition-all"><Volume2 className="w-4 h-4" /></button>
-        <div className="w-20 h-1 bg-black/40 rounded-full overflow-hidden">
-          <div className="h-full w-2/3 bg-white rounded-full transition-colors"></div>
+        <div className="flex items-center gap-2 group">
+          <button onClick={() => { setVolume(volume === 0 ? 0.7 : 0); if (audioRef.current) audioRef.current.volume = volume === 0 ? 0.7 : 0; }}>
+            {volume === 0 ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 hover:text-white transition-all" />}
+          </button>
+          <div className="w-20 relative flex items-center">
+            <input 
+              type="range" 
+              min="0" 
+              max="1" 
+              step="0.01" 
+              value={volume} 
+              onChange={handleVolumeChange}
+              className="absolute w-full h-1 opacity-0 z-10 cursor-pointer"
+            />
+            <div className="h-1 w-full bg-black/40 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white rounded-full transition-all"
+                style={{ width: `${volume * 100}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
+
     </div>
   );
 }
