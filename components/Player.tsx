@@ -5,7 +5,8 @@ import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Shuffle, Repeat, 
 import { useMusic } from "@/context/MusicContext";
 
 export default function Player() {
-  const { currentTrack } = useMusic();
+  // Lấy thêm playNext và playPrevious từ Context
+  const { currentTrack, playNext, playPrevious } = useMusic();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -86,7 +87,7 @@ export default function Player() {
         preload="metadata"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => setIsPlaying(false)}
+        onEnded={playNext} /* Tự động chuyển bài tiếp theo khi phát hết */
       />
 
       {/* BÊN TRÁI: Đĩa than & thông tin */}
@@ -104,13 +105,21 @@ export default function Player() {
       <div className="flex flex-col items-center max-w-[400px] w-full">
         <div className="flex items-center gap-8 mb-1">
           <button className="text-white/40 hover:text-white transition-all"><Shuffle className="w-4 h-4" /></button>
-          <button className="text-white/60 hover:text-white transition-all"><SkipBack className="w-5 h-5 fill-current" /></button>
+          
+          {/* Nút Lùi Bài */}
+          <button onClick={playPrevious} className="text-white/60 hover:text-white transition-all">
+            <SkipBack className="w-5 h-5 fill-current" />
+          </button>
           
           <button onClick={togglePlay} className="w-10 h-10 flex items-center justify-center bg-white rounded-full hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,255,255,0.4)]">
             {isPlaying ? <Pause className="w-5 h-5 fill-black text-black" /> : <Play className="w-5 h-5 fill-black text-black ml-0.5" />}
           </button>
           
-          <button className="text-white/60 hover:text-white transition-all"><SkipForward className="w-5 h-5 fill-current" /></button>
+          {/* Nút Tiến Bài */}
+          <button onClick={playNext} className="text-white/60 hover:text-white transition-all">
+            <SkipForward className="w-5 h-5 fill-current" />
+          </button>
+
           <button className="text-white/40 hover:text-white transition-all"><Repeat className="w-4 h-4" /></button>
         </div>
         
