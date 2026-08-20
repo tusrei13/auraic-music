@@ -1,14 +1,184 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, Play, Disc, Sparkles, Plus, Layers, Bookmark } from "lucide-react";
-import { useMusic } from "@/context/MusicContext";
+import { Heart, Play, Plus, Layers, Bookmark, HeartOff } from "lucide-react";
+import { usePlayerStore } from "@/store/usePlayerStore";
 
-const likedSongs = [
-  { id: 201, title: "Lối Nhỏ", artist: "Đen Vâu", genre: "Hip-Hop / Chill", image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", duration: "3:45" },
-  { id: 202, title: "Tháng Tư Là Lời Nói Dối Của Em", artist: "Hà Anh Tuấn", genre: "Pop Acoustic", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3", duration: "4:12" },
-  { id: 203, title: "Có Chàng Trai Viết Lên Cây", artist: "Phan Mạnh Quỳnh", genre: "Indie Pop", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3", duration: "5:01" },
-  { id: 204, title: "Bước Qua Nhau", artist: "Vũ.", genre: "Indie Ballad", image: "https://images.unsplash.com/photo-1619983081563-430f63602796?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3", duration: "4:30" },
+export interface Track {
+  id: number;
+  title: string;
+  artist: string;
+  image: string;
+  audioUrl: string;
+  genre?: string;
+  duration?: string;
+  lyrics?: { time: number; text: string }[];
+}
+
+export const ALL_SYSTEM_SONGS: Track[] = [
+  { 
+    id: 1, 
+    title: "Chạy Ngay Đi", 
+    artist: "Sơn Tùng M-TP", 
+    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    lyrics: [
+      { time: 0, text: "Chạy ngay đi trước khi mọi chuyện dần xấu hơn" },
+      { time: 5, text: "Chạy ngay đi trước khi dòng người lại đông hơn" },
+      { time: 10, text: "Cơn mưa rơi rơi xóa đi hy vọng" },
+      { time: 15, text: "Lạc trong hoang mang không tìm thấy lối ra" },
+    ]
+  },
+  { 
+    id: 2, 
+    title: "Waiting For You", 
+    artist: "MONO", 
+    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    lyrics: [
+      { time: 0, text: "Em ơi nhắn cho anh một câu" },
+      { time: 5, text: "Để anh biết em vẫn còn chờ" },
+      { time: 10, text: "Waiting for you, waiting for you all night" },
+      { time: 15, text: "Màn đêm buông xuống chỉ riêng anh với đêm" },
+    ]
+  },
+  { 
+    id: 3, 
+    title: "Chìm Sâu", 
+    artist: "RPT MCK", 
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    lyrics: [
+      { time: 0, text: "Tại vì anh chìm sâu vào trong ánh mắt em" },
+      { time: 5, text: "Tại vì anh chìm sâu vào từng nụ cười ngây thơ" },
+      { time: 10, text: "Mong cho thời gian dừng lại phút giây này" },
+      { time: 15, text: "Để anh mãi được bên em" },
+    ]
+  },
+  { 
+    id: 4, 
+    title: "See Tình", 
+    artist: "Hoàng Thùy Linh", 
+    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    lyrics: [
+      { time: 0, text: "Giá như em không gặp anh" },
+      { time: 5, text: "Giá như em không nhìn thấy anh" },
+      { time: 10, text: "Thì giờ đây em đâu có tình yêu dại khùng" },
+      { time: 15, text: "Tình yêu như món quà, anh là em muốn có" },
+      { time: 20, text: "Phút ban đầu ấy, em thấy con tim mình đập nhanh" },
+      { time: 25, text: "Chắc do là xem phim ngôn tình nhiều quá" },
+      { time: 30, text: "Giờ đây em đã trót yêu anh mất rồi!" },
+    ]
+  },
+  { 
+    id: 101, 
+    title: "Nốt Nhạc Trôi", 
+    artist: "Chillies", 
+    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    lyrics: [
+      { time: 0, text: "Những nốt nhạc nhẹ nhàng trôi theo làn gió" },
+      { time: 5, text: "Mang theo bao tâm tư gửi gắm vào không gian" },
+      { time: 10, text: "Hương hoa thơm dịu dàng trong đêm muộn" },
+    ]
+  },
+  { 
+    id: 102, 
+    title: "Dạ Vũ Không Tên", 
+    artist: "Hoàng Dũng", 
+    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    lyrics: [
+      { time: 0, text: "Điệu nhảy dưới ánh đèn lung linh" },
+      { time: 5, text: "Bên nhau trao nụ cười dưới đêm thâu" },
+      { time: 10, text: "Khúc ca vang lên gọi nhớ kỷ niệm xưa" },
+    ]
+  },
+  { 
+    id: 103, 
+    title: "Midnight City", 
+    artist: "M83", 
+    image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+    lyrics: [
+      { time: 0, text: "Waiting in a car, waiting for a ride in the dark" },
+      { time: 5, text: "The night city is my playground" },
+      { time: 10, text: "Sounds and lights everywhere" },
+    ]
+  },
+  { 
+    id: 104, 
+    title: "Coffee & Rain", 
+    artist: "Lofi Girl", 
+    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    lyrics: [
+      { time: 0, text: "Tách cà phê ấm trên tay" },
+      { time: 5, text: "Tiếng mưa rơi tí tách bên hiên nhà" },
+      { time: 10, text: "Giai điệu lofi dịu êm xua tan mệt mỏi" },
+    ]
+  },
+  { 
+    id: 201, 
+    title: "Lối Nhỏ", 
+    artist: "Đen Vâu", 
+    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+    lyrics: [
+      { time: 0, text: "Em vào đời bằng đại lộ, còn anh vào đời bằng lối nhỏ" },
+      { time: 5, text: "Anh nhớ mình đã từng cùng nhau, qua những con đường đỏ" },
+      { time: 10, text: "Cuộc đời này bao nhiêu lần mười năm" },
+      { time: 15, text: "Anh muốn dịu dàng hơn, nhưng đời bắt anh phải gắt" },
+      { time: 20, text: "Thế nên anh chọn cách yêu âm thầm từ xa" },
+      { time: 25, text: "Chỉ mong em luôn bình yên trên lối em qua" },
+    ]
+  },
+  { 
+    id: 202, 
+    title: "Tháng Tư Là Lời Nói Dối Của Em", 
+    artist: "Hà Anh Tuấn", 
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+    lyrics: [
+      { time: 0, text: "Mùa xuân giấu đi những lời nói dối" },
+      { time: 5, text: "Tháng tư về, nắng nhẹ trên bờ vai" },
+      { time: 10, text: "Anh đã từng tin lời em hứa" },
+      { time: 15, text: "Rằng chúng ta sẽ mãi mãi bên nhau" },
+      { time: 20, text: "Nhưng tháng tư đến, em rời xa mất rồi" },
+      { time: 25, text: "Để lại anh cùng những ký ức nhạt màu" },
+    ]
+  },
+  { 
+    id: 203, 
+    title: "Có Chàng Trai Viết Lên Cây", 
+    artist: "Phan Mạnh Quỳnh", 
+    image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
+    lyrics: [
+      { time: 0, text: "Có chàng trai viết lên cây" },
+      { time: 5, text: "Lời yêu thương gửi theo ngọn gió bay" },
+      { time: 10, text: "Ngày tháng trôi qua, cây đã cao lớn rồi" },
+      { time: 15, text: "Mà người năm ấy bây giờ ở đâu?" },
+      { time: 20, text: "Những vết khắc năm xưa nay đã mờ đi" },
+      { time: 25, text: "Chỉ còn kỷ niệm lưu giữ trong tim" },
+    ]
+  },
+  { 
+    id: 204, 
+    title: "Bước Qua Nhau", 
+    artist: "Vũ.", 
+    image: "https://images.unsplash.com/photo-1619983081563-430f63602796?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
+    lyrics: [
+      { time: 0, text: "Và rồi chúng ta bước qua nhau" },
+      { time: 5, text: "Như hai người dưng ngược lối" },
+      { time: 10, text: "Chẳng một câu chào, chẳng một cái nhìn" },
+      { time: 15, text: "Dù trong lòng vẫn còn bao vương vấn" },
+      { time: 20, text: "Cảm ơn em vì đã từng ghé qua" },
+      { time: 25, text: "Thanh xuân này đẹp nhất là có em" },
+    ]
+  },
 ];
 
 const customPlaylists = [
@@ -18,12 +188,17 @@ const customPlaylists = [
 ];
 
 export default function LibraryPage() {
-  const { playTrack } = useMusic();
+  // Lấy thêm currentTrack từ Zustand Store
+  const { playTrack, toggleLike, likedIds, currentTrack } = usePlayerStore();
   const [activeTab, setActiveTab] = useState<"all" | "playlists" | "liked">("all");
+
+  const isLiked = (id: number) => likedIds.includes(id);
+
+  const likedSongsList = ALL_SYSTEM_SONGS.filter((song) => isLiked(song.id));
 
   return (
     <div className="p-8 space-y-10 h-full overflow-y-auto scrollbar-none pb-28">
-      {/* HEADER HIỆN ĐẠI & BỘ CHUYỂN TAB (TỐI GIẢN) */}
+      {/* HEADER & TABS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-semibold tracking-wider uppercase mb-1">
@@ -32,7 +207,7 @@ export default function LibraryPage() {
           <h1 className="text-3xl font-black text-white tracking-tight">Thư Viện Âm Nhạc</h1>
         </div>
 
-        {/* NÚT CHUYỂN TABS PHONG CÁCH NEUMORPHISM */}
+        {/* BỘ CHUYỂN TAB */}
         <div className="flex items-center bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-md">
           <button
             onClick={() => setActiveTab("all")}
@@ -48,7 +223,7 @@ export default function LibraryPage() {
               activeTab === "liked" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" : "text-white/60 hover:text-white"
             }`}
           >
-            Bài hát đã thích
+            Bài hát đã thích ({likedSongsList.length})
           </button>
           <button
             onClick={() => setActiveTab("playlists")}
@@ -61,7 +236,7 @@ export default function LibraryPage() {
         </div>
       </div>
 
-      {/* SECTION 1: BENTO GRID PLAYLIST (THAY CHO CÁC Ô PLAYLIST DỌC) */}
+      {/* SECTION 1: PLAYLIST GRID */}
       {(activeTab === "all" || activeTab === "playlists") && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -102,54 +277,91 @@ export default function LibraryPage() {
         </section>
       )}
 
-      {/* SECTION 2: LƯỚI BÀI HÁT 2 CỘT (HOÀN TOÀN KHÔNG DÙNG DẠNG BẢNG HOẶC HÀNG DỌC ĐƠN ĐIỆU) */}
+      {/* SECTION 2: BÀI HÁT ĐÃ LƯU */}
       {(activeTab === "all" || activeTab === "liked") && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Heart className="w-5 h-5 text-pink-500 fill-pink-500" /> Bài hát đã lưu ({likedSongs.length})
+              <Heart className="w-5 h-5 text-pink-500 fill-pink-500" /> Bài hát đã lưu ({likedSongsList.length})
             </h2>
-            <button 
-              onClick={() => playTrack(likedSongs[0])}
-              className="flex items-center gap-2 text-xs font-bold text-black bg-white hover:bg-white/90 px-4 py-2 rounded-full transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-            >
-              <Play className="w-3.5 h-3.5 fill-black" /> Phát tất cả
-            </button>
+            {likedSongsList.length > 0 && (
+              <button 
+                onClick={() => playTrack(likedSongsList[0] as any, likedSongsList as any)}
+                className="flex items-center gap-2 text-xs font-bold text-black bg-white hover:bg-white/90 px-4 py-2 rounded-full transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+              >
+                <Play className="w-3.5 h-3.5 fill-black" /> Phát tất cả
+              </button>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {likedSongs.map((song) => (
-              <div
-                key={song.id}
-                onClick={() => playTrack(song)}
-                className="group relative bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/15 p-4 rounded-2xl flex items-center justify-between transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl"
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
-                    <img src={song.image} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Play className="w-5 h-5 fill-white text-white ml-0.5" />
+          {likedSongsList.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {likedSongsList.map((song) => {
+                const liked = isLiked(song.id);
+                const isPlayingThis = currentTrack?.id === song.id;
+
+                return (
+                  <div
+                    key={song.id}
+                    onClick={() => playTrack(song as any, likedSongsList as any)}
+                    className={`group relative p-4 rounded-2xl flex items-center justify-between transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl border ${
+                      isPlayingThis
+                        ? "bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_25px_rgba(99,102,241,0.25)]"
+                        : "bg-white/[0.04] hover:bg-white/[0.08] border-white/5 hover:border-white/15"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
+                        <img src={song.image} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        
+                        {/* Cột sóng âm Equalizer khi bài hát đang được phát */}
+                        {isPlayingThis ? (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1">
+                            <span className="w-1 h-4 bg-indigo-400 rounded-full animate-[bounce_0.6s_infinite_100ms]"></span>
+                            <span className="w-1 h-6 bg-indigo-400 rounded-full animate-[bounce_0.6s_infinite_300ms]"></span>
+                            <span className="w-1 h-3 bg-indigo-400 rounded-full animate-[bounce_0.6s_infinite_200ms]"></span>
+                          </div>
+                        ) : (
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Play className="w-5 h-5 fill-white text-white ml-0.5" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="truncate">
+                        <h4 className={`font-bold text-sm transition-colors truncate ${
+                          isPlayingThis ? "text-indigo-400" : "text-white group-hover:text-indigo-300"
+                        }`}>
+                          {song.title}
+                        </h4>
+                        <p className="text-xs text-white/50 truncate mt-0.5">{song.artist}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLike(song.id);
+                        }}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
+                          liked ? "bg-pink-500/10 text-pink-400 border border-pink-500/20" : "bg-white/5 text-white/40 hover:text-white"
+                        }`}
+                        title={liked ? "Bỏ thích" : "Yêu thích"}
+                      >
+                        <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
+                      </button>
                     </div>
                   </div>
-
-                  <div className="truncate">
-                    <h4 className="font-bold text-white text-sm group-hover:text-indigo-300 transition-colors truncate">{song.title}</h4>
-                    <p className="text-xs text-white/50 truncate mt-0.5">{song.artist}</p>
-                    <span className="inline-block mt-1.5 text-[10px] font-medium text-indigo-300/80 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
-                      {song.genre}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-                  <span className="text-xs font-mono text-white/40">{song.duration}</span>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-pink-500/10 text-pink-400 border border-pink-500/20">
-                    <Heart className="w-4 h-4 fill-pink-500" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-16 border border-dashed border-white/10 rounded-2xl bg-white/[0.02] space-y-3">
+              <HeartOff className="w-10 h-10 text-white/20 mx-auto" />
+              <p className="text-white/40 text-sm">Chưa có bài hát nào trong danh sách yêu thích</p>
+            </div>
+          )}
         </section>
       )}
     </div>

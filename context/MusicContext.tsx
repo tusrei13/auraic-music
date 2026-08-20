@@ -2,31 +2,31 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 
-// Khai báo kiểu dữ liệu cho bài hát
 export type Track = {
   id: number;
   title: string;
   artist: string;
   image: string;
   audioUrl: string;
-  lyrics?: { time: number; text: string }[]; // Thêm thuộc tính lyrics để lưu lời bài hát
+  lyrics?: { time: number; text: string }[];
 };
 
-// Khai báo các tính năng mà bộ não sẽ có
 interface MusicContextType {
   currentTrack: Track | null;
   isPlaying: boolean;
+  likedIds: number[];
   playTrack: (track: Track) => void;
   togglePlay: () => void;
   playNext: () => void;
   playPrevious: () => void;
   playMix: () => void;
+  toggleLike: (id: number) => void;
+  isLiked: (id: number) => boolean;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
-// Danh sách phát tổng để test nút Next/Prev
-const defaultPlaylist: Track[] = [
+export const defaultPlaylist: Track[] = [
   { 
     id: 1, 
     title: "Chạy Ngay Đi", 
@@ -88,29 +88,25 @@ const defaultPlaylist: Track[] = [
 export function MusicProvider({ children }: { children: ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [likedIds, setLikedIds] = useState<number[]>([1, 2]); // Mặc định thích sẵn 2 bài
 
   const playTrack = (track: Track) => {
-    // Tự động tìm lyrics từ defaultPlaylist nếu bài hát truyền vào chưa có
     const matchedTrack = defaultPlaylist.find(t => t.id === track.id);
     const fullTrackData = {
       ...track,
       lyrics: track.lyrics || matchedTrack?.lyrics,
     };
-
     setCurrentTrack(fullTrackData);
     setIsPlaying(true);
   };
 
   const togglePlay = () => {
-    if (currentTrack) {
-      setIsPlaying(!isPlaying);
-    }
+    if (currentTrack) setIsPlaying(!isPlaying);
   };
 
   const playNext = () => {
     if (!currentTrack) return;
     const currentIndex = defaultPlaylist.findIndex(t => t.id === currentTrack.id);
-    // Nếu không tìm thấy hoặc là bài cuối cùng, quay lại bài đầu tiên (Loop)
     const nextIndex = (currentIndex === -1 || currentIndex === defaultPlaylist.length - 1) ? 0 : currentIndex + 1;
     playTrack(defaultPlaylist[nextIndex]);
   };
@@ -118,19 +114,25 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const playPrevious = () => {
     if (!currentTrack) return;
     const currentIndex = defaultPlaylist.findIndex(t => t.id === currentTrack.id);
-    // Nếu là bài đầu tiên, quay lại bài cuối cùng
     const prevIndex = (currentIndex <= 0) ? defaultPlaylist.length - 1 : currentIndex - 1;
     playTrack(defaultPlaylist[prevIndex]);
   };
 
   const playMix = () => {
-    // Lấy ngẫu nhiên một bài hát trong danh sách defaultPlaylist
     const randomIndex = Math.floor(Math.random() * defaultPlaylist.length);
     playTrack(defaultPlaylist[randomIndex]);
   };
 
+  const toggleLike = (id: number) => {
+    setLikedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+  };
+
+  const isLiked = (id: number) => likedIds.includes(id);
+
   return (
-    <MusicContext.Provider value={{ currentTrack, isPlaying, playTrack, togglePlay, playNext, playPrevious, playMix }}>
+    <MusicContext.Provider value={{ 
+      currentTrack, isPlaying, likedIds, playTrack, togglePlay, playNext, playPrevious, playMix, toggleLike, isLiked 
+    }}>
       {children}
     </MusicContext.Provider>
   );

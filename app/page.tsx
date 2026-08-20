@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Sparkles, Flame, Headphones, ArrowRight, Search, X } from "lucide-react";
-import { useMusic } from "@/context/MusicContext";
+import { Play, Sparkles, Flame, Headphones, Search, X, Heart } from "lucide-react";
+import { usePlayerStore } from "@/store/usePlayerStore";
 
 const topPicks = [
   { 
@@ -42,7 +42,7 @@ const topPicks = [
     title: "Chìm Sâu", 
     artist: "RPT MCK", 
     genre: "Rap / Hip-Hop", 
-    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", 
     duration: "2:50",
     lyrics: [
@@ -72,13 +72,13 @@ const topPicks = [
 ];
 
 export default function HomePage() {
-  const { playMix, playTrack } = useMusic();
-  const [searchQuery, setSearchQuery] = useState(""); // State lưu từ khóa tìm kiếm
+  const { playMix, playTrack, toggleLike, likedIds, currentTrack } = usePlayerStore();
+  const isLiked = (id: number) => likedIds.includes(id);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? "Chào buổi sáng" : currentHour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
 
-  // Lọc bài hát theo từ khóa (tìm cả tên bài hát và nghệ sĩ)
   const filteredPicks = topPicks.filter(song => 
     song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     song.artist.toLowerCase().includes(searchQuery.toLowerCase())
@@ -86,8 +86,7 @@ export default function HomePage() {
 
   return (
     <div className="p-8 space-y-8 h-full overflow-y-auto scrollbar-none pb-28">
-      
-      {/* HEADER & Ô TÌM KIẾM */}
+      {/* HEADER & SEARCH */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-white/10 pb-6 gap-4">
         <div>
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-semibold tracking-wider uppercase mb-1">
@@ -96,7 +95,6 @@ export default function HomePage() {
           <h1 className="text-3xl font-black text-white tracking-tight">{greeting}, User!</h1>
         </div>
 
-        {/* Ô Tìm Kiếm Interative */}
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
             <Search className="w-4 h-4 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -108,17 +106,14 @@ export default function HomePage() {
               className="w-full bg-white/5 border border-white/10 focus:border-indigo-500/50 rounded-full pl-10 pr-9 py-2 text-xs text-white placeholder-white/40 focus:outline-none backdrop-blur-md transition-all focus:bg-white/10"
             />
             {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-              >
+              <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
           <button 
-            onClick={playMix}
+            onClick={() => playMix(topPicks)} 
             className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all flex items-center gap-2 flex-shrink-0"
           >
             <Play className="w-3.5 h-3.5 fill-white" /> Phát Mix
@@ -126,7 +121,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* HERO BENTO GRID (Chỉ hiện khi không tìm kiếm) */}
+      {/* HERO GRID */}
       {!searchQuery && (
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 group relative h-64 rounded-3xl overflow-hidden border border-white/10 p-8 flex flex-col justify-end cursor-pointer">
@@ -141,7 +136,10 @@ export default function HomePage() {
                 <h2 className="text-4xl font-black text-white drop-shadow-lg">Vũ Trụ Cò Bay</h2>
                 <p className="text-white/70 font-medium mt-1">Phương Mỹ Chi • 10 Bài Hát</p>
               </div>
-              <button className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.4)] hover:scale-105 transition-transform">
+              <button 
+                onClick={() => playMix(topPicks)}
+                className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.4)] hover:scale-105 transition-transform"
+              >
                 <Play className="w-6 h-6 fill-black text-black ml-1" />
               </button>
             </div>
@@ -165,48 +163,80 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* DANH SÁCH BÀI HÁT TÌM KIẾM / GỢI Ý */}
+      {/* SONGS LIST WITH NOW PLAYING INDICATOR */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Headphones className="w-5 h-5 text-indigo-400" /> 
             {searchQuery ? `Kết quả tìm kiếm cho "${searchQuery}"` : "Gợi ý hôm nay"}
           </h2>
-          {!searchQuery && (
-            <button className="text-xs font-semibold text-white/50 hover:text-white flex items-center gap-1 transition-colors">
-              Xem tất cả <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
         </div>
 
         {filteredPicks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredPicks.map((song) => (
-              <div
-                key={song.id}
-                onClick={() => playTrack(song)}
-                className="group relative bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/15 p-4 rounded-2xl flex items-center justify-between transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl"
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
-                    <img src={song.image} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Play className="w-5 h-5 fill-white text-white ml-0.5" />
+            {filteredPicks.map((song) => {
+              const liked = isLiked(song.id);
+              const isPlayingThis = currentTrack?.id === song.id;
+
+              return (
+                <div
+                  key={song.id}
+                  onClick={() => playTrack(song, topPicks)}
+                  className={`group relative p-4 rounded-2xl flex items-center justify-between transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl border ${
+                    isPlayingThis
+                      ? "bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_25px_rgba(99,102,241,0.25)]"
+                      : "bg-white/[0.04] hover:bg-white/[0.08] border-white/5 hover:border-white/15"
+                  }`}
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
+                      <img src={song.image} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      
+                      {/* Cột sóng âm Equalizer khi bài hát đang được phát */}
+                      {isPlayingThis ? (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1">
+                          <span className="w-1 h-4 bg-indigo-400 rounded-full animate-[bounce_0.6s_infinite_100ms]"></span>
+                          <span className="w-1 h-6 bg-indigo-400 rounded-full animate-[bounce_0.6s_infinite_300ms]"></span>
+                          <span className="w-1 h-3 bg-indigo-400 rounded-full animate-[bounce_0.6s_infinite_200ms]"></span>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Play className="w-5 h-5 fill-white text-white ml-0.5" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="truncate">
+                      <h4 className={`font-bold text-sm transition-colors truncate ${
+                        isPlayingThis ? "text-indigo-400" : "text-white group-hover:text-indigo-300"
+                      }`}>
+                        {song.title}
+                      </h4>
+                      <p className="text-xs text-white/50 truncate mt-0.5">{song.artist}</p>
+                      <span className="inline-block mt-1.5 text-[10px] font-medium text-indigo-300/80 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
+                        {song.genre}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="truncate">
-                    <h4 className="font-bold text-white text-sm group-hover:text-indigo-300 transition-colors truncate">{song.title}</h4>
-                    <p className="text-xs text-white/50 truncate mt-0.5">{song.artist}</p>
-                    <span className="inline-block mt-1.5 text-[10px] font-medium text-indigo-300/80 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
-                      {song.genre}
-                    </span>
+                  <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                    <span className="text-xs font-mono text-white/40">{song.duration}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLike(song.id);
+                      }}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 ${
+                        liked ? "bg-pink-500/10 text-pink-400 border border-pink-500/20" : "bg-white/5 text-white/40 hover:text-white"
+                      }`}
+                      title={liked ? "Bỏ thích" : "Yêu thích"}
+                    >
+                      <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
+                    </button>
                   </div>
                 </div>
-
-                <span className="text-xs font-mono text-white/40 ml-4">{song.duration}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl bg-white/[0.02]">
