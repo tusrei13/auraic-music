@@ -9,6 +9,7 @@ export type Track = {
   artist: string;
   image: string;
   audioUrl: string;
+  lyrics?: { time: number; text: string }[]; // Thêm thuộc tính lyrics để lưu lời bài hát
 };
 
 // Khai báo các tính năng mà bộ não sẽ có
@@ -26,7 +27,15 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 // Danh sách phát tổng để test nút Next/Prev
 const defaultPlaylist: Track[] = [
-  { id: 1, title: "Chạy Ngay Đi", artist: "Sơn Tùng M-TP", image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { id: 1, title: "Chạy Ngay Đi", artist: "Sơn Tùng M-TP", image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", 
+    lyrics: [
+      { time: 0, text: "(Nhạc dạo...)" },
+      { time: 5, text: "Chạy ngay đi, trước khi..." },
+      { time: 10, text: "Mọi điều tồi tệ hơn..." },
+      { time: 15, text: "Gạt bỏ đi, những thứ..." },
+      { time: 20, text: "Làm tổn thương nhau..." }
+    ]
+  },
   { id: 2, title: "Waiting For You", artist: "MONO", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
   { id: 3, title: "Chìm Sâu", artist: "RPT MCK", image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
   { id: 101, title: "Nốt Nhạc Trôi", artist: "Chillies", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
@@ -37,7 +46,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const playTrack = (track: Track) => {
-    setCurrentTrack(track);
+    // Tự động tìm lyrics từ defaultPlaylist nếu bài hát truyền vào chưa có
+    const matchedTrack = defaultPlaylist.find(t => t.id === track.id);
+    const fullTrackData = {
+      ...track,
+      lyrics: track.lyrics || matchedTrack?.lyrics,
+    };
+
+    setCurrentTrack(fullTrackData);
     setIsPlaying(true);
   };
 
