@@ -22,6 +22,7 @@ interface PlayerState {
   likedIds: number[];
 
   playTrack: (track: Track, queue?: Track[]) => void;
+  playMix: (tracks: Track[]) => void;
   togglePlay: () => void;
   toggleShuffle: () => void;
   toggleRepeat: () => void;
@@ -46,6 +47,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     });
   },
 
+  playMix: (tracks) => {
+    if (!tracks || tracks.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * tracks.length);
+    set({
+      currentTrack: tracks[randomIndex],
+      queue: tracks,
+      isPlaying: true,
+      isShuffle: true,
+    });
+  },
+
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
 
   toggleShuffle: () => set((state) => ({ isShuffle: !state.isShuffle })),
@@ -63,13 +75,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     const currentIndex = queue.findIndex((t) => t.id === currentTrack.id);
 
-    // Chế độ Lặp 1 bài
     if (repeatMode === "one") {
       set({ isPlaying: true });
       return;
     }
 
-    // Chế độ Trộn bài (Phát ngẫu nhiên bài khác bài hiện tại)
     if (isShuffle && queue.length > 1) {
       let randomIndex = currentIndex;
       while (randomIndex === currentIndex) {
@@ -79,7 +89,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       return;
     }
 
-    // Chế độ phát theo thứ tự danh sách
     if (currentIndex < queue.length - 1) {
       set({ currentTrack: queue[currentIndex + 1], isPlaying: true });
     } else if (repeatMode === "all") {
