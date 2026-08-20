@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Compass, Play, Hash, Heart } from "lucide-react";
+import { Search, Compass, Play, Hash, Heart, Mic2, Radio, Sparkles } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 
 export const trendingTracks = [
@@ -24,7 +24,7 @@ export const trendingTracks = [
     title: "Dạ Vũ Không Tên", 
     artist: "Hoàng Dũng", 
     genre: "Indie Vietnam", 
-    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", 
     duration: "3:40",
     lyrics: [
@@ -70,10 +70,21 @@ const genres = [
   { name: "Synthwave", color: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30" },
 ];
 
+const trendingArtists = [
+  { name: "Sơn Tùng M-TP", listeners: "2.4M người nghe", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop" },
+  { name: "Chillies", listeners: "1.1M người nghe", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=300&auto=format&fit=crop" },
+  { name: "Hoàng Dũng", listeners: "890K người nghe", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop" },
+  { name: "RPT MCK", listeners: "1.8M người nghe", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop" },
+];
+
+const moodCategories = [
+  { title: "Tập trung làm việc", desc: "Deep Focus & Ambient", bg: "from-blue-600/30 to-indigo-900/40" },
+  { title: "ChILL Đêm Muộn", desc: "Lofi Beats & Late Night", bg: "from-purple-600/30 to-pink-900/40" },
+  { title: "Năng lượng ngày mới", desc: "Pop & Upbeat Vibes", bg: "from-amber-600/30 to-rose-900/40" },
+];
+
 export default function DiscoverPage() {
-  // Lấy thêm currentTrack từ Zustand store để kiểm tra bài hát đang phát
   const { playTrack, toggleLike, likedIds, currentTrack } = usePlayerStore();
-  
   const isLiked = (id: number) => likedIds.includes(id);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,7 +110,7 @@ export default function DiscoverPage() {
           placeholder="Tìm bài hát, nghệ sĩ, hoặc album..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-white/[0.05] border border-white/10 text-white rounded-full py-4 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white/[0.08] transition-all backdrop-blur-md shadow-lg font-medium"
+          className="w-full bg-white/[0.05] border border-white/10 text-white rounded-full py-3.5 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white/[0.08] transition-all backdrop-blur-md shadow-lg font-medium text-sm placeholder-white/40"
         />
       </div>
 
@@ -113,7 +124,7 @@ export default function DiscoverPage() {
             <button
               key={genre.name}
               onClick={() => setSelectedGenre(genre.name)}
-              className={`px-5 py-2 rounded-xl text-sm font-semibold border transition-all ${
+              className={`px-5 py-2 rounded-xl text-xs font-semibold border transition-all ${
                 selectedGenre === genre.name 
                   ? "bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]" 
                   : `border-white/10 hover:bg-white/10 ${genre.color || 'text-white/70'}`
@@ -153,7 +164,6 @@ export default function DiscoverPage() {
                     <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
                       <img src={song.image} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       
-                      {/* Sóng âm Equalizer nhảy khi bài hát này đang được phát */}
                       {isPlayingThis ? (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1">
                           <span className="w-1 h-4 bg-indigo-400 rounded-full animate-[bounce_0.6s_infinite_100ms]"></span>
@@ -206,6 +216,44 @@ export default function DiscoverPage() {
           </div>
         )}
       </section>
+
+      {/* SECTION BỔ SUNG: NGHỆ SĨ XU HƯỚNG */}
+      {!searchQuery && (
+        <>
+          <section className="space-y-4 pt-4 border-t border-white/5">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Mic2 className="w-5 h-5 text-indigo-400" /> Nghệ sĩ xu hướng
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {trendingArtists.map((artist, idx) => (
+                <div key={idx} className="bg-white/[0.02] hover:bg-white/[0.06] p-4 rounded-2xl border border-white/5 text-center transition-all group cursor-pointer hover:border-indigo-500/30">
+                  <img src={artist.avatar} alt={artist.name} className="w-20 h-20 rounded-full object-cover mx-auto mb-3 shadow-lg group-hover:scale-105 transition-transform" />
+                  <h4 className="font-bold text-sm text-white truncate">{artist.name}</h4>
+                  <p className="text-[11px] text-white/40 mt-0.5">{artist.listeners}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* SECTION BỔ SUNG: TÂM TRẠNG & KHÔNG GIAN */}
+          <section className="space-y-4 pt-4 border-t border-white/5">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-400" /> Tâm trạng & Hoạt động
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {moodCategories.map((mood, idx) => (
+                <div key={idx} className={`bg-gradient-to-br ${mood.bg} p-5 rounded-2xl border border-white/10 hover:border-white/20 transition-all cursor-pointer group flex flex-col justify-between h-28`}>
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-white group-hover:text-indigo-300 transition-colors">{mood.title}</h3>
+                    <Radio className="w-4 h-4 text-white/40 group-hover:text-white transition-colors" />
+                  </div>
+                  <p className="text-xs text-white/60">{mood.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
 
     </div>
   );
