@@ -4,10 +4,70 @@ import { Play, Sparkles, Flame, Headphones, ArrowRight } from "lucide-react";
 import { useMusic } from "@/context/MusicContext";
 
 const topPicks = [
-  { id: 1, title: "Chạy Ngay Đi", artist: "Sơn Tùng M-TP", genre: "R&B / V-Pop", image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", duration: "4:05" },
-  { id: 2, title: "Waiting For You", artist: "MONO", genre: "City Pop", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", duration: "3:25" },
-  { id: 3, title: "Chìm Sâu", artist: "RPT MCK", genre: "Rap / Hip-Hop", image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", duration: "2:50" },
-  { id: 4, title: "See Tình", artist: "Hoàng Thùy Linh", genre: "Dance Pop", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3", duration: "3:10" },
+  { 
+    id: 1, 
+    title: "Chạy Ngay Đi", 
+    artist: "Sơn Tùng M-TP", 
+    genre: "R&B / V-Pop", 
+    image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", 
+    duration: "4:05",
+    lyrics: [
+      { time: 0, text: "(Nhạc dạo...)" },
+      { time: 5, text: "Chạy ngay đi, trước khi..." },
+      { time: 10, text: "Mọi điều tồi tệ hơn..." },
+      { time: 15, text: "Gạt bỏ đi, những thứ..." },
+      { time: 20, text: "Làm tổn thương nhau..." }
+    ]
+  },
+  { 
+    id: 2, 
+    title: "Waiting For You", 
+    artist: "MONO", 
+    genre: "City Pop", 
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", 
+    duration: "3:25",
+    lyrics: [
+      { time: 0, text: "(Intro bắt tai...)" },
+      { time: 5, text: "Khi màn đêm buông xuống..." },
+      { time: 10, text: "Anh lại nghĩ về em..." },
+      { time: 15, text: "Cứ thế chờ đợi từng ngày..." },
+      { time: 20, text: "I'm waiting for you..." }
+    ]
+  },
+  { 
+    id: 3, 
+    title: "Chìm Sâu", 
+    artist: "RPT MCK", 
+    genre: "Rap / Hip-Hop", 
+    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", 
+    duration: "2:50",
+    lyrics: [
+      { time: 0, text: "(Beat Chill...)" },
+      { time: 5, text: "Tại vì anh thương em..." },
+      { time: 10, text: "Nên là anh mới thế..." },
+      { time: 15, text: "Chìm sâu vào trong đôi mắt em..." },
+      { time: 20, text: "Gặp em vào một ngày nắng..." }
+    ]
+  },
+  { 
+    id: 4, 
+    title: "See Tình", 
+    artist: "Hoàng Thùy Linh", 
+    genre: "Dance Pop", 
+    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3", 
+    duration: "3:10",
+    lyrics: [
+      { time: 0, text: "(Giai điệu sôi động...)" },
+      { time: 5, text: "Giây phút em gặp anh..." },
+      { time: 10, text: "Là em biết em đã yêu rồi..." },
+      { time: 15, text: "Tình tình tình tính tang..." },
+      { time: 20, text: "Dính dính dính luôn rồi..." }
+    ]
+  },
 ];
 
 export default function HomePage() {

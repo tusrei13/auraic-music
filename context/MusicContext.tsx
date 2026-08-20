@@ -27,7 +27,12 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 // Danh sách phát tổng để test nút Next/Prev
 const defaultPlaylist: Track[] = [
-  { id: 1, title: "Chạy Ngay Đi", artist: "Sơn Tùng M-TP", image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", 
+  { 
+    id: 1, 
+    title: "Chạy Ngay Đi", 
+    artist: "Sơn Tùng M-TP", 
+    image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     lyrics: [
       { time: 0, text: "(Nhạc dạo...)" },
       { time: 5, text: "Chạy ngay đi, trước khi..." },
@@ -36,9 +41,48 @@ const defaultPlaylist: Track[] = [
       { time: 20, text: "Làm tổn thương nhau..." }
     ]
   },
-  { id: 2, title: "Waiting For You", artist: "MONO", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-  { id: 3, title: "Chìm Sâu", artist: "RPT MCK", image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
-  { id: 101, title: "Nốt Nhạc Trôi", artist: "Chillies", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
+  { 
+    id: 2, 
+    title: "Waiting For You", 
+    artist: "MONO", 
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    lyrics: [
+      { time: 0, text: "(Intro bắt tai...)" },
+      { time: 5, text: "Khi màn đêm buông xuống..." },
+      { time: 10, text: "Anh lại nghĩ về em..." },
+      { time: 15, text: "Cứ thế chờ đợi từng ngày..." },
+      { time: 20, text: "I'm waiting for you..." }
+    ]
+  },
+  { 
+    id: 3, 
+    title: "Chìm Sâu", 
+    artist: "RPT MCK", 
+    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    lyrics: [
+      { time: 0, text: "(Beat Chill...)" },
+      { time: 5, text: "Tại vì anh thương em..." },
+      { time: 10, text: "Nên là anh mới thế..." },
+      { time: 15, text: "Chìm sâu vào trong đôi mắt em..." },
+      { time: 20, text: "Gặp em vào một ngày nắng..." }
+    ]
+  },
+  { 
+    id: 101, 
+    title: "Nốt Nhạc Trôi", 
+    artist: "Chillies", 
+    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    lyrics: [
+      { time: 0, text: "(Nhạc nhẹ nhàng...)" },
+      { time: 5, text: "Những giai điệu nhẹ nhàng..." },
+      { time: 10, text: "Trôi theo từng đám mây..." },
+      { time: 15, text: "Màn đêm khẽ buông..." },
+      { time: 20, text: "Gửi trao niềm thương..." }
+    ]
+  },
 ];
 
 export function MusicProvider({ children }: { children: ReactNode }) {
