@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Heart, Play, Plus, Layers, Bookmark, HeartOff, Clock } from "lucide-react";
-import { usePlayerStore } from "@/src/store/usePlayerStore";
+import { usePlayerStore } from "@/store/usePlayerStore";
 
 export interface Track {
   id: number;

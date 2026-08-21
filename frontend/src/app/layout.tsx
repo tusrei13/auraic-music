@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import Sidebar from '@/src/components/Sidebar';
-import { AudioProvider } from '@/src/context/AudioContext';
-import Player from '@/src/components/Player';
+import Sidebar from '@/components/Sidebar';
+import { AudioProvider } from '@/context/AudioContext';
+import Player from '@/components/Player';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search, Compass, Play, Hash, Heart, Mic2, Radio, Sparkles } from "lucide-react";
-import { usePlayerStore } from "@/src/store/usePlayerStore";
+import { usePlayerStore } from "@/store/usePlayerStore";
 
 export const trendingTracks = [
   { 
