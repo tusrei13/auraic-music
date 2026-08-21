@@ -166,11 +166,7 @@ const initialPlaylists: Playlist[] = [
 const STORAGE_KEY = "auraic_user_playlists";
 
 export default function LibraryPage() {
-  const store = usePlayerStore() as any;
-  const likedIds: (number | string)[] = store.likedIds || [];
-  const currentTrack: Track | null = store.currentTrack || null;
-  const isPlaying: boolean = store.isPlaying || false;
-  const toggleLike = store.toggleLike || (() => {});
+  const { likedIds, currentTrack, isPlaying, toggleLike, playTrack } = usePlayerStore();
 
   const [activeTab, setActiveTab] = useState<"all" | "playlists" | "liked">("all");
   const [playlists, setPlaylists] = useState<Playlist[]>(initialPlaylists);
@@ -207,21 +203,14 @@ export default function LibraryPage() {
   }, [playlists, isLoaded]);
 
   const isLiked = (id: number | string) => {
-    return likedIds.some((likedId) => String(likedId) === String(id));
+    return (likedIds || []).some((likedId) => String(likedId) === String(id));
   };
 
-  const sourceTracks: Track[] = Array.isArray(store.tracks) && store.tracks.length > 0 
-    ? store.tracks 
-    : ALL_SYSTEM_SONGS;
-
+  const sourceTracks: Track[] = ALL_SYSTEM_SONGS;
   const likedSongsList: Track[] = sourceTracks.filter((song: Track) => isLiked(song.id));
 
-  const handlePlaySong = (song: Track, list?: Track[]) => {
-    if (typeof store.playTrack === "function") {
-      store.playTrack(song, list || sourceTracks);
-    } else if (typeof store.setCurrentTrack === "function") {
-      store.setCurrentTrack(song);
-    }
+  const handlePlaySong = (song: Track, list?: Track[], contextTitle?: string) => {
+    playTrack(song, list || sourceTracks, contextTitle);
   };
 
   const handleCreatePlaylist = (e: React.FormEvent) => {
@@ -279,7 +268,8 @@ export default function LibraryPage() {
 
   const activePlaylist = playlists.find((p) => String(p.id) === String(selectedPlaylistId));
   const activePlaylistSongs = activePlaylist
-    ? sourceTracks.filter((song) => activePlaylist.songIds.some((id) => String(id) === String(song.id)))
+    ? sourceTracks
+        .filter((song) => activePlaylist.songIds.some((id) => String(id) === String(song.id)))
         .filter((song) => 
           song.title.toLowerCase().includes(playlistSearchQuery.toLowerCase()) ||
           getArtistName(song.artist).toLowerCase().includes(playlistSearchQuery.toLowerCase())
@@ -291,12 +281,8 @@ export default function LibraryPage() {
 
     const shuffledList = [...activePlaylistSongs].sort(() => Math.random() - 0.5);
     setIsShuffleActive(!isShuffleActive);
-
-    if (typeof store.toggleShuffle === "function") {
-      store.toggleShuffle();
-    }
     
-    handlePlaySong(shuffledList[0], shuffledList);
+    handlePlaySong(shuffledList[0], shuffledList, activePlaylist?.name);
   };
 
   if (activePlaylist) {
@@ -366,7 +352,7 @@ export default function LibraryPage() {
               <button
                 onClick={() => {
                   if (activePlaylistSongs.length > 0) {
-                    handlePlaySong(activePlaylistSongs[0], activePlaylistSongs);
+                    handlePlaySong(activePlaylistSongs[0], activePlaylistSongs, activePlaylist.name);
                   }
                 }}
                 disabled={activePlaylistSongs.length === 0}
@@ -439,7 +425,7 @@ export default function LibraryPage() {
                     <div
                       key={song.id}
                       style={{ zIndex: activePlaylistSongs.length - index }}
-                      onClick={() => handlePlaySong(song, activePlaylistSongs)}
+                      onClick={() => handlePlaySong(song, activePlaylistSongs, activePlaylist.name)}
                       className={`grid grid-cols-12 items-center px-6 py-4 transition-all duration-200 cursor-pointer group relative ${
                         index === activePlaylistSongs.length - 1 ? "rounded-b-3xl" : ""
                       } ${
@@ -711,7 +697,7 @@ export default function LibraryPage() {
             </h2>
             {likedSongsList.length > 0 && (
               <button 
-                onClick={() => handlePlaySong(likedSongsList[0], likedSongsList)}
+                onClick={() => handlePlaySong(likedSongsList[0], likedSongsList, "Bài hát đã thích")}
                 className="flex items-center gap-2 text-xs font-bold text-black bg-white hover:bg-white/90 px-4 py-2 rounded-full transition-all shadow-lg"
               >
                 <Play className="w-3.5 h-3.5 fill-black" /> Phát tất cả
@@ -735,7 +721,7 @@ export default function LibraryPage() {
                     <div
                       key={song.id}
                       style={{ zIndex: likedSongsList.length - index }}
-                      onClick={() => handlePlaySong(song, likedSongsList)}
+                      onClick={() => handlePlaySong(song, likedSongsList, "Bài hát đã thích")}
                       className={`grid grid-cols-12 items-center px-6 py-3.5 transition-all duration-200 cursor-pointer group relative ${
                         index === likedSongsList.length - 1 ? "rounded-b-2xl" : ""
                       } ${

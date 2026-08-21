@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface Track {
-  id: number;
+  id: number | string;
   title: string;
   artist: string | { name: string };
   image: string;
@@ -14,7 +14,6 @@ export interface Track {
 
 export type RepeatMode = "off" | "all" | "one";
 
-// Kho bài hát hệ thống đầy đủ để bù vào hàng đợi khi trang hiện tại hết bài
 export const ALL_TRACKS: Track[] = [
   { id: 1, title: "Chúng Ta Của Tương Lai", artist: "Sơn Tùng M-TP", image: "/images/1.jpg", audioUrl: "/audio/1.mp3", genre: "Pop" },
   { id: 2, title: "Nấu Ăn Cho Em", artist: "Đen Vâu", image: "/images/2.jpg", audioUrl: "/audio/2.mp3", genre: "Hip Hop / Rap" },
@@ -28,12 +27,13 @@ interface PlayerState {
   currentTrack: Track | null;
   userQueue: Track[];
   contextQueue: Track[];
+  originalQueue: Track[];
   contextTitle: string;
   contextIndex: number;
   isPlaying: boolean;
   isShuffle: boolean;
   repeatMode: RepeatMode;
-  likedIds: number[];
+  likedIds: (number | string)[];
 
   playTrack: (track: Track, contextQueue?: Track[], contextTitle?: string) => void;
   playMix: (tracks: Track[]) => void;
@@ -49,16 +49,25 @@ interface PlayerState {
   toggleRepeat: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
-  toggleLike: (id: number) => void;
+  toggleLike: (id: number | string) => void;
 }
 
 const removeDuplicateTracks = (tracks: Track[]): Track[] => {
-  const seen = new Set<number>();
+  const seen = new Set<string | number>();
   return tracks.filter((t) => {
     if (!t || seen.has(t.id)) return false;
     seen.add(t.id);
     return true;
   });
+};
+
+const shuffleArray = <T>(array: T[]): T[] => {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 };
 
 export const usePlayerStore = create<PlayerState>()(
@@ -67,6 +76,7 @@ export const usePlayerStore = create<PlayerState>()(
       currentTrack: null,
       userQueue: [],
       contextQueue: [],
+      originalQueue: [],
       contextTitle: "Trang chủ",
       contextIndex: 0,
       isPlaying: false,
@@ -74,33 +84,36 @@ export const usePlayerStore = create<PlayerState>()(
       repeatMode: "off",
       likedIds: [],
 
-      playTrack: (track, pageQueue, title = "Gợi ý hôm nay") => {
-        // 1. Lấy danh sách phát từ trang hiện tại
-        const currentList = pageQueue && pageQueue.length > 0 ? pageQueue : [track];
+      playTrack: (track, pageQueue, title) => {
+        const currentList = pageQueue && pageQueue.length > 0 ? [...pageQueue] : [track];
+        const cleanList = removeDuplicateTracks(currentList);
 
-        // 2. Định vị bài được chọn
-        let foundIdx = currentList.findIndex((t) => t.id === track.id);
+        let foundIdx = cleanList.findIndex((t) => String(t.id) === String(track.id));
         if (foundIdx === -1) {
-          currentList.unshift(track);
+          cleanList.unshift(track);
           foundIdx = 0;
         }
 
-        // 3. Lấy bài chọn + các bài đứng sau nó trên trang
-        const remainingInPage = currentList.slice(foundIdx);
+        const displayTitle = title && title.trim() !== "" ? title : "Danh sách phát";
+        const isShuffle = get().isShuffle;
 
-        // 4. Lấy tất cả bài còn lại trong hệ thống làm nguồn gợi ý dự phòng
-        const fallbackPool = ALL_TRACKS.filter(
-          (t) => !remainingInPage.some((item) => item.id === t.id)
-        );
+        let activeQueue = [...cleanList];
+        let activeIdx = foundIdx;
 
-        // 5. Kết hợp lại thành hàng đợi không bao giờ trống
-        const fullContextQueue = removeDuplicateTracks([...remainingInPage, ...fallbackPool]);
+        // Khi mở bài mới mà đang bật Shuffle: Đặt bài được chọn lên đầu và xáo trộn các bài còn lại
+        if (isShuffle && activeQueue.length > 1) {
+          const selectedTrack = activeQueue[foundIdx];
+          const remaining = activeQueue.filter((_, idx) => idx !== foundIdx);
+          activeQueue = [selectedTrack, ...shuffleArray(remaining)];
+          activeIdx = 0;
+        }
 
         set({
           currentTrack: track,
-          contextQueue: fullContextQueue,
-          contextTitle: title,
-          contextIndex: 0,
+          contextQueue: activeQueue,
+          originalQueue: cleanList,
+          contextTitle: displayTitle,
+          contextIndex: activeIdx,
           isPlaying: true,
         });
       },
@@ -108,15 +121,12 @@ export const usePlayerStore = create<PlayerState>()(
       playMix: (tracks) => {
         const pool = tracks && tracks.length > 0 ? tracks : ALL_TRACKS;
         const cleanTracks = removeDuplicateTracks(pool);
-
-        for (let i = cleanTracks.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [cleanTracks[i], cleanTracks[j]] = [cleanTracks[j], cleanTracks[i]];
-        }
+        const shuffled = shuffleArray(cleanTracks);
 
         set({
-          currentTrack: cleanTracks[0],
-          contextQueue: cleanTracks,
+          currentTrack: shuffled[0],
+          contextQueue: shuffled,
+          originalQueue: cleanTracks,
           contextTitle: "Mix ngẫu nhiên",
           contextIndex: 0,
           isPlaying: true,
@@ -126,9 +136,9 @@ export const usePlayerStore = create<PlayerState>()(
 
       addToQueue: (track) => {
         const { userQueue, currentTrack } = get();
-        if (currentTrack?.id === track.id) return;
+        if (String(currentTrack?.id) === String(track.id)) return;
 
-        const filtered = userQueue.filter((t) => t.id !== track.id);
+        const filtered = userQueue.filter((t) => String(t.id) !== String(track.id));
         set({ userQueue: [...filtered, track] });
       },
 
@@ -139,9 +149,19 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       removeFromContextQueue: (index) => {
-        set((state) => ({
-          contextQueue: state.contextQueue.filter((_, i) => i !== index),
-        }));
+        set((state) => {
+          const newContext = state.contextQueue.filter((_, i) => i !== index);
+          let newIndex = state.contextIndex;
+          if (index < state.contextIndex) {
+            newIndex = Math.max(0, state.contextIndex - 1);
+          } else if (newIndex >= newContext.length) {
+            newIndex = Math.max(0, newContext.length - 1);
+          }
+          return {
+            contextQueue: newContext,
+            contextIndex: newIndex,
+          };
+        });
       },
 
       removeFromQueue: (index) => {
@@ -157,24 +177,36 @@ export const usePlayerStore = create<PlayerState>()(
 
       reorderQueue: (newQueue) => set({ userQueue: removeDuplicateTracks(newQueue) }),
 
-      setQueue: (newQueue) => set({ contextQueue: removeDuplicateTracks(newQueue) }),
+      setQueue: (newQueue) => set({ 
+        contextQueue: removeDuplicateTracks(newQueue), 
+        originalQueue: removeDuplicateTracks(newQueue) 
+      }),
 
       togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
 
       toggleShuffle: () =>
         set((state) => {
           const newIsShuffle = !state.isShuffle;
+
           if (newIsShuffle && state.contextQueue.length > 1) {
+            // Khi bật Shuffle: Giữ bài hiện tại, xáo trộn danh sách phía sau
             const played = state.contextQueue.slice(0, state.contextIndex + 1);
-            const remaining = [...state.contextQueue.slice(state.contextIndex + 1)];
+            const remaining = state.contextQueue.slice(state.contextIndex + 1);
 
-            for (let i = remaining.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+            return { 
+              isShuffle: true, 
+              contextQueue: [...played, ...shuffleArray(remaining)] 
+            };
+          } else if (!newIsShuffle && state.originalQueue.length > 0 && state.currentTrack) {
+            // Khi tắt Shuffle: Khôi phục lại thứ tự gốc
+            const cleanOriginal = removeDuplicateTracks(state.originalQueue);
+            const foundIdx = cleanOriginal.findIndex((t) => String(t.id) === String(state.currentTrack?.id));
+            
+            if (foundIdx !== -1) {
+              return { isShuffle: false, contextQueue: cleanOriginal, contextIndex: foundIdx };
             }
-
-            return { isShuffle: true, contextQueue: [...played, ...remaining] };
           }
+
           return { isShuffle: newIsShuffle };
         }),
 
@@ -185,7 +217,7 @@ export const usePlayerStore = create<PlayerState>()(
         }),
 
       nextTrack: () => {
-        const { userQueue, contextQueue, contextIndex, repeatMode } = get();
+        const { userQueue, contextQueue, contextIndex, repeatMode, isShuffle } = get();
 
         if (repeatMode === "one") {
           set({ isPlaying: true });
@@ -202,29 +234,50 @@ export const usePlayerStore = create<PlayerState>()(
           return;
         }
 
-        if (contextIndex < contextQueue.length - 1) {
-          const nextIdx = contextIndex + 1;
-          set({
-            currentTrack: contextQueue[nextIdx],
-            contextIndex: nextIdx,
-            isPlaying: true,
-          });
-        } else if (repeatMode === "all" && contextQueue.length > 0) {
-          set({
-            currentTrack: contextQueue[0],
-            contextIndex: 0,
-            isPlaying: true,
-          });
+        if (contextQueue.length === 0) return;
+
+        let newQueue = [...contextQueue];
+        let nextIdx = 0;
+
+        if (isShuffle) {
+          // Bật Shuffle: Bốc ngẫu nhiên 1 bài trong các bài CHƯA PHÁT phía sau
+          if (contextIndex < newQueue.length - 1) {
+            const randomIndex = Math.floor(
+              Math.random() * (newQueue.length - (contextIndex + 1))
+            ) + (contextIndex + 1);
+
+            // Hoán đổi bài chọn ngẫu nhiên lên vị trí tiếp theo
+            [newQueue[contextIndex + 1], newQueue[randomIndex]] = [
+              newQueue[randomIndex],
+              newQueue[contextIndex + 1],
+            ];
+
+            nextIdx = contextIndex + 1;
+          } else {
+            // Đã phát tới bài cuối -> Đảo ngẫu nhiên lại toàn bộ cho vòng mới và quay về 0
+            newQueue = shuffleArray(newQueue);
+            nextIdx = 0;
+          }
         } else {
-          set({ isPlaying: false });
+          // Không bật Shuffle: Tiến tuyến tính quay vòng
+          nextIdx = (contextIndex + 1) % newQueue.length;
         }
+
+        set({
+          currentTrack: newQueue[nextIdx],
+          contextQueue: newQueue,
+          contextIndex: nextIdx,
+          isPlaying: true,
+        });
       },
 
       prevTrack: () => {
         const { contextQueue, contextIndex } = get();
         if (contextQueue.length === 0) return;
 
-        const prevIdx = contextIndex > 0 ? contextIndex - 1 : contextQueue.length - 1;
+        // Lùi bài theo đúng tiến trình vừa phát trong contextQueue
+        const prevIdx = (contextIndex - 1 + contextQueue.length) % contextQueue.length;
+
         set({
           currentTrack: contextQueue[prevIdx],
           contextIndex: prevIdx,
@@ -234,8 +287,8 @@ export const usePlayerStore = create<PlayerState>()(
 
       toggleLike: (id) =>
         set((state) => ({
-          likedIds: state.likedIds.includes(id)
-            ? state.likedIds.filter((item) => item !== id)
+          likedIds: state.likedIds.some((item) => String(item) === String(id))
+            ? state.likedIds.filter((item) => String(item) !== String(id))
             : [...state.likedIds, id],
         })),
     }),

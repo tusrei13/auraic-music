@@ -35,8 +35,19 @@ export default function QueuePanel({ isOpen, onClose }: QueuePanelProps) {
 
   if (!isOpen) return null;
 
-  // Lấy danh sách các bài hát còn lại từ nguồn phát (bỏ qua bài đang phát)
-  const remainingContextTracks = contextQueue.slice(contextIndex + 1);
+  // Lấy vị trí bài hát hiện tại trong danh sách
+  const getCurrentIndex = () => {
+    if (!currentTrack || contextQueue.length === 0) return contextIndex;
+    const idx = contextQueue.findIndex((t) => String(t.id) === String(currentTrack.id));
+    return idx !== -1 ? idx : contextIndex;
+  };
+
+  const activeIndex = getCurrentIndex();
+
+  // CHỈ LẤY CÁC BÀI TIẾP THEO (Không ghép nối xoay vòng)
+  // Khi ở bài 1 -> lấy từ bài 2 đến bài cuối
+  // Khi ở bài cuối -> trả về mảng rỗng []
+  const remainingContextTracks = contextQueue.slice(activeIndex + 1);
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
@@ -126,7 +137,7 @@ export default function QueuePanel({ isOpen, onClose }: QueuePanelProps) {
           </div>
         )}
 
-        {/* 1. Hàng đợi cá nhân (Do người dùng thêm) */}
+        {/* 1. Hàng đợi cá nhân (Do người dùng tự bấm Thêm vào hàng đợi) */}
         {userQueue.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -179,7 +190,7 @@ export default function QueuePanel({ isOpen, onClose }: QueuePanelProps) {
           </div>
         )}
 
-        {/* 2. Danh sách tiếp theo từ nguồn phát (Album / Playlist / Trang) */}
+        {/* 2. Danh sách tiếp theo từ nguồn phát (Playlist / Liked) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider truncate">
@@ -189,44 +200,49 @@ export default function QueuePanel({ isOpen, onClose }: QueuePanelProps) {
 
           {remainingContextTracks.length > 0 ? (
             <div className="space-y-2">
-              {remainingContextTracks.map((track, index) => (
-                <div
-                  key={`ctx-${track.id}-${index}`}
-                  className="group p-2.5 rounded-xl border border-white/5 hover:border-white/10 bg-white/[0.02] hover:bg-white/5 flex items-center gap-3 transition-all"
-                >
+              {remainingContextTracks.map((track, index) => {
+                // Xác định chính xác index gốc trong contextQueue để thực hiện xóa
+                const targetOriginalIndex = activeIndex + 1 + index;
+
+                return (
                   <div
-                    onClick={() => handlePlayTrack(track)}
-                    className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden group/thumb cursor-pointer"
+                    key={`ctx-${track.id}-${index}`}
+                    className="group p-2.5 rounded-xl border border-white/5 hover:border-white/10 bg-white/[0.02] hover:bg-white/5 flex items-center gap-3 transition-all"
                   >
-                    <img src={track.image} alt={track.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
-                      <Play className="w-4 h-4 text-white fill-white" />
+                    <div
+                      onClick={() => handlePlayTrack(track)}
+                      className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden group/thumb cursor-pointer"
+                    >
+                      <img src={track.image} alt={track.title} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
+                        <Play className="w-4 h-4 text-white fill-white" />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handlePlayTrack(track)}>
-                    <h4 className="text-xs font-semibold text-white group-hover:text-indigo-300 truncate">
-                      {track.title}
-                    </h4>
-                    <p className="text-[11px] text-white/40 truncate">{renderArtist(track.artist)}</p>
-                  </div>
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handlePlayTrack(track)}>
+                      <h4 className="text-xs font-semibold text-white group-hover:text-indigo-300 truncate">
+                        {track.title}
+                      </h4>
+                      <p className="text-[11px] text-white/40 truncate">{renderArtist(track.artist)}</p>
+                    </div>
 
-                  <button
-                    onClick={() => removeFromContextQueue(contextIndex + 1 + index)}
-                    className="p-1.5 text-white/30 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                    title="Xóa khỏi danh sách"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                    <button
+                      onClick={() => removeFromContextQueue && removeFromContextQueue(targetOriginalIndex)}
+                      className="p-1.5 text-white/30 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                      title="Xóa khỏi danh sách"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             userQueue.length === 0 && (
               <div className="text-center py-12 px-4 border border-dashed border-white/10 rounded-2xl space-y-2">
                 <Music2 className="w-8 h-8 text-white/20 mx-auto" />
-                <p className="text-xs font-medium text-white/40">Hàng đợi trống</p>
-                <p className="text-[11px] text-white/30">Chọn một danh sách phát hoặc thêm bài hát vào hàng đợi</p>
+                <p className="text-xs font-medium text-white/40">Bài hát cuối trong danh sách</p>
+                <p className="text-[11px] text-white/30">Hết bài này nhạc sẽ tự quay lại bài đầu tiên</p>
               </div>
             )
           )}
