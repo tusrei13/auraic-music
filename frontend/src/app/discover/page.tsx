@@ -3,8 +3,20 @@
 import { useState } from "react";
 import { Search, Compass, Play, Hash, Heart, Mic2, Radio, Sparkles } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
+import TrackActionMenu from "@/components/TrackActionMenu";
 
-export const trendingTracks = [
+export interface Track {
+  id: number | string;
+  title: string;
+  artist: string;
+  genre: string;
+  image: string;
+  audioUrl: string;
+  duration: string;
+  lyrics?: { time: number; text: string }[];
+}
+
+export const trendingTracks: Track[] = [
   { 
     id: 101, 
     title: "Nốt Nhạc Trôi", 
@@ -84,8 +96,22 @@ const moodCategories = [
 ];
 
 export default function DiscoverPage() {
-  const { playTrack, toggleLike, likedIds, currentTrack } = usePlayerStore();
-  const isLiked = (id: number) => likedIds.includes(id);
+  const store = usePlayerStore() as any;
+  const likedIds: (number | string)[] = store.likedIds || [];
+  const currentTrack: Track | null = store.currentTrack || null;
+  const toggleLike = store.toggleLike || (() => {});
+
+  const handlePlayTrack = (track: Track, list: Track[]) => {
+    if (typeof store.playTrack === "function") {
+      store.playTrack(track, list);
+    } else if (typeof store.setCurrentTrack === "function") {
+      store.setCurrentTrack(track);
+    }
+  };
+
+  const isLiked = (id: number | string) => {
+    return likedIds.some((likedId) => String(likedId) === String(id));
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("Tất cả");
@@ -148,12 +174,12 @@ export default function DiscoverPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             {filteredTracks.map((song) => {
               const liked = isLiked(song.id);
-              const isPlayingThis = currentTrack?.id === song.id;
+              const isPlayingThis = String(currentTrack?.id) === String(song.id);
 
               return (
                 <div
                   key={song.id}
-                  onClick={() => playTrack(song, filteredTracks)}
+                  onClick={() => handlePlayTrack(song, filteredTracks)}
                   className={`group relative p-4 rounded-2xl flex items-center justify-between transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl border ${
                     isPlayingThis
                       ? "bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_25px_rgba(99,102,241,0.25)]"
@@ -190,8 +216,8 @@ export default function DiscoverPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-                    <span className="text-xs font-mono text-white/40">{song.duration}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                    <span className="text-xs font-mono text-white/40 mr-1">{song.duration}</span>
                     
                     <button
                       onClick={(e) => {
@@ -205,6 +231,9 @@ export default function DiscoverPage() {
                     >
                       <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
                     </button>
+
+                    {/* MENU TÙY CHỌN BÀI HÁT */}
+                    <TrackActionMenu track={song} />
                   </div>
                 </div>
               );
@@ -235,7 +264,7 @@ export default function DiscoverPage() {
             </div>
           </section>
 
-          {/* SECTION BỔ SUNG: TÂM TRẠNG & KHÔNG GIAN */}
+          {/* SECTION BỔ SUNG: TÂM TRẠNG & HOẠT ĐỘNG */}
           <section className="space-y-4 pt-4 border-t border-white/5">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-indigo-400" /> Tâm trạng & Hoạt động

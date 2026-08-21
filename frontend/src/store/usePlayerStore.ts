@@ -16,14 +16,17 @@ export type RepeatMode = "off" | "all" | "one";
 
 interface PlayerState {
   currentTrack: Track | null;
+  currentIndex: number;
   queue: Track[];
   isPlaying: boolean;
   isShuffle: boolean;
   repeatMode: RepeatMode;
   likedIds: number[];
 
-  playTrack: (track: Track, queue?: Track[]) => void;
+  playTrack: (track: Track, queue?: Track[], index?: number) => void;
   playMix: (tracks: Track[]) => void;
+  addToQueue: (track: Track) => void;
+  removeFromQueue: (index: number) => void;
   togglePlay: () => void;
   toggleShuffle: () => void;
   toggleRepeat: () => void;
@@ -36,16 +39,27 @@ export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => ({
       currentTrack: null,
+      currentIndex: 0,
       queue: [],
       isPlaying: false,
       isShuffle: false,
       repeatMode: "off",
       likedIds: [],
 
-      playTrack: (track, queue) => {
+      playTrack: (track, newQueue, index) => {
+        const currentQueue = newQueue && newQueue.length > 0 ? newQueue : get().queue;
+        let targetIndex = index;
+
+        // Nếu không truyền index cụ thể thì tìm vị trí đầu tiên của bài hát trong queue
+        if (targetIndex === undefined) {
+          const foundIndex = currentQueue.findIndex((t) => t.id === track.id);
+          targetIndex = foundIndex !== -1 ? foundIndex : 0;
+        }
+
         set({
           currentTrack: track,
-          queue: queue && queue.length > 0 ? queue : get().queue,
+          currentIndex: targetIndex,
+          queue: currentQueue,
           isPlaying: true,
         });
       },
@@ -55,9 +69,37 @@ export const usePlayerStore = create<PlayerState>()(
         const randomIndex = Math.floor(Math.random() * tracks.length);
         set({
           currentTrack: tracks[randomIndex],
+          currentIndex: randomIndex,
           queue: tracks,
           isPlaying: true,
           isShuffle: true,
+        });
+      },
+
+      // Thêm bài hát vào cuối hàng đợi phát hiện tại
+      addToQueue: (track) => {
+        set((state) => ({
+          queue: [...state.queue, track],
+        }));
+      },
+
+      // Xóa bài hát khỏi hàng đợi theo vị trí
+      removeFromQueue: (index) => {
+        set((state) => {
+          const newQueue = state.queue.filter((_, i) => i !== index);
+          let newIndex = state.currentIndex;
+
+          if (index < state.currentIndex) {
+            newIndex = Math.max(0, state.currentIndex - 1);
+          } else if (index === state.currentIndex && newQueue.length > 0) {
+            newIndex = Math.min(state.currentIndex, newQueue.length - 1);
+          }
+
+          return {
+            queue: newQueue,
+            currentIndex: newIndex,
+            currentTrack: newQueue.length > 0 ? newQueue[newIndex] : null,
+          };
         });
       },
 
@@ -73,10 +115,8 @@ export const usePlayerStore = create<PlayerState>()(
         }),
 
       nextTrack: () => {
-        const { queue, currentTrack, isShuffle, repeatMode } = get();
-        if (!currentTrack || queue.length === 0) return;
-
-        const currentIndex = queue.findIndex((t) => t.id === currentTrack.id);
+        const { queue, currentIndex, isShuffle, repeatMode } = get();
+        if (queue.length === 0) return;
 
         if (repeatMode === "one") {
           set({ isPlaying: true });
@@ -88,29 +128,42 @@ export const usePlayerStore = create<PlayerState>()(
           while (randomIndex === currentIndex) {
             randomIndex = Math.floor(Math.random() * queue.length);
           }
-          set({ currentTrack: queue[randomIndex], isPlaying: true });
+          set({
+            currentIndex: randomIndex,
+            currentTrack: queue[randomIndex],
+            isPlaying: true,
+          });
           return;
         }
 
         if (currentIndex < queue.length - 1) {
-          set({ currentTrack: queue[currentIndex + 1], isPlaying: true });
+          const nextIndex = currentIndex + 1;
+          set({
+            currentIndex: nextIndex,
+            currentTrack: queue[nextIndex],
+            isPlaying: true,
+          });
         } else if (repeatMode === "all") {
-          set({ currentTrack: queue[0], isPlaying: true });
+          set({
+            currentIndex: 0,
+            currentTrack: queue[0],
+            isPlaying: true,
+          });
         } else {
           set({ isPlaying: false });
         }
       },
 
       prevTrack: () => {
-        const { queue, currentTrack } = get();
-        if (!currentTrack || queue.length === 0) return;
+        const { queue, currentIndex } = get();
+        if (queue.length === 0) return;
 
-        const currentIndex = queue.findIndex((t) => t.id === currentTrack.id);
-        if (currentIndex > 0) {
-          set({ currentTrack: queue[currentIndex - 1], isPlaying: true });
-        } else {
-          set({ currentTrack: queue[queue.length - 1], isPlaying: true });
-        }
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : queue.length - 1;
+        set({
+          currentIndex: prevIndex,
+          currentTrack: queue[prevIndex],
+          isPlaying: true,
+        });
       },
 
       toggleLike: (id) =>
@@ -121,12 +174,12 @@ export const usePlayerStore = create<PlayerState>()(
         })),
     }),
     {
-      name: "auraic-player-storage", // Khóa lưu trữ dưới localStorage
+      name: "auraic-player-storage",
       partialize: (state) => ({
         likedIds: state.likedIds,
         isShuffle: state.isShuffle,
         repeatMode: state.repeatMode,
-      }), // Chỉ lưu các state này, không lưu trạng thái đang phát hay bài hát hiện tại
+      }),
     }
   )
 );
