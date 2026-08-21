@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Shuffle, Repeat, Repeat1, Mic2, Music, X, Heart } from "lucide-react";
-import { usePlayerStore } from "@/src/store/usePlayerStore";
+import { usePlayerStore } from "@/store/usePlayerStore";
 
 export default function Player() {
   const { 
