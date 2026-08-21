@@ -5,6 +5,7 @@ import Player from '@/components/Player';
 import ToastContainer from '@/components/ToastContainer';
 import AuthProvider from '@/context/AuthProvider';
 import AuthModal from '@/components/AuthModal';
+import DynamicTheme from '@/components/DynamicTheme';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -21,8 +22,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi">
-      <body className={`${inter.className} h-screen flex flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-[#050505] to-purple-950 text-white`}>
+      <body className={`${inter.className} h-screen flex flex-col overflow-hidden text-white`}>
         <AuthProvider>
+        <DynamicTheme />
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         <div className="flex flex-1 overflow-hidden p-4 gap-4 pb-2">
             <Sidebar />
             <main className="flex-1 overflow-y-auto bg-black/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl relative">
@@ -36,6 +39,7 @@ export default function RootLayout({
 
           <ToastContainer />
           <AuthModal />
+        </div>
         </AuthProvider>
       </body>
     </html>

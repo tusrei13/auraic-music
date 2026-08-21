@@ -1,6 +1,21 @@
 @import "tailwindcss";
 
 body {
-  background-color: #0A0A0A;
+  isolation: isolate;
+  background: #050508;
   color: #EDEDED;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 82% 8%, var(--auraic-accent-soft, rgba(99, 102, 241, 0.22)), transparent 38%),
+    radial-gradient(circle at 12% 90%, color-mix(in srgb, var(--auraic-accent, #6366f1) 12%, transparent), transparent 44%);
+  filter: blur(34px);
+  opacity: 0.8;
+  transition: background 700ms ease, opacity 700ms ease;
 }
