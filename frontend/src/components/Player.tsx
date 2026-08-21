@@ -258,7 +258,7 @@ export default function Player() {
 
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
-                onClick={() => toggleLike(currentTrack.id)}
+                onClick={() => toggleLike(currentTrack)}
                 className="text-white/40 hover:text-pink-500 transition-colors p-1.5 hover:bg-white/5 rounded-lg cursor-pointer"
                 title={liked ? "Bỏ thích" : "Yêu thích"}
               >

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useToastStore } from "./useToastStore";
+import { toggleLikeSong } from "../lib/api";
 
 export interface Track {
   id: number | string;
@@ -8,21 +9,12 @@ export interface Track {
   artist: string | { name: string };
   image: string;
   audioUrl: string;
-  genre?: string;
+  genre?: string | { name: string } | null;
   duration?: string;
   lyrics?: { time: number; text: string }[];
 }
 
 export type RepeatMode = "off" | "all" | "one";
-
-export const ALL_TRACKS: Track[] = [
-  { id: 1, title: "Chúng Ta Của Tương Lai", artist: "Sơn Tùng M-TP", image: "/images/1.jpg", audioUrl: "/audio/1.mp3", genre: "Pop" },
-  { id: 2, title: "Nấu Ăn Cho Em", artist: "Đen Vâu", image: "/images/2.jpg", audioUrl: "/audio/2.mp3", genre: "Hip Hop / Rap" },
-  { id: 3, title: "Nốt Nhạc Trôi", artist: "Chillies", image: "/images/3.jpg", audioUrl: "/audio/3.mp3", genre: "Indie Vietnam" },
-  { id: 4, title: "Dạ Vũ Không Tên", artist: "Hoàng Dũng", image: "/images/4.jpg", audioUrl: "/audio/4.mp3", genre: "Indie Vietnam" },
-  { id: 5, title: "Midnight City", artist: "M83", image: "/images/5.jpg", audioUrl: "/audio/5.mp3", genre: "Synthwave" },
-  { id: 6, title: "Coffee & Rain", artist: "Lofi Girl", image: "/images/6.jpg", audioUrl: "/audio/6.mp3", genre: "Lofi Chill" },
-];
 
 interface PlayerState {
   currentTrack: Track | null;
@@ -50,7 +42,7 @@ interface PlayerState {
   toggleRepeat: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
-  toggleLike: (id: number | string) => void;
+  toggleLike: (trackOrId: number | string | Track) => Promise<void>;
 }
 
 const removeDuplicateTracks = (tracks: Track[]): Track[] => {
@@ -119,7 +111,8 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       playMix: (tracks) => {
-        const pool = tracks && tracks.length > 0 ? tracks : ALL_TRACKS;
+        const pool = tracks && tracks.length > 0 ? tracks : [];
+        if (pool.length === 0) return;
         const cleanTracks = removeDuplicateTracks(pool);
         const shuffled = shuffleArray(cleanTracks);
 
@@ -295,24 +288,53 @@ export const usePlayerStore = create<PlayerState>()(
         });
       },
 
-      toggleLike: (id) =>
-        set((state) => {
-          const isLiked = state.likedIds.some((item) => String(item) === String(id));
-          const track = ALL_TRACKS.find((t) => String(t.id) === String(id)) || state.currentTrack;
-          const trackTitle = track ? `"${track.title}"` : "bài hát";
-
-          if (isLiked) {
-            useToastStore.getState().addToast(`Đã xóa ${trackTitle} khỏi Yêu thích`, "info");
-          } else {
-            useToastStore.getState().addToast(`Đã thêm ${trackTitle} vào Yêu thích`, "success");
+      toggleLike: async (trackOrId) => {
+        let id: number | string;
+        let trackTitle = "";
+        const state = get();
+        if (typeof trackOrId === "object" && trackOrId !== null) {
+          id = trackOrId.id;
+          trackTitle = trackOrId.title || "";
+        } else {
+          id = trackOrId;
+          const foundTrack = state.currentTrack?.id === id
+            ? state.currentTrack
+            : state.contextQueue.find((t) => String(t.id) === String(id)) ||
+              state.userQueue.find((t) => String(t.id) === String(id)) ||
+              state.originalQueue.find((t) => String(t.id) === String(id)) ||
+              undefined;
+          trackTitle = foundTrack?.title || "";
+        }
+        const wasLiked = state.likedIds.some((item) => String(item) === String(id));
+        set((current) => ({
+          likedIds: wasLiked
+            ? current.likedIds.filter((item) => String(item) !== String(id))
+            : [...current.likedIds, id],
+        }));
+        const formattedTitle = trackTitle.trim() ? `"${trackTitle}"` : "bài hát";
+        useToastStore.getState().addToast(
+          `${wasLiked ? "Đã xóa" : "Đã thêm"} ${formattedTitle} ${wasLiked ? "khỏi" : "vào"} Yêu thích`,
+          wasLiked ? "info" : "success"
+        );
+        if (typeof window !== "undefined" && localStorage.getItem("token")) {
+          try {
+            const result = await toggleLikeSong(id);
+            if (result.liked === wasLiked) {
+              set((current) => ({
+                likedIds: wasLiked
+                  ? [...current.likedIds, id]
+                  : current.likedIds.filter((item) => String(item) !== String(id)),
+              }));
+            }
+          } catch {
+            set((current) => ({
+              likedIds: wasLiked
+                ? [...current.likedIds, id]
+                : current.likedIds.filter((item) => String(item) !== String(id)),
+            }));
           }
-
-          return {
-            likedIds: isLiked
-              ? state.likedIds.filter((item) => String(item) !== String(id))
-              : [...state.likedIds, id],
-          };
-        }),
+        }
+      },
     }),
     {
       name: "auraic-player-storage",

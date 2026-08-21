@@ -163,7 +163,7 @@ export default function TrackActionMenu({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (store.toggleLike) store.toggleLike(track.id);
+                if (store.toggleLike) store.toggleLike(track);
                 setIsOpen(false);
               }}
               className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-3 transition-colors cursor-pointer font-semibold"

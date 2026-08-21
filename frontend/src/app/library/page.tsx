@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Heart, 
   Play, 
@@ -16,108 +16,19 @@ import {
   Search, 
   Sparkles,
   Disc,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
 import { usePlayerStore, Track as StoreTrack } from "@/store/usePlayerStore";
 import { usePlaylistStore } from "@/store/usePlaylistStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
+import { getSongs } from "@/lib/api";
 
 export type Track = StoreTrack & {
   addedAt?: string;
   duration?: string;
   [key: string]: any;
 };
-
-export const ALL_SYSTEM_SONGS: Track[] = [
-  { 
-    id: 1, 
-    title: "Chúng Ta Của Tương Lai", 
-    artist: "Sơn Tùng M-TP", 
-    album: "Chúng Ta Của Tương Lai (Single)",
-    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    genre: "Pop / R&B",
-    addedAt: "2 ngày trước",
-    duration: "03:38",
-  },
-  { 
-    id: 2, 
-    title: "Nấu Ăn Cho Em", 
-    artist: "Đen Vâu ft. PiaLinh", 
-    album: "Nấu Ăn Cho Em",
-    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
-    genre: "Hip-Hop / Rap",
-    addedAt: "1 tuần trước",
-    duration: "04:12",
-  },
-  { 
-    id: 3, 
-    title: "Chạy Ngay Đi", 
-    artist: "Sơn Tùng M-TP", 
-    album: "Chạy Ngay Đi",
-    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    genre: "Hip-Hop / Trap",
-    addedAt: "3 tuần trước",
-    duration: "04:05",
-  },
-  { 
-    id: 4, 
-    title: "Waiting For You", 
-    artist: "MONO", 
-    album: "22",
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-    genre: "Synth-Pop",
-    addedAt: "1 tháng trước",
-    duration: "03:25",
-  },
-  { 
-    id: 5, 
-    title: "Chìm Sâu", 
-    artist: "RPT MCK ft. Trung Trần", 
-    album: "99%",
-    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-    genre: "R&B / Soul",
-    addedAt: "1 tháng trước",
-    duration: "02:58",
-  },
-  { 
-    id: 6, 
-    title: "See Tình", 
-    artist: "Hoàng Thùy Linh", 
-    album: "LINK",
-    image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-    genre: "Dance Pop",
-    addedAt: "2 tháng trước",
-    duration: "03:10",
-  },
-  { 
-    id: 101, 
-    title: "Nốt Nhạc Trôi", 
-    artist: "Chillies", 
-    album: "Qua Khung Cửa Sổ",
-    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-    genre: "Indie Rock",
-    addedAt: "2 tháng trước",
-    duration: "04:15",
-  },
-  { 
-    id: 102, 
-    title: "Dạ Vũ Không Tên", 
-    artist: "Hoàng Dũng", 
-    album: "25",
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
-    genre: "Ballad",
-    addedAt: "3 tháng trước",
-    duration: "03:40",
-  },
-];
 
 const getStringValue = (val: any, fallback = ""): string => {
   if (!val) return fallback;
@@ -142,6 +53,9 @@ export default function LibraryPage() {
   const playlistStore = usePlaylistStore() as any;
   const playlists = playlistStore.playlists || [];
 
+  const [systemSongs, setSystemSongs] = useState<Track[]>([]);
+  const [loadingSongs, setLoadingSongs] = useState(true);
+
   const [activeTab, setActiveTab] = useState<"all" | "playlists" | "liked">("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddSongsModal, setShowAddSongsModal] = useState(false);
@@ -152,11 +66,26 @@ export default function LibraryPage() {
   const [isShuffleActive, setIsShuffleActive] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | string | null>(null);
 
+  // Tải danh sách bài hát thực tế từ Database
+  useEffect(() => {
+    getSongs()
+      .then((data) => {
+        setSystemSongs(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => console.error("Lỗi tải bài hát cho Thư viện:", err))
+      .finally(() => setLoadingSongs(false));
+  }, []);
+
+  useEffect(() => {
+    void playlistStore.hydrate?.();
+  }, [playlistStore.hydrate]);
+
+  const sourceTracks: Track[] = systemSongs;
+
   const isLiked = (id: number | string) => {
     return (likedIds || []).some((likedId) => String(likedId) === String(id));
   };
 
-  const sourceTracks: Track[] = ALL_SYSTEM_SONGS;
   const likedSongsList: Track[] = sourceTracks.filter((song: Track) => isLiked(song.id));
 
   const handlePlaySong = (song: Track, list?: Track[], contextTitle?: string) => {
@@ -250,6 +179,15 @@ export default function LibraryPage() {
     const plName = getStringValue(activePlaylist?.name || activePlaylist?.title, "Playlist");
     handlePlaySong(shuffledList[0], shuffledList, plName);
   };
+
+  if (loadingSongs) {
+    return (
+      <div className="flex items-center justify-center h-full text-white/50 gap-2">
+        <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+        <span className="text-sm font-medium">Đang tải Thư viện...</span>
+      </div>
+    );
+  }
 
   if (activePlaylist) {
     const playlistTitle = getStringValue(activePlaylist.name || activePlaylist.title, "Playlist");
@@ -390,6 +328,7 @@ export default function LibraryPage() {
                 {activePlaylistSongs.map((song: Track, index: number) => {
                   const isCurrent = String(currentTrack?.id) === String(song.id);
                   const liked = isLiked(song.id);
+                  const songImage = getStringValue(song.image) || getStringValue(song.coverUrl) || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
                   return (
                     <div
@@ -423,7 +362,7 @@ export default function LibraryPage() {
 
                       <div className="col-span-5 sm:col-span-4 flex items-center gap-3.5 min-w-0 pr-2">
                         <img 
-                          src={getStringValue(song.image)} 
+                          src={songImage} 
                           alt={getStringValue(song.title)} 
                           className="w-11 h-11 rounded-xl object-cover flex-shrink-0 shadow-lg border border-white/10" 
                         />
@@ -449,7 +388,7 @@ export default function LibraryPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleLike(song.id);
+                            toggleLike(song);
                           }}
                           className="text-white/30 hover:text-pink-500 transition-colors p-1.5 hover:bg-white/5 rounded-lg"
                           title={liked ? "Bỏ thích" : "Yêu thích"}
@@ -514,6 +453,7 @@ export default function LibraryPage() {
               <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-none divide-y divide-white/5">
                 {sourceTracks.map((song) => {
                   const isAdded = activePlaylistSongIds.some((id) => String(id) === String(song.id));
+                  const songImage = getStringValue(song.image) || getStringValue(song.coverUrl) || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
                   return (
                     <div
@@ -524,7 +464,7 @@ export default function LibraryPage() {
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <img src={getStringValue(song.image)} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <img src={songImage} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         <div className="truncate">
                           <h5 className="text-sm font-bold text-white truncate">{getStringValue(song.title)}</h5>
                           <p className="text-xs text-white/50 truncate">{getArtistName(song.artist)}</p>
@@ -564,7 +504,6 @@ export default function LibraryPage() {
           </div>
         )}
 
-        {/* Modal xác nhận xóa dành cho giao diện chi tiết Playlist */}
         {playlistToDelete && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-[#121216] border border-white/10 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl relative text-center">
@@ -728,6 +667,7 @@ export default function LibraryPage() {
               <div className="divide-y divide-white/[0.02]">
                 {likedSongsList.map((song: Track, index: number) => {
                   const isCurrent = String(currentTrack?.id) === String(song.id);
+                  const songImage = getStringValue(song.image) || getStringValue(song.coverUrl) || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
                   return (
                     <div
@@ -745,7 +685,7 @@ export default function LibraryPage() {
                       </div>
 
                       <div className="col-span-8 flex items-center gap-3.5 min-w-0">
-                        <img src={getStringValue(song.image)} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <img src={songImage} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         <div className="truncate">
                           <h4 className={`text-sm font-semibold truncate ${isCurrent ? "text-indigo-400" : "text-white"}`}>{getStringValue(song.title)}</h4>
                           <p className="text-xs text-white/50 truncate">{getArtistName(song.artist)}</p>
@@ -756,7 +696,7 @@ export default function LibraryPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleLike(song.id);
+                            toggleLike(song);
                           }}
                           className="text-pink-500 hover:text-pink-400 transition-colors p-1.5 hover:bg-white/5 rounded-lg"
                           title="Bỏ thích"
@@ -816,7 +756,6 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {/* Modal xác nhận xóa dành cho giao diện danh sách chính */}
       {playlistToDelete && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-[#121216] border border-white/10 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl relative text-center">

@@ -1,11 +1,14 @@
+import 'dotenv/config'
 import { Request, Response, NextFunction } from 'express'
 import { createClient } from '@supabase/supabase-js'
 import { prisma } from '../lib/prisma'
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'placeholder'
+const supabaseUrl = process.env.SUPABASE_URL
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
 export interface AuthRequest extends Request {
   user?: {
@@ -25,6 +28,9 @@ export const authenticate = async (
 
     // 1. Nếu gửi Token từ Supabase Auth
     if (authHeader && authHeader.startsWith('Bearer ')) {
+      if (!supabase) {
+        return res.status(500).json({ error: 'Backend chưa cấu hình Supabase' })
+      }
       const token = authHeader.split(' ')[1]
       const { data: { user }, error } = await supabase.auth.getUser(token)
 

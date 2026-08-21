@@ -5,9 +5,11 @@ import { prisma } from '../lib/prisma'
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body
-    if (!email || !password) {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || password.length < 6) {
       return res.status(400).json({ error: 'Email và password là bắt buộc' })
     }
+
+    if (!supabase) return res.status(500).json({ error: 'Backend chưa cấu hình Supabase' })
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -37,9 +39,11 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body
-    if (!email || !password) {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
       return res.status(400).json({ error: 'Email và password là bắt buộc' })
     }
+
+    if (!supabase) return res.status(500).json({ error: 'Backend chưa cấu hình Supabase' })
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
@@ -62,7 +66,15 @@ export const getMe = async (req: AuthRequest, res: Response) => {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       include: {
-        playlists: true,
+        playlists: {
+          include: {
+            songs: {
+              include: {
+                song: { include: { artist: true, genre: true } },
+              },
+            },
+          },
+        },
         likes: { include: { song: { include: { artist: true } } } },
       },
     })

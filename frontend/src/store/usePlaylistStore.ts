@@ -2,6 +2,13 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Track } from "./usePlayerStore";
 import { useToastStore } from "./useToastStore";
+import {
+  addSongToPlaylist as addSongToPlaylistApi,
+  createPlaylist as createPlaylistApi,
+  deletePlaylist as deletePlaylistApi,
+  getCurrentUser,
+  removeSongFromPlaylist as removeSongFromPlaylistApi,
+} from "../lib/api";
 
 export interface Playlist {
   id: string;
@@ -18,7 +25,19 @@ interface PlaylistState {
   addTrackToPlaylist: (playlistId: string, track: Track) => void;
   removeTrackFromPlaylist: (playlistId: string, trackId: string | number) => void;
   deletePlaylist: (playlistId: string) => void;
+  hydrate: () => Promise<void>;
 }
+
+const hasToken = () => typeof window !== "undefined" && Boolean(localStorage.getItem("token"));
+
+const toLocalPlaylist = (playlist: any): Playlist => ({
+  id: playlist.id,
+  title: playlist.title || playlist.name,
+  description: playlist.description,
+  coverImage: playlist.coverImage,
+  createdAt: playlist.createdAt,
+  tracks: playlist.tracks || playlist.songs?.map((item: any) => item.song).filter(Boolean) || [],
+});
 
 export const usePlaylistStore = create<PlaylistState>()(
   persist(
@@ -63,6 +82,19 @@ export const usePlaylistStore = create<PlaylistState>()(
           useToastStore.getState().addToast(`Đã tạo playlist "${newPlaylist.title}"`, "success");
         }
 
+        if (hasToken()) {
+          void createPlaylistApi({ name: newPlaylist.title, coverImage: newPlaylist.coverImage }).then(async (remote) => {
+            set((state) => ({
+              playlists: state.playlists.map((playlist) =>
+                playlist.id === newId ? { ...playlist, id: remote.id } : playlist
+              ),
+            }));
+            if (initialTrack) await addSongToPlaylistApi(remote.id, initialTrack.id);
+          }).catch(() => {
+            useToastStore.getState().addToast("Không thể đồng bộ playlist với máy chủ", "error");
+          });
+        }
+
         return newPlaylist;
       },
 
@@ -91,6 +123,12 @@ export const usePlaylistStore = create<PlaylistState>()(
           `Đã thêm "${track.title}" vào playlist "${targetPlaylist.title}"`,
           "success"
         );
+
+        if (hasToken()) {
+          void addSongToPlaylistApi(playlistId, track.id).catch(() => {
+            useToastStore.getState().addToast("Không thể đồng bộ bài hát với playlist", "error");
+          });
+        }
       },
 
       removeTrackFromPlaylist: (playlistId, trackId) => {
@@ -102,6 +140,11 @@ export const usePlaylistStore = create<PlaylistState>()(
           ),
         }));
         useToastStore.getState().addToast("Đã xóa bài hát khỏi playlist", "info");
+        if (hasToken()) {
+          void removeSongFromPlaylistApi(playlistId, trackId).catch(() => {
+            useToastStore.getState().addToast("Không thể đồng bộ thay đổi với máy chủ", "error");
+          });
+        }
       },
 
       deletePlaylist: (playlistId) => {
@@ -109,6 +152,21 @@ export const usePlaylistStore = create<PlaylistState>()(
           playlists: state.playlists.filter((p) => p.id !== playlistId),
         }));
         useToastStore.getState().addToast("Đã xóa playlist", "info");
+        if (hasToken()) {
+          void deletePlaylistApi(playlistId).catch(() => {
+            useToastStore.getState().addToast("Không thể xóa playlist trên máy chủ", "error");
+          });
+        }
+      },
+
+      hydrate: async () => {
+        if (!hasToken()) return;
+        try {
+          const user = await getCurrentUser();
+          set({ playlists: user.playlists.map(toLocalPlaylist) });
+        } catch {
+          useToastStore.getState().addToast("Không thể tải playlist từ máy chủ", "error");
+        }
       },
     }),
     {

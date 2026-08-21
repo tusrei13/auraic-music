@@ -5,6 +5,7 @@ import {
   createPlaylist,
   addSongToPlaylist,
   removeSongFromPlaylist,
+  deletePlaylist,
 } from '../controllers/playlist.controller'
 import { authenticate } from '../middlewares/auth.middleware'
 
@@ -15,5 +16,6 @@ router.get('/:id', getPlaylistById)
 router.post('/', authenticate, createPlaylist)
 router.post('/:id/songs', authenticate, addSongToPlaylist)
 router.delete('/:id/songs/:songId', authenticate, removeSongFromPlaylist)
+router.delete('/:id', authenticate, deletePlaylist)
 
 export default router

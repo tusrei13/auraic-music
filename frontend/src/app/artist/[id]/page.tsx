@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useState } from "react";
-import { ALL_SYSTEM_SONGS, Track } from "@/app/library/page";
+import { use, useEffect, useState } from "react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
+import { getArtistById } from "@/lib/api";
 import { 
   Play, 
   Music, 
@@ -11,42 +11,51 @@ import {
   Heart, 
   UserPlus, 
   UserCheck, 
-  BadgeCheck 
+  BadgeCheck,
+  Loader2 
 } from "lucide-react";
 
 export default function ArtistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const artistName = decodeURIComponent(id);
+  const artistIdOrName = decodeURIComponent(id);
 
-  const store = usePlayerStore() as any;
-  const currentTrack = store.currentTrack;
-  const isPlaying = store.isPlaying;
-  const likedIds: (number | string)[] = store.likedIds || [];
-  const toggleLike = store.toggleLike || (() => {});
-
+  const [artist, setArtist] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
 
-  // Lọc bài hát thuộc nghệ sĩ
-  const artistSongs = ALL_SYSTEM_SONGS.filter((s) => {
-    const name = typeof s.artist === "object" ? s.artist.name : s.artist;
-    return name.toLowerCase() === artistName.toLowerCase();
-  });
+  const { currentTrack, isPlaying, playTrack, likedIds = [], toggleLike } = usePlayerStore();
 
-  // Gom nhóm danh sách Album
+  useEffect(() => {
+    setLoading(true);
+    getArtistById(artistIdOrName)
+      .then((data) => setArtist(data))
+      .catch((err) => {
+        console.error("Lỗi tải thông tin nghệ sĩ từ API:", err);
+        setArtist(null);
+      })
+      .finally(() => setLoading(false));
+  }, [artistIdOrName]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] text-white/50 gap-2">
+        <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+        <span>Đang tải thông tin nghệ sĩ...</span>
+      </div>
+    );
+  }
+
+  const artistName = artist?.name || artistIdOrName;
+  const artistSongs: any[] = artist?.songs || [];
+  const artistImage = artist?.avatar || artist?.image || artistSongs[0]?.image || artistSongs[0]?.coverUrl || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
+
+  // Gom nhóm danh sách Album từ bài hát
   const albums = Array.from(
-    new Set(artistSongs.map((s) => s.album).filter(Boolean))
+    new Set(artistSongs.map((s: any) => typeof s.album === "object" ? s.album?.title : s.album).filter(Boolean))
   );
 
-  const handlePlaySong = (song: Track) => {
-    if (store.playTrack) {
-      store.playTrack(song, artistSongs);
-    } else if (store.setCurrentTrack) {
-      store.setCurrentTrack(song);
-    }
-  };
-
   const isLiked = (songId: number | string) =>
-    likedIds.some((likedId) => String(likedId) === String(songId));
+    (likedIds || []).some((likedId: any) => String(likedId) === String(songId));
 
   return (
     <div className="min-h-full overflow-y-auto scrollbar-none pb-28 text-white bg-[#09090b] p-6 sm:p-8 space-y-10">
@@ -54,7 +63,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-indigo-900/60 via-purple-900/40 to-black p-6 sm:p-8 border border-white/10 flex flex-col md:flex-row items-center gap-6 sm:gap-8 shadow-2xl">
         <div className="w-36 h-36 sm:w-48 sm:h-48 rounded-full overflow-hidden shadow-2xl border-4 border-indigo-500/30 flex-shrink-0 relative group">
           <img
-            src={artistSongs[0]?.image || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop"}
+            src={artistImage}
             alt={artistName}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -73,8 +82,9 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
 
           <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-3">
             <button
-              onClick={() => artistSongs.length > 0 && handlePlaySong(artistSongs[0])}
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-full shadow-lg shadow-indigo-600/30 transition-all transform hover:scale-105 active:scale-95 cursor-pointer text-xs sm:text-sm"
+              onClick={() => artistSongs.length > 0 && playTrack(artistSongs[0], artistSongs)}
+              disabled={artistSongs.length === 0}
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-full shadow-lg shadow-indigo-600/30 transition-all transform hover:scale-105 active:scale-95 cursor-pointer text-xs sm:text-sm disabled:opacity-50"
             >
               <Play className="w-4 h-4 fill-white" /> Phát bài nổi bật
             </button>
@@ -109,16 +119,18 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
 
         <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-visible backdrop-blur-xl">
           {artistSongs.length > 0 ? (
-            artistSongs.map((song, index) => {
+            artistSongs.map((song: any, index: number) => {
               const isCurrent = String(currentTrack?.id) === String(song.id);
               const liked = isLiked(song.id);
+              const songCover = song.image || song.coverUrl || artistImage;
+              const albumTitle = typeof song.album === "object" ? song.album?.title : song.album || "Single";
 
               return (
                 <div
                   key={song.id}
                   style={{ zIndex: artistSongs.length - index }}
-                  onClick={() => handlePlaySong(song)}
-                  className={`grid grid-cols-12 items-center px-4 sm:px-6 py-3.5 transition-all cursor-pointer group border-b border-white/5 last:border-0 relative ${
+                  onClick={() => playTrack(song, artistSongs)}
+                  className={`grid grid-cols-12 items-center px-4 sm:px-6 py-3.5 transition-all cursor-pointer group border-b border-white/5 last:border-0 relative hover:z-20 ${
                     isCurrent ? "bg-indigo-500/15" : "hover:bg-white/5"
                   }`}
                 >
@@ -130,29 +142,29 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
                         <span className="w-1 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]" />
                       </div>
                     ) : (
-                      <span>0{index + 1}</span>
+                      <span>{String(index + 1).padStart(2, "0")}</span>
                     )}
                   </div>
 
                   <div className="col-span-7 sm:col-span-6 flex items-center gap-3 min-w-0 pr-2">
-                    <img src={song.image} alt={song.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    <img src={songCover} alt={song.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                     <div className="truncate">
                       <h4 className={`text-sm font-semibold truncate ${isCurrent ? "text-indigo-400 font-bold" : "text-white group-hover:text-indigo-300"}`}>
                         {song.title}
                       </h4>
-                      <p className="text-xs text-white/40 truncate">{song.album || "Single"}</p>
+                      <p className="text-xs text-white/40 truncate">{albumTitle}</p>
                     </div>
                   </div>
 
                   <div className="hidden sm:block sm:col-span-2 text-xs text-white/40 truncate">
-                    {song.album || "Single"}
+                    {albumTitle}
                   </div>
 
                   <div className="col-span-4 sm:col-span-3 flex items-center justify-end gap-2 sm:gap-3">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleLike(song.id);
+                        toggleLike(song);
                       }}
                       className="p-1.5 text-white/40 hover:text-pink-500 transition-colors"
                     >
@@ -166,7 +178,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
               );
             })
           ) : (
-            <div className="p-8 text-center text-white/40 text-sm">Chưa có bài hát nào của nghệ sĩ này.</div>
+            <div className="p-8 text-center text-white/40 text-sm">Chưa có bài hát nào của nghệ sĩ này trong Database.</div>
           )}
         </div>
       </section>
@@ -179,14 +191,14 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {albums.length > 0 ? (
-            albums.map((albumName, idx) => (
+            albums.map((albumName: any, idx: number) => (
               <div
                 key={idx}
                 className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3 hover:border-indigo-500/50 hover:bg-white/[0.08] transition-all group cursor-pointer"
               >
                 <div className="aspect-square rounded-xl overflow-hidden bg-white/10 shadow-lg">
                   <img
-                    src={artistSongs[idx]?.image || "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=500&auto=format&fit=crop"}
+                    src={artistSongs[idx]?.image || artistSongs[idx]?.coverUrl || artistImage}
                     alt={albumName || "Album"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -200,7 +212,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
           ) : (
             <div className="col-span-full bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center gap-4">
               <img
-                src={artistSongs[0]?.image || "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=500&auto=format&fit=crop"}
+                src={artistImage}
                 alt={artistName}
                 className="w-16 h-16 rounded-xl object-cover"
               />

@@ -449,7 +449,7 @@ export default function SearchPage() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    toggleLike(song.id);
+                                    toggleLike(song);
                                   }}
                                   className="text-white/30 hover:text-pink-500 p-1.5 transition-colors"
                                 >
@@ -581,7 +581,7 @@ export default function SearchPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleLike(song.id);
+                            toggleLike(song);
                           }}
                           className="text-white/30 hover:text-pink-500 p-1.5 transition-colors"
                         >

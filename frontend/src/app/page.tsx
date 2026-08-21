@@ -198,7 +198,7 @@ export default function HomePage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleLike(song.id);
+                          toggleLike(song);
                         }}
                         className="text-white/40 hover:text-pink-500 transition-colors p-1.5 hover:bg-white/5 rounded-lg"
                         title={liked ? "Bỏ thích" : "Yêu thích"}

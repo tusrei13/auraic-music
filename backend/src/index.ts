@@ -117,6 +117,15 @@ app.get('/', (_req, res) => {
   `)
 })
 
+app.use((_req, res) => {
+  res.status(404).json({ error: 'Không tìm thấy endpoint' })
+})
+
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Unhandled API error:', err)
+  res.status(500).json({ error: 'Lỗi server không xác định' })
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`)
 })

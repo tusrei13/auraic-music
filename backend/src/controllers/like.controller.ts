@@ -8,9 +8,13 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
     const { songId } = req.body
 
     if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
-    if (!songId) return res.status(400).json({ error: 'Thiếu songId' })
-
     const numericSongId = Number(songId)
+    if (!Number.isInteger(numericSongId) || numericSongId <= 0) {
+      return res.status(400).json({ error: 'songId không hợp lệ' })
+    }
+
+    const song = await prisma.song.findUnique({ where: { id: numericSongId } })
+    if (!song) return res.status(404).json({ error: 'Không tìm thấy bài hát' })
 
     const existingLike = await prisma.like.findUnique({
       where: {

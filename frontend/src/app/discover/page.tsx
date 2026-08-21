@@ -1,107 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Compass, Play, Hash, Heart, Mic2, Radio, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Search, Compass, Play, Hash, Heart, Mic2, Radio, Sparkles, Loader2 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
+import { getSongs, getArtists } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
-export interface Track {
-  id: number | string;
-  title: string;
-  artist: string;
-  genre: string;
-  image: string;
-  audioUrl: string;
-  duration: string;
-  lyrics?: { time: number; text: string }[];
-}
-
-export const trendingTracks: Track[] = [
-  { 
-    id: 101, 
-    title: "Nốt Nhạc Trôi", 
-    artist: "Chillies", 
-    genre: "Indie Vietnam", 
-    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3", 
-    duration: "4:15",
-    lyrics: [
-      { time: 0, text: "Những nốt nhạc nhẹ nhàng trôi theo làn gió" },
-      { time: 5, text: "Mang theo bao tâm tư gửi gắm vào không gian" },
-      { time: 10, text: "Hương hoa thơm dịu dàng trong đêm muộn" },
-    ]
-  },
-  { 
-    id: 102, 
-    title: "Dạ Vũ Không Tên", 
-    artist: "Hoàng Dũng", 
-    genre: "Indie Vietnam", 
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", 
-    duration: "3:40",
-    lyrics: [
-      { time: 0, text: "Điệu nhảy dưới ánh đèn lung linh" },
-      { time: 5, text: "Bên nhau trao nụ cười dưới đêm thâu" },
-      { time: 10, text: "Khúc ca vang lên gọi nhớ kỷ niệm xưa" },
-    ]
-  },
-  { 
-    id: 103, 
-    title: "Midnight City", 
-    artist: "M83", 
-    genre: "Synthwave", 
-    image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3", 
-    duration: "4:00",
-    lyrics: [
-      { time: 0, text: "Waiting in a car, waiting for a ride in the dark" },
-      { time: 5, text: "The night city is my playground" },
-      { time: 10, text: "Sounds and lights everywhere" },
-    ]
-  },
-  { 
-    id: 104, 
-    title: "Coffee & Rain", 
-    artist: "Lofi Girl", 
-    genre: "Lofi Chill", 
-    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", 
-    duration: "2:30",
-    lyrics: [
-      { time: 0, text: "Tách cà phê ấm trên tay" },
-      { time: 5, text: "Tiếng mưa rơi tí tách bên hiên nhà" },
-      { time: 10, text: "Giai điệu lofi dịu êm xua tan mệt mỏi" },
-    ]
-  },
-];
-
-const genres = [
-  { name: "Tất cả", color: "bg-white/10" },
-  { name: "Indie Vietnam", color: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30" },
-  { name: "Lofi Chill", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
-  { name: "Synthwave", color: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30" },
-];
-
-const trendingArtists = [
-  { name: "Sơn Tùng M-TP", listeners: "2.4M người nghe", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop" },
-  { name: "Chillies", listeners: "1.1M người nghe", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=300&auto=format&fit=crop" },
-  { name: "Hoàng Dũng", listeners: "890K người nghe", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop" },
-  { name: "RPT MCK", listeners: "1.8M người nghe", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop" },
-];
-
-const moodCategories = [
-  { title: "Tập trung làm việc", desc: "Deep Focus & Ambient", bg: "from-blue-600/30 to-indigo-900/40" },
-  { title: "ChILL Đêm Muộn", desc: "Lofi Beats & Late Night", bg: "from-purple-600/30 to-pink-900/40" },
-  { title: "Năng lượng ngày mới", desc: "Pop & Upbeat Vibes", bg: "from-amber-600/30 to-rose-900/40" },
-];
-
 export default function DiscoverPage() {
+  const [songs, setSongs] = useState<any[]>([]);
+  const [artists, setArtists] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState("Tất cả");
+
   const store = usePlayerStore() as any;
   const likedIds: (number | string)[] = store.likedIds || [];
-  const currentTrack: Track | null = store.currentTrack || null;
+  const currentTrack = store.currentTrack || null;
   const toggleLike = store.toggleLike || (() => {});
 
-  const handlePlayTrack = (track: Track, list: Track[]) => {
+  useEffect(() => {
+    Promise.all([getSongs(), getArtists()])
+      .then(([songsData, artistsData]) => {
+        setSongs(Array.isArray(songsData) ? songsData : []);
+        setArtists(Array.isArray(artistsData) ? artistsData : []);
+      })
+      .catch((err) => console.error("Lỗi tải dữ liệu Khám phá:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handlePlayTrack = (track: any, list: any[]) => {
     if (typeof store.playTrack === "function") {
       store.playTrack(track, list);
     } else if (typeof store.setCurrentTrack === "function") {
@@ -113,19 +41,46 @@ export default function DiscoverPage() {
     return likedIds.some((likedId) => String(likedId) === String(id));
   };
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState("Tất cả");
+  // Trích xuất tự động danh sách thể loại từ Database
+  const extractedGenres = Array.from(
+    new Set(
+      songs
+        .map((s) => (typeof s.genre === "object" ? s.genre?.name : s.genre))
+        .filter(Boolean)
+    )
+  );
+  const genres = ["Tất cả", ...extractedGenres];
 
-  const filteredTracks = trendingTracks.filter(track => {
-    const matchSearch = track.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        track.artist.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchGenre = selectedGenre === "Tất cả" || track.genre === selectedGenre;
+  // Lọc bài hát theo Tìm kiếm và Thể loại chọn
+  const filteredTracks = songs.filter((track) => {
+    const artistName = typeof track.artist === "object" ? track.artist?.name : track.artist || "";
+    const genreName = typeof track.genre === "object" ? track.genre?.name : track.genre || "";
+
+    const matchSearch =
+      track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      artistName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchGenre = selectedGenre === "Tất cả" || genreName === selectedGenre;
+
     return matchSearch && matchGenre;
   });
 
+  const moodCategories = [
+    { title: "Tập trung làm việc", desc: "Deep Focus & Ambient", bg: "from-blue-600/30 to-indigo-900/40" },
+    { title: "Chill Đêm Muộn", desc: "Lofi Beats & Late Night", bg: "from-purple-600/30 to-pink-900/40" },
+    { title: "Năng lượng ngày mới", desc: "Pop & Upbeat Vibes", bg: "from-amber-600/30 to-rose-900/40" },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full text-white/50 gap-2">
+        <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+        <span className="text-sm font-medium">Đang tải kho nhạc từ server...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 space-y-10 h-full overflow-y-auto scrollbar-none pb-28">
-      
       {/* THANH TÌM KIẾM NỔI */}
       <div className="relative max-w-2xl mx-auto">
         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -133,7 +88,7 @@ export default function DiscoverPage() {
         </div>
         <input
           type="text"
-          placeholder="Tìm bài hát, nghệ sĩ, hoặc album..."
+          placeholder="Tìm bài hát, nghệ sĩ..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full bg-white/[0.05] border border-white/10 text-white rounded-full py-3.5 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white/[0.08] transition-all backdrop-blur-md shadow-lg font-medium text-sm placeholder-white/40"
@@ -146,24 +101,24 @@ export default function DiscoverPage() {
           <Compass className="w-5 h-5 text-indigo-400" /> Khám phá thể loại
         </h2>
         <div className="flex flex-wrap gap-3">
-          {genres.map((genre) => (
+          {genres.map((genreName) => (
             <button
-              key={genre.name}
-              onClick={() => setSelectedGenre(genre.name)}
-              className={`px-5 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                selectedGenre === genre.name 
-                  ? "bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]" 
-                  : `border-white/10 hover:bg-white/10 ${genre.color || 'text-white/70'}`
+              key={genreName}
+              onClick={() => setSelectedGenre(genreName)}
+              className={`px-5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                selectedGenre === genreName
+                  ? "bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                  : "border-white/10 hover:bg-white/10 text-white/70"
               }`}
             >
-              {selectedGenre === genre.name && <Hash className="w-3.5 h-3.5 inline-block mr-1" />}
-              {genre.name}
+              {selectedGenre === genreName && <Hash className="w-3.5 h-3.5 inline-block mr-1" />}
+              {genreName}
             </button>
           ))}
         </div>
       </div>
 
-      {/* KẾT QUẢ HIỂN THỊ */}
+      {/* KẾT QUẢ HIỂN THỊ BÀI HÁT */}
       <section className="space-y-4">
         <div className="flex items-center justify-between border-b border-white/10 pb-2">
           <h2 className="text-lg font-bold text-white">Kết quả nổi bật</h2>
@@ -175,6 +130,9 @@ export default function DiscoverPage() {
             {filteredTracks.map((song) => {
               const liked = isLiked(song.id);
               const isPlayingThis = String(currentTrack?.id) === String(song.id);
+              const artistName = typeof song.artist === "object" ? song.artist?.name : song.artist || "Nghệ sĩ";
+              const genreName = typeof song.genre === "object" ? song.genre?.name : song.genre || "N/A";
+              const songCover = song.image || song.coverUrl || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
               return (
                 <div
@@ -188,8 +146,12 @@ export default function DiscoverPage() {
                 >
                   <div className="flex items-center gap-4 min-w-0">
                     <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
-                      <img src={song.image} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      
+                      <img
+                        src={songCover}
+                        alt={song.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+
                       {isPlayingThis ? (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1">
                           <span className="w-1 h-4 bg-indigo-400 rounded-full animate-[bounce_0.6s_infinite_100ms]"></span>
@@ -204,25 +166,29 @@ export default function DiscoverPage() {
                     </div>
 
                     <div className="truncate">
-                      <h4 className={`font-bold text-sm transition-colors truncate ${
-                        isPlayingThis ? "text-indigo-400" : "text-white group-hover:text-indigo-300"
-                      }`}>
+                      <h4
+                        className={`font-bold text-sm transition-colors truncate ${
+                          isPlayingThis ? "text-indigo-400" : "text-white group-hover:text-indigo-300"
+                        }`}
+                      >
                         {song.title}
                       </h4>
-                      <p className="text-xs text-white/50 truncate mt-0.5">{song.artist}</p>
+                      <p className="text-xs text-white/50 truncate mt-0.5">{artistName}</p>
                       <span className="inline-block mt-1.5 text-[10px] font-medium bg-white/5 border border-white/10 text-white/70 px-2 py-0.5 rounded-md">
-                        {song.genre}
+                        {genreName}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                    <span className="text-xs font-mono text-white/40 mr-1">{song.duration}</span>
-                    
+                    {song.duration && (
+                      <span className="text-xs font-mono text-white/40 mr-1">{song.duration}</span>
+                    )}
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleLike(song.id);
+                        toggleLike(song);
                       }}
                       className={`w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
                         liked ? "bg-pink-500/10 text-pink-400 border border-pink-500/20" : "bg-white/5 text-white/40 hover:text-white"
@@ -232,7 +198,6 @@ export default function DiscoverPage() {
                       <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
                     </button>
 
-                    {/* MENU TÙY CHỌN BÀI HÁT */}
                     <TrackActionMenu track={song} />
                   </div>
                 </div>
@@ -246,34 +211,49 @@ export default function DiscoverPage() {
         )}
       </section>
 
-      {/* SECTION BỔ SUNG: NGHỆ SĨ XU HƯỚNG */}
-      {!searchQuery && (
+      {/* SECTION NGHỆ SĨ XU HƯỚNG TỪ DATABASE */}
+      {!searchQuery && artists.length > 0 && (
         <>
           <section className="space-y-4 pt-4 border-t border-white/5">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Mic2 className="w-5 h-5 text-indigo-400" /> Nghệ sĩ xu hướng
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {trendingArtists.map((artist, idx) => (
-                <div key={idx} className="bg-white/[0.02] hover:bg-white/[0.06] p-4 rounded-2xl border border-white/5 text-center transition-all group cursor-pointer hover:border-indigo-500/30">
-                  <img src={artist.avatar} alt={artist.name} className="w-20 h-20 rounded-full object-cover mx-auto mb-3 shadow-lg group-hover:scale-105 transition-transform" />
+              {artists.map((artist) => (
+                <Link
+                  key={artist.id}
+                  href={`/artist/${encodeURIComponent(artist.name)}`}
+                  className="bg-white/[0.02] hover:bg-white/[0.06] p-4 rounded-2xl border border-white/5 text-center transition-all group cursor-pointer hover:border-indigo-500/30"
+                >
+                  <img
+                    src={artist.avatar || artist.image || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop"}
+                    alt={artist.name}
+                    className="w-20 h-20 rounded-full object-cover mx-auto mb-3 shadow-lg group-hover:scale-105 transition-transform"
+                  />
                   <h4 className="font-bold text-sm text-white truncate">{artist.name}</h4>
-                  <p className="text-[11px] text-white/40 mt-0.5">{artist.listeners}</p>
-                </div>
+                  <p className="text-[11px] text-white/40 mt-0.5 truncate">
+                    {artist.listeners ? `${(artist.listeners / 1000000).toFixed(1)}M người nghe` : `${artist.songs?.length || 0} bài hát`}
+                  </p>
+                </Link>
               ))}
             </div>
           </section>
 
-          {/* SECTION BỔ SUNG: TÂM TRẠNG & HOẠT ĐỘNG */}
+          {/* SECTION TÂM TRẠNG & HOẠT ĐỘNG */}
           <section className="space-y-4 pt-4 border-t border-white/5">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-indigo-400" /> Tâm trạng & Hoạt động
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {moodCategories.map((mood, idx) => (
-                <div key={idx} className={`bg-gradient-to-br ${mood.bg} p-5 rounded-2xl border border-white/10 hover:border-white/20 transition-all cursor-pointer group flex flex-col justify-between h-28`}>
+                <div
+                  key={idx}
+                  className={`bg-gradient-to-br ${mood.bg} p-5 rounded-2xl border border-white/10 hover:border-white/20 transition-all cursor-pointer group flex flex-col justify-between h-28`}
+                >
                   <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-white group-hover:text-indigo-300 transition-colors">{mood.title}</h3>
+                    <h3 className="font-bold text-white group-hover:text-indigo-300 transition-colors">
+                      {mood.title}
+                    </h3>
                     <Radio className="w-4 h-4 text-white/40 group-hover:text-white transition-colors" />
                   </div>
                   <p className="text-xs text-white/60">{mood.desc}</p>
@@ -283,7 +263,6 @@ export default function DiscoverPage() {
           </section>
         </>
       )}
-
     </div>
   );
 }
