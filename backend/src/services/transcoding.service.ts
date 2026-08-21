@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import ffmpeg from 'fluent-ffmpeg'
 import fs from 'node:fs/promises'
 import path from 'node:path'
