@@ -1,87 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { Play, Sparkles, Flame, Headphones, Search, X, Heart, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Play, Sparkles, Flame, Headphones, Search, X, Heart, Clock, Loader2 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
-
-const topPicks = [
-  { 
-    id: 1, 
-    title: "Chạy Ngay Đi", 
-    artist: "Sơn Tùng M-TP", 
-    genre: "R&B / V-Pop", 
-    image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", 
-    duration: "4:05",
-    lyrics: [
-      { time: 0, text: "(Nhạc dạo...)" },
-      { time: 5, text: "Chạy ngay đi, trước khi..." },
-      { time: 10, text: "Mọi điều tồi tệ hơn..." },
-      { time: 15, text: "Gạt bỏ đi, những thứ..." },
-      { time: 20, text: "Làm tổn thương nhau..." }
-    ]
-  },
-  { 
-    id: 2, 
-    title: "Waiting For You", 
-    artist: "MONO", 
-    genre: "City Pop", 
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", 
-    duration: "3:25",
-    lyrics: [
-      { time: 0, text: "(Intro bắt tai...)" },
-      { time: 5, text: "Khi màn đêm buông xuống..." },
-      { time: 10, text: "Anh lại nghĩ về em..." },
-      { time: 15, text: "Cứ thế chờ đợi từng ngày..." },
-      { time: 20, text: "I'm waiting for you..." }
-    ]
-  },
-  { 
-    id: 3, 
-    title: "Chìm Sâu", 
-    artist: "RPT MCK", 
-    genre: "Rap / Hip-Hop", 
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", 
-    duration: "2:50",
-    lyrics: [
-      { time: 0, text: "(Beat Chill...)" },
-      { time: 5, text: "Tại vì anh thương em..." },
-      { time: 10, text: "Nên là anh mới thế..." },
-      { time: 15, text: "Chìm sâu vào trong đôi mắt em..." },
-      { time: 20, text: "Gặp em vào một ngày nắng..." }
-    ]
-  },
-  { 
-    id: 4, 
-    title: "See Tình", 
-    artist: "Hoàng Thùy Linh", 
-    genre: "Dance Pop", 
-    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop", 
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3", 
-    duration: "3:10",
-    lyrics: [
-      { time: 0, text: "(Giai điệu sôi động...)" },
-      { time: 5, text: "Giây phút em gặp anh..." },
-      { time: 10, text: "Là em biết em đã yêu rồi..." },
-      { time: 15, text: "Tình tình tình tính tang..." },
-      { time: 20, text: "Dính dính dính luôn rồi..." }
-    ]
-  },
-];
+import { getSongs } from "@/lib/api";
 
 export default function HomePage() {
   const { playMix, playTrack, toggleLike, likedIds, currentTrack, isPlaying } = usePlayerStore();
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [songs, setSongs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getSongs()
+      .then((data) => setSongs(data))
+      .catch((err) => console.error("Lỗi tải bài hát từ API:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? "Chào buổi sáng" : currentHour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
 
-  const filteredPicks = topPicks.filter(song => 
-    song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    song.artist.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredSongs = songs.filter((song) => {
+    const artistName = typeof song.artist === "object" ? song.artist?.name : song.artist;
+    return (
+      song.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      artistName?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
   return (
     <div className="p-8 space-y-8 h-full overflow-y-auto scrollbar-none pb-28">
@@ -112,8 +58,9 @@ export default function HomePage() {
           </div>
 
           <button 
-            onClick={() => playMix(topPicks)} 
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all flex items-center gap-2 flex-shrink-0"
+            onClick={() => songs.length > 0 && playMix(songs)} 
+            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-50"
+            disabled={songs.length === 0}
           >
             <Play className="w-3.5 h-3.5 fill-white" /> Phát Mix
           </button>
@@ -136,7 +83,7 @@ export default function HomePage() {
                 <p className="text-white/70 font-medium mt-1">Phương Mỹ Chi • 10 Bài Hát</p>
               </div>
               <button 
-                onClick={() => playMix(topPicks)}
+                onClick={() => songs.length > 0 && playMix(songs)}
                 className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.4)] hover:scale-105 transition-transform"
               >
                 <Play className="w-6 h-6 fill-black text-black ml-1" />
@@ -162,7 +109,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* DANH SÁCH BÀI HÁT DẠNG BẢNG/ROW LIST */}
+      {/* DANH SÁCH BÀI HÁT */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -171,9 +118,13 @@ export default function HomePage() {
           </h2>
         </div>
 
-        {filteredPicks.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-white/50 gap-2">
+            <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+            <span>Đang tải bài hát từ API...</span>
+          </div>
+        ) : filteredSongs.length > 0 ? (
           <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm">
-            {/* Header Bảng */}
             <div className="grid grid-cols-12 text-xs font-semibold text-white/40 px-6 py-3 border-b border-white/5 uppercase tracking-wider">
               <div className="col-span-1">#</div>
               <div className="col-span-6 md:col-span-5">Bài hát</div>
@@ -183,23 +134,23 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Các Dòng Bài Hát */}
             <div className="divide-y divide-white/[0.02]">
-              {filteredPicks.map((song, index) => {
+              {filteredSongs.map((song, index) => {
                 const liked = likedIds.includes(song.id);
                 const isCurrent = currentTrack?.id === song.id;
+                const artistName = typeof song.artist === "object" ? song.artist?.name : song.artist;
+                const genreName = typeof song.genre === "object" ? song.genre?.name : song.genre || "V-Pop";
 
                 return (
                   <div
                     key={song.id}
-                    onClick={() => playTrack(song, topPicks)}
+                    onClick={() => playTrack(song, songs)}
                     className={`grid grid-cols-12 items-center px-6 py-3.5 transition-all duration-200 cursor-pointer group ${
                       isCurrent
                         ? "bg-indigo-500/15 border-l-4 border-indigo-500"
                         : "hover:bg-white/[0.06]"
                     }`}
                   >
-                    {/* Cột Số TT / Sóng Âm Equalizer */}
                     <div className="col-span-1 text-xs font-mono font-bold text-white/40">
                       {isCurrent && isPlaying ? (
                         <div className="flex items-center gap-0.5">
@@ -217,25 +168,22 @@ export default function HomePage() {
                       )}
                     </div>
 
-                    {/* Cột Thông tin Bài hát */}
                     <div className="col-span-6 md:col-span-5 flex items-center gap-3.5 min-w-0">
                       <img src={song.image} alt={song.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 shadow-md" />
                       <div className="truncate">
                         <h4 className={`text-sm font-semibold truncate ${isCurrent ? "text-indigo-400" : "text-white group-hover:text-indigo-300"}`}>
                           {song.title}
                         </h4>
-                        <p className="text-xs text-white/50 truncate mt-0.5">{song.artist}</p>
+                        <p className="text-xs text-white/50 truncate mt-0.5">{artistName}</p>
                       </div>
                     </div>
 
-                    {/* Cột Thể loại */}
                     <div className="hidden md:block md:col-span-4">
                       <span className="text-[11px] font-medium text-white/60 bg-white/5 px-2.5 py-1 rounded-md border border-white/5">
-                        {song.genre}
+                        {genreName}
                       </span>
                     </div>
 
-                    {/* Cột Thời lượng & Yêu thích */}
                     <div className="col-span-5 md:col-span-2 flex items-center justify-end gap-4">
                       <button
                         onClick={(e) => {
@@ -247,7 +195,7 @@ export default function HomePage() {
                       >
                         <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
                       </button>
-                      <span className="text-xs font-mono text-white/40">{song.duration}</span>
+                      <span className="text-xs font-mono text-white/40">{song.duration || "03:30"}</span>
                     </div>
                   </div>
                 );
