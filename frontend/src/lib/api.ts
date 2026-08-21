@@ -1,5 +1,11 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+export const resolveMediaUrl = (url: string) => {
+  if (/^https?:\/\//i.test(url)) return url;
+  const apiUrl = new URL(API_BASE_URL, typeof window === "undefined" ? "http://localhost" : window.location.origin);
+  return new URL(url, `${apiUrl.origin}/`).toString();
+};
+
 export interface Artist { id: string; name: string; avatar: string; listeners?: number; songs?: Song[] }
 export interface Genre { id: string; name: string; image: string; color?: string | null }
 export interface Mood { id: string; title: string; color: string; icon: string }

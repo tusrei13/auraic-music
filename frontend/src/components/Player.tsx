@@ -23,6 +23,8 @@ import TrackActionMenu from "@/components/TrackActionMenu";
 import QueuePanel from "@/components/QueuePanel";
 import AudioVisualizer from "@/components/AudioVisualizer";
 import { normalizeLyrics } from "@/lib/lyrics";
+import Hls from "hls.js";
+import { resolveMediaUrl } from "@/lib/api";
 
 export default function Player() {
   const pathname = usePathname();
@@ -54,6 +56,9 @@ export default function Player() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const activeLyricRef = useRef<HTMLHeadingElement>(null);
   const recordedTrackIdRef = useRef<string | number | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const mediaUrl = resolveMediaUrl(currentTrack?.audioUrl || "");
+  const isHlsSource = /\.m3u8(?:\?|$)/i.test(mediaUrl);
 
   // Tự động đóng Queue và Karaoke khi chuyển trang
   useEffect(() => {
@@ -77,6 +82,41 @@ export default function Player() {
       audioRef.current.volume = volume;
     }
   }, [volume]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentTrack) return;
+
+    hlsRef.current?.destroy();
+    hlsRef.current = null;
+
+    if (!isHlsSource) {
+      audio.src = mediaUrl;
+      return;
+    }
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({ enableWorker: true });
+      hlsRef.current = hls;
+      hls.loadSource(mediaUrl);
+      hls.attachMedia(audio);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (isPlaying) audio.play().catch(() => setPlaybackStatus("error", "Không thể phát HLS stream"));
+      });
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) setPlaybackStatus("error", "Không thể tải HLS stream");
+      });
+    } else if (audio.canPlayType("application/vnd.apple.mpegurl")) {
+      audio.src = mediaUrl;
+    } else {
+      setPlaybackStatus("error", "Trình duyệt không hỗ trợ HLS");
+    }
+
+    return () => {
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
+    };
+  }, [currentTrack, isHlsSource, mediaUrl, setPlaybackStatus]);
 
   // 2. Đồng bộ Phát/Tạm dừng & Media Session API
   useEffect(() => {
@@ -272,7 +312,7 @@ export default function Player() {
 
           <audio 
             ref={audioRef} 
-            src={currentTrack.audioUrl} 
+            src={isHlsSource ? undefined : mediaUrl}
             preload="metadata"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
