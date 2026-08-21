@@ -9,6 +9,9 @@ async function main() {
   await prisma.playlistSong.deleteMany({});
   await prisma.song.deleteMany({});
   await prisma.playlist.deleteMany({});
+  await prisma.follow.deleteMany({});
+  await prisma.album.deleteMany({});
+  await prisma.mood.deleteMany({});
   await prisma.artist.deleteMany({});
   await prisma.genre.deleteMany({});
   await prisma.user.deleteMany({});
@@ -62,6 +65,28 @@ async function main() {
     },
   });
 
+  const albumVpop = await prisma.album.create({
+    data: {
+      title: "Chúng Ta Của Tương Lai",
+      coverImage: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop",
+      releaseYear: 2024,
+      artistId: sonTung.id,
+    },
+  });
+
+  const albumHiphop = await prisma.album.create({
+    data: {
+      title: "Bài Hát Cho Những Ngày Đen",
+      coverImage: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=500&auto=format&fit=crop",
+      releaseYear: 2023,
+      artistId: denVau.id,
+    },
+  });
+
+  const chillMood = await prisma.mood.create({
+    data: { title: "Chill", color: "#6366f1", icon: "cloud" },
+  });
+
   console.log("Tạo Bài hát...");
   await prisma.song.createMany({
     data: [
@@ -71,6 +96,8 @@ async function main() {
         genreId: vpop.id,
         image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop",
         audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        albumId: albumVpop.id,
+        moodId: chillMood.id,
       },
       {
         title: "Making My Way",
@@ -78,6 +105,8 @@ async function main() {
         genreId: vpop.id,
         image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop",
         audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        albumId: albumVpop.id,
+        moodId: chillMood.id,
       },
       {
         title: "Nấu Ăn Cho Em",
@@ -85,6 +114,8 @@ async function main() {
         genreId: hiphop.id,
         image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=500&auto=format&fit=crop",
         audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+        albumId: albumHiphop.id,
+        moodId: chillMood.id,
       },
       {
         title: "Trốn Tìm",
@@ -92,6 +123,8 @@ async function main() {
         genreId: hiphop.id,
         image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=500&auto=format&fit=crop",
         audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+        albumId: albumHiphop.id,
+        moodId: chillMood.id,
       },
       {
         title: "Vũ Trụ Cò Bay",

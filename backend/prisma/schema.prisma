@@ -19,6 +19,7 @@ model User {
   playlists Playlist[]
   likes     Like[]
   histories ListeningHistory[]
+  follows   Follow[]
 }
 
 model Artist {
@@ -29,6 +30,8 @@ model Artist {
   createdAt DateTime @default(now())
 
   songs     Song[]
+  albums    Album[]
+  followers Follow[]
 }
 
 model Genre {
@@ -45,6 +48,20 @@ model Mood {
   title String
   color String
   icon  String
+
+  songs Song[]
+}
+
+model Album {
+  id          String   @id @default(uuid())
+  title       String
+  coverImage  String
+  releaseYear Int?
+  createdAt   DateTime @default(now())
+
+  artistId String
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  songs    Song[]
 }
 
 model Song {
@@ -62,9 +79,19 @@ model Song {
   genreId   String?
   genre     Genre?   @relation(fields: [genreId], references: [id], onDelete: SetNull)
 
+  albumId String?
+  album   Album? @relation(fields: [albumId], references: [id], onDelete: SetNull)
+
+  moodId String?
+  mood   Mood? @relation(fields: [moodId], references: [id], onDelete: SetNull)
+
   playlistSongs PlaylistSong[]
   likes         Like[]
   histories     ListeningHistory[]
+
+  @@index([artistId])
+  @@index([genreId])
+  @@index([albumId])
 }
 
 model Playlist {
@@ -111,4 +138,19 @@ model ListeningHistory {
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   song       Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@index([userId, listenedAt])
+  @@index([songId, listenedAt])
+}
+
+model Follow {
+  userId    String
+  artistId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([userId, artistId])
+  @@index([artistId])
 }
