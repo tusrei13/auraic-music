@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { AuthRequest } from '../middlewares/auth.middleware'
 import { prisma } from '../lib/prisma'
+import { isNonEmptyString, parsePositiveInteger } from '../lib/validation'
 
 export const getPlaylists = async (_req: Request, res: Response) => {
   try {
@@ -44,7 +45,7 @@ export const createPlaylist = async (req: AuthRequest, res: Response) => {
     const { name, coverImage, color } = req.body
 
     if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
-    if (typeof name !== 'string' || !name.trim()) {
+    if (!isNonEmptyString(name)) {
       return res.status(400).json({ error: 'Tên playlist là bắt buộc' })
     }
 
@@ -66,8 +67,8 @@ export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
     const { songId } = req.body
 
     if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
-    const numericSongId = Number(songId)
-    if (!Number.isInteger(numericSongId) || numericSongId <= 0) {
+    const numericSongId = parsePositiveInteger(songId)
+    if (numericSongId === null) {
       return res.status(400).json({ error: 'songId không hợp lệ' })
     }
 
