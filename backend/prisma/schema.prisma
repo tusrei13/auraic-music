@@ -1,25 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String             @id @default(uuid())
+  email     String             @unique
   name      String?
   avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  playlists Playlist[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  follows   Follow[]
   likes     Like[]
   histories ListeningHistory[]
-  follows   Follow[]
+  playlists Playlist[]
 }
 
 model Artist {
@@ -28,10 +27,9 @@ model Artist {
   avatar    String
   listeners Int      @default(0)
   createdAt DateTime @default(now())
-
-  songs     Song[]
   albums    Album[]
   followers Follow[]
+  songs     Song[]
 }
 
 model Genre {
@@ -39,7 +37,6 @@ model Genre {
   name  String  @unique
   image String
   color String?
-
   songs Song[]
 }
 
@@ -48,7 +45,6 @@ model Mood {
   title String
   color String
   icon  String
-
   songs Song[]
 }
 
@@ -58,38 +54,32 @@ model Album {
   coverImage  String
   releaseYear Int?
   createdAt   DateTime @default(now())
-
-  artistId String
-  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  songs    Song[]
+  artistId    String
+  artist      Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  songs       Song[]
 }
 
 model Song {
-  id        Int      @id @default(autoincrement())
-  title     String
-  audioUrl  String
-  hlsUrl    String?
-  duration  Int?
-  image     String
-  lyrics    Json?    
-  playCount Int      @default(0)
-  createdAt DateTime @default(now())
-
-  artistId  String
-  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
-
-  genreId   String?
-  genre     Genre?   @relation(fields: [genreId], references: [id], onDelete: SetNull)
-
-  albumId String?
-  album   Album? @relation(fields: [albumId], references: [id], onDelete: SetNull)
-
-  moodId String?
-  mood   Mood? @relation(fields: [moodId], references: [id], onDelete: SetNull)
-
-  playlistSongs PlaylistSong[]
+  id            Int                @id @default(autoincrement())
+  title         String
+  audioUrl      String
+  image         String
+  lyrics        Json?
+  playCount     Int                @default(0)
+  createdAt     DateTime           @default(now())
+  artistId      String
+  genreId       String?
+  albumId       String?
+  moodId        String?
+  duration      Int?
+  hlsUrl        String?
   likes         Like[]
   histories     ListeningHistory[]
+  playlistSongs PlaylistSong[]
+  album         Album?             @relation(fields: [albumId], references: [id])
+  artist        Artist             @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  genre         Genre?             @relation(fields: [genreId], references: [id])
+  mood          Mood?              @relation(fields: [moodId], references: [id])
 
   @@index([artistId])
   @@index([genreId])
@@ -97,16 +87,14 @@ model Song {
 }
 
 model Playlist {
-  id         String   @id @default(uuid())
+  id         String         @id @default(uuid())
   name       String
   coverImage String?
-  color      String?  @default("from-indigo-600/40 to-purple-600/40")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
+  color      String?        @default("from-indigo-600/40 to-purple-600/40")
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   songs      PlaylistSong[]
 }
 
@@ -114,7 +102,6 @@ model PlaylistSong {
   playlistId String
   songId     Int
   addedAt    DateTime @default(now())
-
   playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
   song       Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
 
@@ -125,9 +112,8 @@ model Like {
   userId    String
   songId    Int
   createdAt DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, songId])
 }
@@ -137,9 +123,8 @@ model ListeningHistory {
   userId     String
   songId     Int
   listenedAt DateTime @default(now())
-
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   song       Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, listenedAt])
   @@index([songId, listenedAt])
@@ -149,9 +134,8 @@ model Follow {
   userId    String
   artistId  String
   createdAt DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, artistId])
   @@index([artistId])

@@ -20,6 +20,13 @@ DIRECT_URL=...
 SUPABASE_URL=...
 SUPABASE_ANON_KEY=...
 PORT=5000
+
+# Optional Cloudflare R2/CDN media storage
+R2_ACCOUNT_ID=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET=...
+R2_PUBLIC_BASE_URL=https://cdn.example.com
 ```
 
 `SUPABASE_URL` và `SUPABASE_ANON_KEY` lấy trong Supabase Dashboard tại
@@ -33,6 +40,10 @@ npm install
 npm run prisma:generate
 npm run dev
 ```
+
+When all R2 variables are configured, uploaded HLS playlists and segments are
+published under `media/<mediaId>/` and songs use `R2_PUBLIC_BASE_URL`. If they
+are omitted, development uploads remain available from the local `/media` route.
 
 ### Frontend
 

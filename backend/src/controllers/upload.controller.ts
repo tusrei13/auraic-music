@@ -2,6 +2,8 @@ import { Request, Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { sendError, sendInternalError } from '../lib/api-error'
 import { transcodeToHls } from '../services/transcoding.service'
+import { publishMediaDirectory } from '../services/media-storage.service'
+import fs from 'node:fs/promises'
 
 export const uploadSong = async (req: Request, res: Response) => {
   const file = req.file
@@ -20,11 +22,13 @@ export const uploadSong = async (req: Request, res: Response) => {
     if (!artist) return sendError(res, 404, 'ARTIST_NOT_FOUND', 'Không tìm thấy nghệ sĩ')
 
     const result = await transcodeToHls(file.path)
+    const publishedUrl = await publishMediaDirectory(result.mediaDirectory, result.mediaId)
+    const mediaUrl = publishedUrl || result.masterPlaylist
     const song = await prisma.song.create({
       data: {
         title: title.trim(),
-        audioUrl: result.masterPlaylist,
-        hlsUrl: result.masterPlaylist,
+        audioUrl: mediaUrl,
+        hlsUrl: mediaUrl,
         duration: result.duration,
         image: typeof image === 'string' ? image : artist.avatar,
         artistId,
@@ -34,6 +38,8 @@ export const uploadSong = async (req: Request, res: Response) => {
       },
       include: { artist: true, genre: true, album: true, mood: true },
     })
+
+    if (publishedUrl) await fs.rm(result.mediaDirectory, { recursive: true, force: true })
 
     res.status(201).json(song)
   } catch (error) {
