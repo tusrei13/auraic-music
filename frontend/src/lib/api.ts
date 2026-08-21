@@ -8,6 +8,7 @@ export interface Song { id: number; title: string; audioUrl: string; image: stri
 export interface Playlist { id: string; name: string; coverImage?: string | null; color?: string | null; userId?: string; songs?: Array<{ song: Song }> }
 export interface SearchResult { songs: Song[]; artists: Artist[]; playlists: Playlist[] }
 export interface CurrentUser { id: string; email: string; name?: string | null; playlists: Playlist[] }
+export interface AuthResponse { message: string; token?: string; user?: { id: string; email?: string | null; user_metadata?: { full_name?: string } } }
 export interface ApiErrorPayload { code: string; message: string; details?: unknown }
 
 export class ApiError extends Error {
@@ -74,6 +75,13 @@ export const removeSongFromPlaylist = (playlistId: string, songId: string | numb
 export const deletePlaylist = (playlistId: string) =>
   fetcher(`/playlists/${encodeURIComponent(playlistId)}`, { method: 'DELETE' });
 export const getCurrentUser = () => fetcher<CurrentUser>('/auth/me');
+export const login = (email: string, password: string) =>
+  fetcher<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+export const register = (email: string, password: string, name?: string) =>
+  fetcher<AuthResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ email, password, ...(name ? { name } : {}) }),
+  });
 
 // 3. NGHỆ SĨ (ARTISTS)
 export const getArtists = () => fetcher<Artist[]>("/artists");

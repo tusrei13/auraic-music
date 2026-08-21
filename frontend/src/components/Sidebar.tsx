@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, Compass, Library, Radio } from "lucide-react";
+import { Home, Search, Compass, Library, Radio, LogIn, LogOut } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
   { name: "Trang chủ", href: "/", icon: Home },
@@ -13,6 +14,7 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user, status, signOut } = useAuthStore();
 
   return (
     <aside className="w-64 bg-white/[0.02] border-r border-white/10 p-6 flex flex-col justify-between h-full">
@@ -46,6 +48,26 @@ export default function Sidebar() {
           })}
         </nav>
       </div>
+
+      {status === "authenticated" && user ? (
+        <div className="space-y-3 border-t border-white/10 pt-4">
+          <div className="truncate px-2 text-xs text-white/60">{user.name || user.email}</div>
+          <button
+            type="button"
+            onClick={signOut}
+            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-xs font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
+          >
+            <LogOut className="h-4 w-4" /> Đăng xuất
+          </button>
+        </div>
+      ) : (
+        <Link
+          href="/login"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-xs font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
+        >
+          <LogIn className="h-4 w-4" /> Đăng nhập
+        </Link>
+      )}
     </aside>
   );
 }
