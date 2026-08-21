@@ -36,7 +36,11 @@ export default function Player() {
     isShuffle,
     repeatMode,
     toggleShuffle,
-    toggleRepeat
+    toggleRepeat,
+    playbackStatus,
+    playbackError,
+    setPlaybackStatus,
+    recordListening,
   } = usePlayerStore();
   
   const [volume, setVolume] = useState(0.7);
@@ -47,6 +51,7 @@ export default function Player() {
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const activeLyricRef = useRef<HTMLHeadingElement>(null);
+  const recordedTrackIdRef = useRef<string | number | null>(null);
 
   // Tự động đóng Queue và Karaoke khi chuyển trang
   useEffect(() => {
@@ -73,9 +78,16 @@ export default function Player() {
 
   // 2. Đồng bộ Phát/Tạm dừng & Media Session API
   useEffect(() => {
+    recordedTrackIdRef.current = null;
+  }, [currentTrack?.id]);
+
+  useEffect(() => {
     if (currentTrack && audioRef.current) {
+      setPlaybackStatus("loading");
       if (isPlaying) {
-        audioRef.current.play().catch(() => {});
+        audioRef.current.play().catch(() => {
+          setPlaybackStatus("error", "Không thể phát bài hát này");
+        });
       } else {
         audioRef.current.pause();
       }
@@ -93,7 +105,7 @@ export default function Player() {
         navigator.mediaSession.setActionHandler("nexttrack", nextTrack);
       }
     }
-  }, [currentTrack, isPlaying, artistName, togglePlay, prevTrack, nextTrack]);
+  }, [currentTrack, isPlaying, artistName, togglePlay, prevTrack, nextTrack, setPlaybackStatus]);
 
   // 3. Phím tắt Bàn phím
   useEffect(() => {
@@ -137,14 +149,32 @@ export default function Player() {
   const handleTimeUpdate = () => {
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
+      const listeningThreshold = Math.min(30, audioRef.current.duration * 0.5 || 30);
+      if (
+        currentTrack &&
+        audioRef.current.currentTime >= listeningThreshold &&
+        recordedTrackIdRef.current !== currentTrack.id
+      ) {
+        recordedTrackIdRef.current = currentTrack.id;
+        void recordListening(currentTrack.id);
+      }
     }
   };
 
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
+      setPlaybackStatus("paused");
     }
   };
+
+  const handleCanPlay = () => setPlaybackStatus(isPlaying ? "playing" : "paused");
+  const handlePlaying = () => setPlaybackStatus("playing");
+  const handleWaiting = () => setPlaybackStatus("buffering");
+  const handlePause = () => {
+    if (audioRef.current && !audioRef.current.ended) setPlaybackStatus("paused");
+  };
+  const handleAudioError = () => setPlaybackStatus("error", "Không thể tải file âm thanh");
 
   const handleEnded = () => {
     if (repeatMode === "one" && audioRef.current) {
@@ -243,6 +273,11 @@ export default function Player() {
             preload="metadata"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
+            onCanPlay={handleCanPlay}
+            onPlaying={handlePlaying}
+            onWaiting={handleWaiting}
+            onPause={handlePause}
+            onError={handleAudioError}
             onEnded={handleEnded}
           />
 
@@ -325,6 +360,11 @@ export default function Player() {
               </div>
               <span>{formatTime(duration)}</span>
             </div>
+            {playbackStatus === "buffering" || playbackStatus === "loading" ? (
+              <span className="mt-1 text-[10px] text-indigo-300">Đang tải âm thanh...</span>
+            ) : playbackStatus === "error" ? (
+              <span className="mt-1 text-[10px] text-rose-300">{playbackError || "Lỗi phát nhạc"}</span>
+            ) : null}
           </div>
 
           {/* BÊN PHẢI: PHÍM TẮT & ÂM LƯỢNG */}

@@ -98,6 +98,6 @@ export const toggleLikeSong = (songId: string | number) =>
 // 6. THỂ LOẠI (GENRES)
 export const getGenres = () => fetcher<Genre[]>("/genres");
 export const recordListening = (songId: string | number) =>
-  fetcher(`/songs/${songId}/listen`, { method: "POST" });
+  fetcher<{ id: string; listenedAt: string }>(`/songs/${songId}/listen`, { method: "POST" });
 export const getListeningHistory = () =>
   fetcher<Array<{ id: string; listenedAt: string; song: Song }>>("/songs/history");

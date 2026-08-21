@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useToastStore } from "./useToastStore";
-import { toggleLikeSong } from "../lib/api";
+import { recordListening, toggleLikeSong } from "../lib/api";
 import { useAuthStore } from "./useAuthStore";
 
 export interface Track {
@@ -16,6 +16,7 @@ export interface Track {
 }
 
 export type RepeatMode = "off" | "all" | "one";
+export type PlaybackStatus = "idle" | "loading" | "playing" | "paused" | "buffering" | "error";
 
 interface PlayerState {
   currentTrack: Track | null;
@@ -25,6 +26,8 @@ interface PlayerState {
   contextTitle: string;
   contextIndex: number;
   isPlaying: boolean;
+  playbackStatus: PlaybackStatus;
+  playbackError: string | null;
   isShuffle: boolean;
   repeatMode: RepeatMode;
   likedIds: (number | string)[];
@@ -44,6 +47,8 @@ interface PlayerState {
   nextTrack: () => void;
   prevTrack: () => void;
   toggleLike: (trackOrId: number | string | Track) => Promise<void>;
+  setPlaybackStatus: (status: PlaybackStatus, error?: string | null) => void;
+  recordListening: (songId: number | string) => Promise<void>;
 }
 
 export const removeDuplicateTracks = (tracks: Track[]): Track[] => {
@@ -74,6 +79,8 @@ export const usePlayerStore = create<PlayerState>()(
       contextTitle: "Trang chủ",
       contextIndex: 0,
       isPlaying: false,
+      playbackStatus: "idle",
+      playbackError: null,
       isShuffle: false,
       repeatMode: "off",
       likedIds: [],
@@ -108,6 +115,8 @@ export const usePlayerStore = create<PlayerState>()(
           contextTitle: displayTitle,
           contextIndex: activeIdx,
           isPlaying: true,
+          playbackStatus: "loading",
+          playbackError: null,
         });
       },
 
@@ -124,6 +133,8 @@ export const usePlayerStore = create<PlayerState>()(
           contextTitle: "Mix ngẫu nhiên",
           contextIndex: 0,
           isPlaying: true,
+          playbackStatus: "loading",
+          playbackError: null,
           isShuffle: true,
         });
       },
@@ -193,7 +204,23 @@ export const usePlayerStore = create<PlayerState>()(
         originalQueue: removeDuplicateTracks(newQueue) 
       }),
 
-      togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
+      togglePlay: () => set((state) => ({
+        isPlaying: !state.isPlaying,
+        playbackStatus: state.isPlaying ? "paused" : "loading",
+        playbackError: null,
+      })),
+
+      setPlaybackStatus: (playbackStatus, playbackError = null) =>
+        set({ playbackStatus, playbackError }),
+
+      recordListening: async (songId) => {
+        if (typeof window === "undefined" || !localStorage.getItem("token")) return;
+        try {
+          await recordListening(songId);
+        } catch {
+          // Listening history must not interrupt playback.
+        }
+      },
 
       toggleShuffle: () =>
         set((state) => {
