@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useToastStore } from "./useToastStore";
 
 export interface Track {
   id: number | string;
@@ -100,7 +101,6 @@ export const usePlayerStore = create<PlayerState>()(
         let activeQueue = [...cleanList];
         let activeIdx = foundIdx;
 
-        // Khi mở bài mới mà đang bật Shuffle: Đặt bài được chọn lên đầu và xáo trộn các bài còn lại
         if (isShuffle && activeQueue.length > 1) {
           const selectedTrack = activeQueue[foundIdx];
           const remaining = activeQueue.filter((_, idx) => idx !== foundIdx);
@@ -136,20 +136,29 @@ export const usePlayerStore = create<PlayerState>()(
 
       addToQueue: (track) => {
         const { userQueue, currentTrack } = get();
-        if (String(currentTrack?.id) === String(track.id)) return;
+        if (String(currentTrack?.id) === String(track.id)) {
+          useToastStore.getState().addToast("Bài hát đang phát!", "info");
+          return;
+        }
 
         const filtered = userQueue.filter((t) => String(t.id) !== String(track.id));
         set({ userQueue: [...filtered, track] });
+        useToastStore.getState().addToast(`Đã thêm "${track.title}" vào Hàng đợi`, "success");
       },
 
       removeFromUserQueue: (index) => {
+        const track = get().userQueue[index];
         set((state) => ({
           userQueue: state.userQueue.filter((_, i) => i !== index),
         }));
+        if (track) {
+          useToastStore.getState().addToast(`Đã xóa "${track.title}" khỏi Hàng đợi`, "info");
+        }
       },
 
       removeFromContextQueue: (index) => {
         set((state) => {
+          const track = state.contextQueue[index];
           const newContext = state.contextQueue.filter((_, i) => i !== index);
           let newIndex = state.contextIndex;
           if (index < state.contextIndex) {
@@ -157,6 +166,11 @@ export const usePlayerStore = create<PlayerState>()(
           } else if (newIndex >= newContext.length) {
             newIndex = Math.max(0, newContext.length - 1);
           }
+
+          if (track) {
+            useToastStore.getState().addToast(`Đã xóa "${track.title}" khỏi danh sách`, "info");
+          }
+
           return {
             contextQueue: newContext,
             contextIndex: newIndex,
@@ -173,7 +187,10 @@ export const usePlayerStore = create<PlayerState>()(
         }
       },
 
-      clearQueue: () => set({ userQueue: [] }),
+      clearQueue: () => {
+        set({ userQueue: [] });
+        useToastStore.getState().addToast("Đã xóa toàn bộ Hàng đợi", "info");
+      },
 
       reorderQueue: (newQueue) => set({ userQueue: removeDuplicateTracks(newQueue) }),
 
@@ -189,7 +206,6 @@ export const usePlayerStore = create<PlayerState>()(
           const newIsShuffle = !state.isShuffle;
 
           if (newIsShuffle && state.contextQueue.length > 1) {
-            // Khi bật Shuffle: Giữ bài hiện tại, xáo trộn danh sách phía sau
             const played = state.contextQueue.slice(0, state.contextIndex + 1);
             const remaining = state.contextQueue.slice(state.contextIndex + 1);
 
@@ -198,7 +214,6 @@ export const usePlayerStore = create<PlayerState>()(
               contextQueue: [...played, ...shuffleArray(remaining)] 
             };
           } else if (!newIsShuffle && state.originalQueue.length > 0 && state.currentTrack) {
-            // Khi tắt Shuffle: Khôi phục lại thứ tự gốc
             const cleanOriginal = removeDuplicateTracks(state.originalQueue);
             const foundIdx = cleanOriginal.findIndex((t) => String(t.id) === String(state.currentTrack?.id));
             
@@ -240,13 +255,11 @@ export const usePlayerStore = create<PlayerState>()(
         let nextIdx = 0;
 
         if (isShuffle) {
-          // Bật Shuffle: Bốc ngẫu nhiên 1 bài trong các bài CHƯA PHÁT phía sau
           if (contextIndex < newQueue.length - 1) {
             const randomIndex = Math.floor(
               Math.random() * (newQueue.length - (contextIndex + 1))
             ) + (contextIndex + 1);
 
-            // Hoán đổi bài chọn ngẫu nhiên lên vị trí tiếp theo
             [newQueue[contextIndex + 1], newQueue[randomIndex]] = [
               newQueue[randomIndex],
               newQueue[contextIndex + 1],
@@ -254,12 +267,10 @@ export const usePlayerStore = create<PlayerState>()(
 
             nextIdx = contextIndex + 1;
           } else {
-            // Đã phát tới bài cuối -> Đảo ngẫu nhiên lại toàn bộ cho vòng mới và quay về 0
             newQueue = shuffleArray(newQueue);
             nextIdx = 0;
           }
         } else {
-          // Không bật Shuffle: Tiến tuyến tính quay vòng
           nextIdx = (contextIndex + 1) % newQueue.length;
         }
 
@@ -275,7 +286,6 @@ export const usePlayerStore = create<PlayerState>()(
         const { contextQueue, contextIndex } = get();
         if (contextQueue.length === 0) return;
 
-        // Lùi bài theo đúng tiến trình vừa phát trong contextQueue
         const prevIdx = (contextIndex - 1 + contextQueue.length) % contextQueue.length;
 
         set({
@@ -286,11 +296,23 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       toggleLike: (id) =>
-        set((state) => ({
-          likedIds: state.likedIds.some((item) => String(item) === String(id))
-            ? state.likedIds.filter((item) => String(item) !== String(id))
-            : [...state.likedIds, id],
-        })),
+        set((state) => {
+          const isLiked = state.likedIds.some((item) => String(item) === String(id));
+          const track = ALL_TRACKS.find((t) => String(t.id) === String(id)) || state.currentTrack;
+          const trackTitle = track ? `"${track.title}"` : "bài hát";
+
+          if (isLiked) {
+            useToastStore.getState().addToast(`Đã xóa ${trackTitle} khỏi Yêu thích`, "info");
+          } else {
+            useToastStore.getState().addToast(`Đã thêm ${trackTitle} vào Yêu thích`, "success");
+          }
+
+          return {
+            likedIds: isLiked
+              ? state.likedIds.filter((item) => String(item) !== String(id))
+              : [...state.likedIds, id],
+          };
+        }),
     }),
     {
       name: "auraic-player-storage",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   Heart, 
   Play, 
@@ -15,32 +15,18 @@ import {
   Shuffle, 
   Search, 
   Sparkles,
-  Disc
+  Disc,
+  AlertTriangle
 } from "lucide-react";
-import { usePlayerStore } from "@/store/usePlayerStore";
+import { usePlayerStore, Track as StoreTrack } from "@/store/usePlayerStore";
+import { usePlaylistStore } from "@/store/usePlaylistStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
-export interface Track {
-  id: number | string;
-  title: string;
-  artist: string | { name: string };
-  image: string;
-  audioUrl: string;
-  genre?: string;
-  album?: string;
+export type Track = StoreTrack & {
   addedAt?: string;
   duration?: string;
-}
-
-export interface Playlist {
-  id: number | string;
-  name: string;
-  description?: string;
-  songIds: (number | string)[];
-  color: string;
-  image: string;
-  createdAt: string;
-}
+  [key: string]: any;
+};
 
 export const ALL_SYSTEM_SONGS: Track[] = [
   { 
@@ -133,74 +119,38 @@ export const ALL_SYSTEM_SONGS: Track[] = [
   },
 ];
 
-const initialPlaylists: Playlist[] = [
-  { 
-    id: 1, 
-    name: "Night Drive Vibes", 
-    description: "Thả mình vào những giai điệu Synthwave và R&B huyền ảo dọc phố đêm.",
-    songIds: [3, 4, 5], 
-    color: "from-purple-900/80 via-indigo-900/50 to-[#0b0c10]", 
-    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop",
-    createdAt: "15 Th08, 2026"
-  },
-  { 
-    id: 2, 
-    name: "Focus & Code", 
-    description: "Âm nhạc tập trung tối đa cho những giờ làm việc căng thẳng.",
-    songIds: [101, 102], 
-    color: "from-emerald-900/80 via-teal-900/50 to-[#0b0c10]", 
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=500&auto=format&fit=crop",
-    createdAt: "10 Th08, 2026"
-  },
-  { 
-    id: 3, 
-    name: "Acoustic Sunday", 
-    description: "Giai điệu mộc mạc và êm dịu cho ngày cuối tuần nhẹ nhàng.",
-    songIds: [1, 2, 6], 
-    color: "from-amber-900/80 via-orange-900/50 to-[#0b0c10]", 
-    image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=500&auto=format&fit=crop",
-    createdAt: "01 Th08, 2026"
-  },
-];
+const getStringValue = (val: any, fallback = ""): string => {
+  if (!val) return fallback;
+  if (typeof val === "string") return val;
+  if (typeof val === "number") return String(val);
+  if (typeof val === "object") {
+    return val.name || val.title || val.label || fallback;
+  }
+  return fallback;
+};
 
-const STORAGE_KEY = "auraic_user_playlists";
+const getArtistName = (artist: any): string => {
+  if (!artist) return "Ca sĩ chưa xác định";
+  if (typeof artist === "object") {
+    return artist.name || artist.title || "Ca sĩ chưa xác định";
+  }
+  return String(artist);
+};
 
 export default function LibraryPage() {
   const { likedIds, currentTrack, isPlaying, toggleLike, playTrack } = usePlayerStore();
+  const playlistStore = usePlaylistStore() as any;
+  const playlists = playlistStore.playlists || [];
 
   const [activeTab, setActiveTab] = useState<"all" | "playlists" | "liked">("all");
-  const [playlists, setPlaylists] = useState<Playlist[]>(initialPlaylists);
-  const [isLoaded, setIsLoaded] = useState(false);
-
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddSongsModal, setShowAddSongsModal] = useState(false);
+  const [playlistToDelete, setPlaylistToDelete] = useState<{ id: number | string; name: string } | null>(null);
+  
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [playlistSearchQuery, setPlaylistSearchQuery] = useState("");
   const [isShuffleActive, setIsShuffleActive] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | string | null>(null);
-
-  useEffect(() => {
-    try {
-      const savedPlaylists = localStorage.getItem(STORAGE_KEY);
-      if (savedPlaylists) {
-        setPlaylists(JSON.parse(savedPlaylists));
-      }
-    } catch (error) {
-      console.error("Lỗi đọc Playlist từ localStorage:", error);
-    } finally {
-      setIsLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(playlists));
-      } catch (error) {
-        console.error("Lỗi lưu Playlist vào localStorage:", error);
-      }
-    }
-  }, [playlists, isLoaded]);
 
   const isLiked = (id: number | string) => {
     return (likedIds || []).some((likedId) => String(likedId) === String(id));
@@ -210,68 +160,83 @@ export default function LibraryPage() {
   const likedSongsList: Track[] = sourceTracks.filter((song: Track) => isLiked(song.id));
 
   const handlePlaySong = (song: Track, list?: Track[], contextTitle?: string) => {
-    playTrack(song, list || sourceTracks, contextTitle);
+    playTrack(song as any, (list || sourceTracks) as any, contextTitle);
   };
 
-  const handleCreatePlaylist = (e: React.FormEvent) => {
+  const handleCreatePlaylistSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPlaylistName.trim()) return;
 
-    const newPl: Playlist = {
-      id: Date.now(),
-      name: newPlaylistName.trim(),
-      description: "Playlist cá nhân mới tạo trên AURAIC Sound Space.",
-      songIds: [],
-      color: "from-indigo-900/80 via-purple-900/50 to-[#0b0c10]",
-      image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop",
-      createdAt: "Vừa xong"
-    };
-
-    setPlaylists([newPl, ...playlists]);
+    if (playlistStore.createPlaylist) {
+      playlistStore.createPlaylist(newPlaylistName.trim());
+    }
     setNewPlaylistName("");
     setShowCreateModal(false);
-    setSelectedPlaylistId(newPl.id);
   };
 
-  const handleDeletePlaylist = (playlistId: number | string, e?: React.MouseEvent) => {
+  const handleOpenDeleteModal = (playlistId: number | string, playlistName: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    setPlaylistToDelete({ id: playlistId, name: playlistName });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!playlistToDelete) return;
+
+    if (playlistStore.deletePlaylist) {
+      playlistStore.deletePlaylist(playlistToDelete.id);
+    }
+    if (String(selectedPlaylistId) === String(playlistToDelete.id)) {
+      setSelectedPlaylistId(null);
+    }
+    setPlaylistToDelete(null);
+  };
+
+  const handleToggleSongInPlaylist = (playlistId: number | string, song: Track) => {
+    const store = playlistStore;
+    const targetPl = (store.playlists || []).find((p: any) => String(p.id) === String(playlistId));
     
-    if (window.confirm("Bạn có chắc chắn muốn xóa danh sách phát này?")) {
-      setPlaylists((prev) => prev.filter((p) => String(p.id) !== String(playlistId)));
-      if (String(selectedPlaylistId) === String(playlistId)) {
-        setSelectedPlaylistId(null);
-      }
+    if (store.toggleSongInPlaylist) {
+      store.toggleSongInPlaylist(playlistId, song);
+      return;
     }
-  };
+    if (store.toggleTrackInPlaylist) {
+      store.toggleTrackInPlaylist(playlistId, song);
+      return;
+    }
 
-  const toggleSongInPlaylist = (playlistId: number | string, songId: number | string) => {
-    setPlaylists((prev) =>
-      prev.map((pl) => {
-        if (String(pl.id) === String(playlistId)) {
-          const exists = pl.songIds.some((id) => String(id) === String(songId));
-          const updatedSongIds = exists
-            ? pl.songIds.filter((id) => String(id) !== String(songId))
-            : [...pl.songIds, songId];
-          return { ...pl, songIds: updatedSongIds };
-        }
-        return pl;
-      })
+    const isAdded = targetPl && (
+      (targetPl.tracks && targetPl.tracks.some((t: any) => String(t.id || t) === String(song.id))) ||
+      (targetPl.songIds && targetPl.songIds.some((id: any) => String(id) === String(song.id)))
     );
-  };
 
-  const getArtistName = (artist: any) => {
-    if (typeof artist === "object" && artist !== null) {
-      return artist.name || "Ca sĩ chưa xác định";
+    if (isAdded) {
+      if (store.removeTrackFromPlaylist) store.removeTrackFromPlaylist(playlistId, song.id);
+      else if (store.removeSongFromPlaylist) store.removeSongFromPlaylist(playlistId, song.id);
+    } else {
+      if (store.addTrackToPlaylist) store.addTrackToPlaylist(playlistId, song);
+      else if (store.addSongToPlaylist) store.addSongToPlaylist(playlistId, song);
     }
-    return artist || "Ca sĩ chưa xác định";
   };
 
-  const activePlaylist = playlists.find((p) => String(p.id) === String(selectedPlaylistId));
+  const activePlaylist = playlists.find((p: any) => String(p.id) === String(selectedPlaylistId));
+
+  const activePlaylistSongIds: (number | string)[] = activePlaylist
+    ? [
+        ...(activePlaylist.songIds || []),
+        ...((activePlaylist.tracks || []).map((t: any) => t.id || t))
+      ]
+    : [];
+
   const activePlaylistSongs = activePlaylist
-    ? sourceTracks
-        .filter((song) => activePlaylist.songIds.some((id) => String(id) === String(song.id)))
+    ? [
+        ...(activePlaylist.tracks || []),
+        ...sourceTracks.filter((song) =>
+          activePlaylistSongIds.some((id) => String(id) === String(song.id))
+        )
+      ]
+        .filter((song, idx, self) => idx === self.findIndex((s) => String(s.id) === String(song.id)))
         .filter((song) => 
-          song.title.toLowerCase().includes(playlistSearchQuery.toLowerCase()) ||
+          getStringValue(song.title).toLowerCase().includes(playlistSearchQuery.toLowerCase()) ||
           getArtistName(song.artist).toLowerCase().includes(playlistSearchQuery.toLowerCase())
         )
     : [];
@@ -282,13 +247,18 @@ export default function LibraryPage() {
     const shuffledList = [...activePlaylistSongs].sort(() => Math.random() - 0.5);
     setIsShuffleActive(!isShuffleActive);
     
-    handlePlaySong(shuffledList[0], shuffledList, activePlaylist?.name);
+    const plName = getStringValue(activePlaylist?.name || activePlaylist?.title, "Playlist");
+    handlePlaySong(shuffledList[0], shuffledList, plName);
   };
 
   if (activePlaylist) {
+    const playlistTitle = getStringValue(activePlaylist.name || activePlaylist.title, "Playlist");
+    const playlistColor = getStringValue(activePlaylist.color, "from-indigo-900/80 via-purple-900/50 to-[#0b0c10]");
+    const playlistImage = getStringValue(activePlaylist.image, "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop");
+
     return (
       <div className="min-h-full overflow-y-auto scrollbar-none pb-28 text-white relative bg-[#09090b]">
-        <div className={`absolute top-0 left-0 right-0 h-96 bg-gradient-to-b ${activePlaylist.color} opacity-80 pointer-events-none blur-3xl`} />
+        <div className={`absolute top-0 left-0 right-0 h-96 bg-gradient-to-b ${playlistColor} opacity-80 pointer-events-none blur-3xl`} />
 
         <div className="relative z-10 p-8 space-y-8">
           <div className="flex items-center justify-between">
@@ -313,8 +283,8 @@ export default function LibraryPage() {
             <div className="relative group flex-shrink-0">
               <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-indigo-500 to-purple-600 opacity-50 blur-xl group-hover:opacity-75 transition-all"></div>
               <img
-                src={activePlaylist.image}
-                alt={activePlaylist.name}
+                src={playlistImage}
+                alt={playlistTitle}
                 className="relative w-52 h-52 sm:w-60 sm:h-60 object-cover rounded-2xl shadow-2xl border border-white/20"
               />
             </div>
@@ -325,11 +295,11 @@ export default function LibraryPage() {
               </div>
 
               <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight drop-shadow-md">
-                {activePlaylist.name}
+                {playlistTitle}
               </h1>
 
               <p className="text-sm text-white/70 max-w-2xl leading-relaxed">
-                {activePlaylist.description || "Giai điệu tuyển chọn dành riêng cho trải nghiệm âm nhạc của bạn."}
+                {getStringValue(activePlaylist.description, "Giai điệu tuyển chọn dành riêng cho trải nghiệm âm nhạc của bạn.")}
               </p>
 
               <div className="flex items-center flex-wrap gap-4 text-xs font-semibold text-white/80 pt-2 border-t border-white/10">
@@ -340,9 +310,9 @@ export default function LibraryPage() {
                   <span className="text-white font-bold">Người dùng AURAIC</span>
                 </div>
                 <span>•</span>
-                <span>{activePlaylist.songIds.length} bài hát</span>
+                <span>{activePlaylistSongs.length} bài hát</span>
                 <span>•</span>
-                <span className="text-white/50">Tạo ngày {activePlaylist.createdAt}</span>
+                <span className="text-white/50">Tạo ngày {getStringValue(activePlaylist.createdAt, "Gần đây")}</span>
               </div>
             </div>
           </div>
@@ -352,7 +322,7 @@ export default function LibraryPage() {
               <button
                 onClick={() => {
                   if (activePlaylistSongs.length > 0) {
-                    handlePlaySong(activePlaylistSongs[0], activePlaylistSongs, activePlaylist.name);
+                    handlePlaySong(activePlaylistSongs[0], activePlaylistSongs, playlistTitle);
                   }
                 }}
                 disabled={activePlaylistSongs.length === 0}
@@ -382,8 +352,8 @@ export default function LibraryPage() {
               </button>
 
               <button
-                onClick={() => handleDeletePlaylist(activePlaylist.id)}
-                className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer"
+                onClick={(e) => handleOpenDeleteModal(activePlaylist.id, playlistTitle, e)}
+                className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95"
                 title="Xóa Playlist này"
               >
                 <Trash2 className="w-4 h-4" /> Xóa Playlist
@@ -425,7 +395,7 @@ export default function LibraryPage() {
                     <div
                       key={song.id}
                       style={{ zIndex: activePlaylistSongs.length - index }}
-                      onClick={() => handlePlaySong(song, activePlaylistSongs, activePlaylist.name)}
+                      onClick={() => handlePlaySong(song, activePlaylistSongs, playlistTitle)}
                       className={`grid grid-cols-12 items-center px-6 py-4 transition-all duration-200 cursor-pointer group relative ${
                         index === activePlaylistSongs.length - 1 ? "rounded-b-3xl" : ""
                       } ${
@@ -453,13 +423,13 @@ export default function LibraryPage() {
 
                       <div className="col-span-5 sm:col-span-4 flex items-center gap-3.5 min-w-0 pr-2">
                         <img 
-                          src={song.image} 
-                          alt={song.title} 
+                          src={getStringValue(song.image)} 
+                          alt={getStringValue(song.title)} 
                           className="w-11 h-11 rounded-xl object-cover flex-shrink-0 shadow-lg border border-white/10" 
                         />
                         <div className="truncate">
                           <h4 className={`text-sm font-bold truncate ${isCurrent ? "text-indigo-400" : "text-white group-hover:text-indigo-300"}`}>
-                            {song.title}
+                            {getStringValue(song.title, "Bài hát")}
                           </h4>
                           <p className="text-xs text-white/50 truncate mt-0.5">{getArtistName(song.artist)}</p>
                         </div>
@@ -467,12 +437,12 @@ export default function LibraryPage() {
 
                       <div className="hidden sm:block sm:col-span-3 text-xs text-white/60 truncate pr-2">
                         <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-md text-[11px]">
-                          {song.album || song.genre || "AURAIC Original"}
+                          {getStringValue(song.album) || getStringValue(song.genre) || "AURAIC Original"}
                         </span>
                       </div>
 
                       <div className="hidden md:block md:col-span-2 text-xs text-white/40">
-                        {song.addedAt || "Vừa xong"}
+                        {getStringValue(song.addedAt, "Vừa xong")}
                       </div>
 
                       <div className="col-span-6 sm:col-span-4 md:col-span-2 flex items-center justify-end gap-2">
@@ -490,7 +460,7 @@ export default function LibraryPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleSongInPlaylist(activePlaylist.id, song.id);
+                            handleToggleSongInPlaylist(activePlaylist.id, song);
                           }}
                           className="text-white/30 hover:text-red-400 transition-colors p-1.5 hover:bg-white/5 rounded-lg"
                           title="Xóa khỏi Playlist này"
@@ -501,7 +471,7 @@ export default function LibraryPage() {
                         <TrackActionMenu track={song} />
 
                         <span className="text-xs font-mono font-semibold text-white/50 ml-1">
-                          {song.duration || "03:30"}
+                          {getStringValue(song.duration, "03:30")}
                         </span>
                       </div>
                     </div>
@@ -518,7 +488,7 @@ export default function LibraryPage() {
               </div>
               <button
                 onClick={() => setShowAddSongsModal(true)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-6 py-3 rounded-full transition-all shadow-lg shadow-indigo-600/30"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-6 py-3 rounded-full transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
               >
                 + Thêm bài hát ngay
               </button>
@@ -538,25 +508,25 @@ export default function LibraryPage() {
 
               <div>
                 <h3 className="text-xl font-bold text-white">Thêm bài hát vào Playlist</h3>
-                <p className="text-xs text-indigo-400 mt-1">Playlist: {activePlaylist.name}</p>
+                <p className="text-xs text-indigo-400 mt-1">Playlist: {playlistTitle}</p>
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-none divide-y divide-white/5">
                 {sourceTracks.map((song) => {
-                  const isAdded = activePlaylist.songIds.some((id) => String(id) === String(song.id));
+                  const isAdded = activePlaylistSongIds.some((id) => String(id) === String(song.id));
 
                   return (
                     <div
                       key={song.id}
-                      onClick={() => toggleSongInPlaylist(activePlaylist.id, song.id)}
+                      onClick={() => handleToggleSongInPlaylist(activePlaylist.id, song)}
                       className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
                         isAdded ? "bg-indigo-600/15 border border-indigo-500/30" : "hover:bg-white/5"
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <img src={song.image} alt={song.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <img src={getStringValue(song.image)} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         <div className="truncate">
-                          <h5 className="text-sm font-bold text-white truncate">{song.title}</h5>
+                          <h5 className="text-sm font-bold text-white truncate">{getStringValue(song.title)}</h5>
                           <p className="text-xs text-white/50 truncate">{getArtistName(song.artist)}</p>
                         </div>
                       </div>
@@ -586,10 +556,45 @@ export default function LibraryPage() {
 
               <button
                 onClick={() => setShowAddSongsModal(false)}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg cursor-pointer"
               >
                 Xong
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal xác nhận xóa dành cho giao diện chi tiết Playlist */}
+        {playlistToDelete && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-[#121216] border border-white/10 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl relative text-center">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto shadow-inner">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-white">Xóa Playlist?</h3>
+                <p className="text-xs text-white/60 leading-relaxed">
+                  Bạn có chắc chắn muốn xóa <span className="text-white font-bold">"{playlistToDelete.name}"</span> không? Hành động này không thể hoàn tác.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPlaylistToDelete(null)}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg shadow-red-600/30 transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
+                >
+                  Xóa ngay
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -610,7 +615,7 @@ export default function LibraryPage() {
         <div className="flex items-center bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-md">
           <button
             onClick={() => setActiveTab("all")}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "all" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" : "text-white/60 hover:text-white"
             }`}
           >
@@ -618,7 +623,7 @@ export default function LibraryPage() {
           </button>
           <button
             onClick={() => setActiveTab("liked")}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "liked" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" : "text-white/60 hover:text-white"
             }`}
           >
@@ -626,7 +631,7 @@ export default function LibraryPage() {
           </button>
           <button
             onClick={() => setActiveTab("playlists")}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "playlists" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" : "text-white/60 hover:text-white"
             }`}
           >
@@ -650,41 +655,48 @@ export default function LibraryPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {playlists.map((pl) => (
-              <div
-                key={pl.id}
-                onClick={() => setSelectedPlaylistId(pl.id)}
-                className="group relative h-44 rounded-2xl overflow-hidden border border-white/10 p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:border-indigo-500/50 hover:shadow-[0_10px_30px_rgba(99,102,241,0.25)]"
-              >
-                <img src={pl.image} alt={pl.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-30 group-hover:opacity-40" />
-                <div className={`absolute inset-0 bg-gradient-to-br ${pl.color} mix-blend-multiply`}></div>
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
+            {playlists.map((pl: any) => {
+              const pName = getStringValue(pl.name || pl.title, "Playlist");
+              const pSongCount = pl.tracks ? pl.tracks.length : (pl.songIds ? pl.songIds.length : 0);
+              const pColor = getStringValue(pl.color, "from-indigo-900/80 via-purple-900/50 to-[#0b0c10]");
+              const pImage = getStringValue(pl.image, "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop");
 
-                <div className="relative z-10 flex items-center justify-between">
-                  <span className="text-[10px] font-bold tracking-widest uppercase bg-white/10 border border-white/20 px-2.5 py-1 rounded-full text-white/80 backdrop-blur-md">
-                    {pl.songIds.length} bài hát
-                  </span>
-                  
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={(e) => handleDeletePlaylist(pl.id, e)}
-                      className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 text-white/60 hover:text-white border border-white/10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 transform hover:scale-110"
-                      title="Xóa Playlist"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="w-9 h-9 rounded-full bg-white/10 group-hover:bg-white text-white group-hover:text-black flex items-center justify-center transition-all shadow-md group-hover:scale-110">
-                      <Play className="w-4 h-4 fill-current ml-0.5" />
+              return (
+                <div
+                  key={pl.id}
+                  onClick={() => setSelectedPlaylistId(pl.id)}
+                  className="group relative h-44 rounded-2xl overflow-hidden border border-white/10 p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:border-indigo-500/50 hover:shadow-[0_10px_30px_rgba(99,102,241,0.25)]"
+                >
+                  <img src={pImage} alt={pName} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-30 group-hover:opacity-40" />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${pColor} mix-blend-multiply`}></div>
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
+
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="text-[10px] font-bold tracking-widest uppercase bg-white/10 border border-white/20 px-2.5 py-1 rounded-full text-white/80 backdrop-blur-md">
+                      {pSongCount} bài hát
+                    </span>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => handleOpenDeleteModal(pl.id, pName, e)}
+                        className="w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 text-white/60 hover:text-white border border-white/10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 transform hover:scale-110 cursor-pointer"
+                        title="Xóa Playlist"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="w-9 h-9 rounded-full bg-white/10 group-hover:bg-white text-white group-hover:text-black flex items-center justify-center transition-all shadow-md group-hover:scale-110">
+                        <Play className="w-4 h-4 fill-current ml-0.5" />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="relative z-10">
-                  <h3 className="text-xl font-bold text-white group-hover:text-indigo-200 transition-colors truncate">{pl.name}</h3>
-                  <p className="text-xs text-white/60 mt-1 truncate">{pl.description}</p>
+                  <div className="relative z-10">
+                    <h3 className="text-xl font-bold text-white group-hover:text-indigo-200 transition-colors truncate">{pName}</h3>
+                    <p className="text-xs text-white/60 mt-1 truncate">{getStringValue(pl.description, "Playlist cá nhân trên AURAIC.")}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
@@ -698,7 +710,7 @@ export default function LibraryPage() {
             {likedSongsList.length > 0 && (
               <button 
                 onClick={() => handlePlaySong(likedSongsList[0], likedSongsList, "Bài hát đã thích")}
-                className="flex items-center gap-2 text-xs font-bold text-black bg-white hover:bg-white/90 px-4 py-2 rounded-full transition-all shadow-lg"
+                className="flex items-center gap-2 text-xs font-bold text-black bg-white hover:bg-white/90 px-4 py-2 rounded-full transition-all shadow-lg cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-black" /> Phát tất cả
               </button>
@@ -733,9 +745,9 @@ export default function LibraryPage() {
                       </div>
 
                       <div className="col-span-8 flex items-center gap-3.5 min-w-0">
-                        <img src={song.image} alt={song.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <img src={getStringValue(song.image)} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         <div className="truncate">
-                          <h4 className={`text-sm font-semibold truncate ${isCurrent ? "text-indigo-400" : "text-white"}`}>{song.title}</h4>
+                          <h4 className={`text-sm font-semibold truncate ${isCurrent ? "text-indigo-400" : "text-white"}`}>{getStringValue(song.title)}</h4>
                           <p className="text-xs text-white/50 truncate">{getArtistName(song.artist)}</p>
                         </div>
                       </div>
@@ -754,7 +766,7 @@ export default function LibraryPage() {
 
                         <TrackActionMenu track={song} />
 
-                        <span className="text-xs font-mono text-white/40 ml-1">{song.duration || "03:30"}</span>
+                        <span className="text-xs font-mono text-white/40 ml-1">{getStringValue(song.duration, "03:30")}</span>
                       </div>
                     </div>
                   );
@@ -781,7 +793,7 @@ export default function LibraryPage() {
               <p className="text-xs text-white/50 mt-1">Nhập tên danh sách phát của bạn</p>
             </div>
 
-            <form onSubmit={handleCreatePlaylist} className="space-y-4">
+            <form onSubmit={handleCreatePlaylistSubmit} className="space-y-4">
               <input 
                 type="text" 
                 placeholder="Tên playlist..." 
@@ -792,14 +804,49 @@ export default function LibraryPage() {
               />
 
               <div className="flex items-center justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowCreateModal(false)} className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white/60 hover:text-white">
+                <button type="button" onClick={() => setShowCreateModal(false)} className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white/60 hover:text-white cursor-pointer">
                   Hủy
                 </button>
-                <button type="submit" disabled={!newPlaylistName.trim()} className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg">
+                <button type="submit" disabled={!newPlaylistName.trim()} className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg cursor-pointer">
                   Tạo Playlist
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xác nhận xóa dành cho giao diện danh sách chính */}
+      {playlistToDelete && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[#121216] border border-white/10 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl relative text-center">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto shadow-inner">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-white">Xóa Playlist?</h3>
+              <p className="text-xs text-white/60 leading-relaxed">
+                Bạn có chắc chắn muốn xóa <span className="text-white font-bold">"{playlistToDelete.name}"</span> không? Hành động này không thể hoàn tác.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setPlaylistToDelete(null)}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg shadow-red-600/30 transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
+              >
+                Xóa ngay
+              </button>
+            </div>
           </div>
         </div>
       )}

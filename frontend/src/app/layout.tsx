@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import Sidebar from '@/components/Sidebar';
 import { AudioProvider } from '@/context/AudioContext';
 import Player from '@/components/Player';
+import ToastContainer from '@/components/ToastContainer';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -31,6 +32,8 @@ export default function RootLayout({
           <div className="px-4 pb-4 w-full z-50">
             <Player />
           </div>
+
+          <ToastContainer />
         </AudioProvider>
       </body>
     </html>
