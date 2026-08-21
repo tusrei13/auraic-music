@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Library, Radio } from "lucide-react";
+import { Home, Search, Compass, Library, Radio } from "lucide-react";
 
 const navItems = [
   { name: "Trang chủ", href: "/", icon: Home },
+  { name: "Tìm kiếm", href: "/search", icon: Search },
   { name: "Khám phá", href: "/discover", icon: Compass },
   { name: "Thư viện", href: "/library", icon: Library },
 ];
