@@ -9,6 +9,7 @@ import playlistRoutes from './routes/playlist.route'
 import searchRoutes from './routes/search.route'
 import authRoutes from './routes/auth.route'
 import likeRoutes from './routes/like.route'
+import { sendError } from './lib/api-error'
 
 dotenv.config()
 
@@ -118,12 +119,12 @@ app.get('/', (_req, res) => {
 })
 
 app.use((_req, res) => {
-  res.status(404).json({ error: 'Không tìm thấy endpoint' })
+  sendError(res, 404, 'ENDPOINT_NOT_FOUND', 'Không tìm thấy endpoint')
 })
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled API error:', err)
-  res.status(500).json({ error: 'Lỗi server không xác định' })
+  sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Lỗi server không xác định')
 })
 
 app.listen(PORT, () => {

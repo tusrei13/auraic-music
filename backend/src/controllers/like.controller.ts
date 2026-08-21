@@ -2,20 +2,21 @@ import { Response } from 'express'
 import { AuthRequest } from '../middlewares/auth.middleware'
 import { prisma } from '../lib/prisma'
 import { parsePositiveInteger } from '../lib/validation'
+import { sendError, sendInternalError } from '../lib/api-error'
 
 export const toggleLike = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
     const { songId } = req.body
 
-    if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
     const numericSongId = parsePositiveInteger(songId)
     if (numericSongId === null) {
-      return res.status(400).json({ error: 'songId không hợp lệ' })
+      return sendError(res, 400, 'INVALID_SONG_ID', 'songId không hợp lệ')
     }
 
     const song = await prisma.song.findUnique({ where: { id: numericSongId } })
-    if (!song) return res.status(404).json({ error: 'Không tìm thấy bài hát' })
+    if (!song) return sendError(res, 404, 'SONG_NOT_FOUND', 'Không tìm thấy bài hát')
 
     const existingLike = await prisma.like.findUnique({
       where: {
@@ -37,14 +38,14 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
       return res.json({ liked: true, message: 'Đã thêm bài hát vào danh sách yêu thích' })
     }
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi khi thả tim bài hát' })
+    sendInternalError(res, 'LIKE_TOGGLE_ERROR', 'Lỗi khi thả tim bài hát')
   }
 }
 
 export const getMyLikes = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
-    if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
 
     const likes = await prisma.like.findMany({
       where: { userId },
@@ -56,6 +57,6 @@ export const getMyLikes = async (req: AuthRequest, res: Response) => {
 
     res.json(likes)
   } catch (error) {
-    res.status(500).json({ error: 'Không thể lấy danh sách yêu thích' })
+    sendInternalError(res, 'LIKE_LIST_ERROR', 'Không thể lấy danh sách yêu thích')
   }
 }

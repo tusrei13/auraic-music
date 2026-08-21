@@ -8,14 +8,15 @@ import {
   deletePlaylist,
 } from '../controllers/playlist.controller'
 import { authenticate } from '../middlewares/auth.middleware'
+import { createPlaylistSchema, playlistIdParamsSchema, playlistSongParamsSchema, playlistSongSchema, validate } from '../middlewares/validate.middleware'
 
 const router = Router()
 
 router.get('/', getPlaylists)
-router.get('/:id', getPlaylistById)
-router.post('/', authenticate, createPlaylist)
-router.post('/:id/songs', authenticate, addSongToPlaylist)
-router.delete('/:id/songs/:songId', authenticate, removeSongFromPlaylist)
-router.delete('/:id', authenticate, deletePlaylist)
+router.get('/:id', validate(playlistIdParamsSchema), getPlaylistById)
+router.post('/', authenticate, validate(createPlaylistSchema), createPlaylist)
+router.post('/:id/songs', authenticate, validate(playlistSongSchema), addSongToPlaylist)
+router.delete('/:id/songs/:songId', authenticate, validate(playlistSongParamsSchema), removeSongFromPlaylist)
+router.delete('/:id', authenticate, validate(playlistIdParamsSchema), deletePlaylist)
 
 export default router

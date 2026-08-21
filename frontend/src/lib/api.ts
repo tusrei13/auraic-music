@@ -2,10 +2,27 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/a
 
 export interface Artist { id: string; name: string; avatar: string; listeners?: number; songs?: Song[] }
 export interface Genre { id: string; name: string; image: string; color?: string | null }
-export interface Song { id: number; title: string; audioUrl: string; image: string; lyrics?: Array<{ time: number; text: string }>; playCount?: number; artist: Artist | string; genre?: Genre | string | null }
+export interface Mood { id: string; title: string; color: string; icon: string }
+export interface Album { id: string; title: string; coverImage: string; releaseYear?: number | null; artistId: string }
+export interface Song { id: number; title: string; audioUrl: string; image: string; lyrics?: Array<{ time: number; text: string }>; playCount?: number; artist: Artist | string; genre?: Genre | string | null; album?: Album | null; mood?: Mood | null }
 export interface Playlist { id: string; name: string; coverImage?: string | null; color?: string | null; userId?: string; songs?: Array<{ song: Song }> }
 export interface SearchResult { songs: Song[]; artists: Artist[]; playlists: Playlist[] }
 export interface CurrentUser { id: string; email: string; name?: string | null; playlists: Playlist[] }
+export interface ApiErrorPayload { code: string; message: string; details?: unknown }
+
+export class ApiError extends Error {
+  code: string;
+  status: number;
+  details?: unknown;
+
+  constructor(status: number, payload: ApiErrorPayload) {
+    super(payload.message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = payload.code;
+    this.details = payload.details;
+  }
+}
 
 // Hàm helper để gọi fetch ngắn gọn và tự động gắn Auth Token
 async function fetcher<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -23,11 +40,19 @@ async function fetcher<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers,
   });
 
+  const payload = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(`API Error: ${res.statusText}`);
+    const error = payload?.error;
+    if (error && typeof error === "object" && typeof error.message === "string") {
+      throw new ApiError(res.status, error as ApiErrorPayload);
+    }
+    throw new ApiError(res.status, {
+      code: "API_ERROR",
+      message: payload?.error || res.statusText || "API request failed",
+    });
   }
 
-  return res.json();
+  return payload as T;
 }
 
 // 1. BÀI HÁT (SONGS)
@@ -64,3 +89,7 @@ export const toggleLikeSong = (songId: string | number) =>
 
 // 6. THỂ LOẠI (GENRES)
 export const getGenres = () => fetcher<Genre[]>("/genres");
+export const recordListening = (songId: string | number) =>
+  fetcher(`/songs/${songId}/listen`, { method: "POST" });
+export const getListeningHistory = () =>
+  fetcher<Array<{ id: string; listenedAt: string; song: Song }>>("/songs/history");

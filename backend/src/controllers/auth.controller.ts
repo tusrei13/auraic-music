@@ -1,15 +1,16 @@
 import { Request, Response } from 'express'
 import { supabase, AuthRequest } from '../middlewares/auth.middleware'
 import { prisma } from '../lib/prisma'
+import { sendError, sendInternalError } from '../lib/api-error'
 
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body
     if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || password.length < 6) {
-      return res.status(400).json({ error: 'Email và password là bắt buộc' })
+      return sendError(res, 400, 'INVALID_CREDENTIALS', 'Email và password không hợp lệ')
     }
 
-    if (!supabase) return res.status(500).json({ error: 'Backend chưa cấu hình Supabase' })
+    if (!supabase) return sendInternalError(res, 'SUPABASE_NOT_CONFIGURED', 'Backend chưa cấu hình Supabase')
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -17,7 +18,7 @@ export const register = async (req: Request, res: Response) => {
       options: { data: { full_name: name } },
     })
 
-    if (error) return res.status(400).json({ error: error.message })
+    if (error) return sendError(res, 400, 'AUTH_REGISTER_FAILED', error.message)
 
     if (data.user) {
       const user = await prisma.user.create({
@@ -30,9 +31,9 @@ export const register = async (req: Request, res: Response) => {
       return res.status(201).json({ message: 'Đăng ký thành công', user, session: data.session })
     }
 
-    res.status(400).json({ error: 'Đăng ký không thành công' })
+    sendError(res, 400, 'AUTH_REGISTER_FAILED', 'Đăng ký không thành công')
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi server khi đăng ký' })
+    sendInternalError(res, 'AUTH_REGISTER_ERROR', 'Lỗi server khi đăng ký')
   }
 }
 
@@ -40,14 +41,14 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body
     if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
-      return res.status(400).json({ error: 'Email và password là bắt buộc' })
+      return sendError(res, 400, 'INVALID_CREDENTIALS', 'Email và password không hợp lệ')
     }
 
-    if (!supabase) return res.status(500).json({ error: 'Backend chưa cấu hình Supabase' })
+    if (!supabase) return sendInternalError(res, 'SUPABASE_NOT_CONFIGURED', 'Backend chưa cấu hình Supabase')
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) return res.status(400).json({ error: error.message })
+    if (error) return sendError(res, 400, 'AUTH_LOGIN_FAILED', error.message)
 
     res.json({
       message: 'Đăng nhập thành công',
@@ -55,13 +56,13 @@ export const login = async (req: Request, res: Response) => {
       token: data.session?.access_token,
     })
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi server khi đăng nhập' })
+    sendInternalError(res, 'AUTH_LOGIN_ERROR', 'Lỗi server khi đăng nhập')
   }
 }
 
 export const getMe = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Chưa đăng nhập' })
+    if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
 
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
@@ -79,10 +80,10 @@ export const getMe = async (req: AuthRequest, res: Response) => {
       },
     })
 
-    if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' })
+    if (!user) return sendError(res, 404, 'USER_NOT_FOUND', 'Không tìm thấy người dùng')
 
     res.json(user)
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi server' })
+    sendInternalError(res, 'AUTH_ME_ERROR', 'Lỗi server')
   }
 }

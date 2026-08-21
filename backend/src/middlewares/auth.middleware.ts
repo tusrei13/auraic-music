@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { Request, Response, NextFunction } from 'express'
 import { createClient } from '@supabase/supabase-js'
 import { prisma } from '../lib/prisma'
+import { sendError, sendInternalError } from '../lib/api-error'
 
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
@@ -29,13 +30,13 @@ export const authenticate = async (
     // 1. Nếu gửi Token từ Supabase Auth
     if (authHeader && authHeader.startsWith('Bearer ')) {
       if (!supabase) {
-        return res.status(500).json({ error: 'Backend chưa cấu hình Supabase' })
+        return sendInternalError(res, 'SUPABASE_NOT_CONFIGURED', 'Backend chưa cấu hình Supabase')
       }
       const token = authHeader.split(' ')[1]
       const { data: { user }, error } = await supabase.auth.getUser(token)
 
       if (error || !user) {
-        return res.status(401).json({ error: 'Token không hợp lệ hoặc đã hết hạn' })
+        return sendError(res, 401, 'INVALID_TOKEN', 'Token không hợp lệ hoặc đã hết hạn')
       }
 
       let dbUser = await prisma.user.findUnique({ where: { id: user.id } })
@@ -63,8 +64,8 @@ export const authenticate = async (
       }
     }
 
-    return res.status(401).json({ error: 'Yêu cầu token xác thực (Header: Authorization: Bearer <token>)' })
+    return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu token xác thực (Header: Authorization: Bearer <token>)')
   } catch (err) {
-    return res.status(500).json({ error: 'Lỗi xác thực người dùng' })
+    return sendInternalError(res, 'AUTHENTICATION_ERROR', 'Lỗi xác thực người dùng')
   }
 }

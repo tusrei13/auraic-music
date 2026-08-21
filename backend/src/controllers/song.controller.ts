@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { AuthRequest } from '../middlewares/auth.middleware'
 import { prisma } from '../lib/prisma'
 import { parsePositiveInteger } from '../lib/validation'
+import { sendError, sendInternalError } from '../lib/api-error'
 
 export const getSongs = async (_req: Request, res: Response) => {
   try {
@@ -15,7 +16,7 @@ export const getSongs = async (_req: Request, res: Response) => {
     })
     res.json(songs)
   } catch (error) {
-    res.status(500).json({ error: 'Không thể lấy danh sách bài hát' })
+    sendInternalError(res, 'SONG_LIST_ERROR', 'Không thể lấy danh sách bài hát')
   }
 }
 
@@ -23,11 +24,11 @@ export const recordListening = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
     const songId = parsePositiveInteger(req.params.id)
-    if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
-    if (songId === null) return res.status(400).json({ error: 'songId không hợp lệ' })
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
+    if (songId === null) return sendError(res, 400, 'INVALID_SONG_ID', 'songId không hợp lệ')
 
     const song = await prisma.song.findUnique({ where: { id: songId } })
-    if (!song) return res.status(404).json({ error: 'Không tìm thấy bài hát' })
+    if (!song) return sendError(res, 404, 'SONG_NOT_FOUND', 'Không tìm thấy bài hát')
 
     const [history] = await prisma.$transaction([
       prisma.listeningHistory.create({ data: { userId, songId } }),
@@ -39,14 +40,14 @@ export const recordListening = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(history)
   } catch (error) {
-    res.status(500).json({ error: 'Không thể ghi nhận lịch sử nghe' })
+    sendInternalError(res, 'LISTENING_RECORD_ERROR', 'Không thể ghi nhận lịch sử nghe')
   }
 }
 
 export const getListeningHistory = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
-    if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
 
     const history = await prisma.listeningHistory.findMany({
       where: { userId },
@@ -57,6 +58,6 @@ export const getListeningHistory = async (req: AuthRequest, res: Response) => {
 
     res.json(history)
   } catch (error) {
-    res.status(500).json({ error: 'Không thể lấy lịch sử nghe' })
+    sendInternalError(res, 'LISTENING_HISTORY_ERROR', 'Không thể lấy lịch sử nghe')
   }
 }

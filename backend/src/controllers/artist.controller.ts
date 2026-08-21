@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
+import { sendError, sendInternalError } from "../lib/api-error";
 
 export const getArtists = async (req: Request, res: Response) => {
   try {
@@ -15,7 +16,7 @@ export const getArtists = async (req: Request, res: Response) => {
     return res.json(artists);
   } catch (error) {
     console.error("Lỗi getArtists:", error);
-    return res.status(500).json({ message: "Lỗi server", error });
+    return sendInternalError(res, "ARTIST_LIST_ERROR", "Lỗi server");
   }
 };
 
@@ -42,12 +43,12 @@ export const getArtistById = async (req: Request, res: Response) => {
     });
 
     if (!artist) {
-      return res.status(404).json({ message: "Không tìm thấy nghệ sĩ" });
+      return sendError(res, 404, "ARTIST_NOT_FOUND", "Không tìm thấy nghệ sĩ");
     }
 
     return res.json(artist);
   } catch (error) {
     console.error("Lỗi getArtistById:", error);
-    return res.status(500).json({ message: "Lỗi server", error });
+    return sendInternalError(res, "ARTIST_DETAIL_ERROR", "Lỗi server");
   }
 };

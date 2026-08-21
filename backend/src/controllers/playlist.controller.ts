@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { AuthRequest } from '../middlewares/auth.middleware'
 import { prisma } from '../lib/prisma'
 import { isNonEmptyString, parsePositiveInteger } from '../lib/validation'
+import { sendError, sendInternalError } from '../lib/api-error'
 
 export const getPlaylists = async (_req: Request, res: Response) => {
   try {
@@ -13,7 +14,7 @@ export const getPlaylists = async (_req: Request, res: Response) => {
     })
     res.json(playlists)
   } catch (error) {
-    res.status(500).json({ error: 'Không thể lấy danh sách playlist' })
+    sendInternalError(res, 'PLAYLIST_LIST_ERROR', 'Không thể lấy danh sách playlist')
   }
 }
 
@@ -31,10 +32,10 @@ export const getPlaylistById = async (req: Request, res: Response) => {
         },
       },
     })
-    if (!playlist) return res.status(404).json({ error: 'Không tìm thấy playlist' })
+    if (!playlist) return sendError(res, 404, 'PLAYLIST_NOT_FOUND', 'Không tìm thấy playlist')
     res.json(playlist)
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi server' })
+    sendInternalError(res, 'PLAYLIST_DETAIL_ERROR', 'Lỗi server')
   }
 }
 
@@ -44,9 +45,9 @@ export const createPlaylist = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id
     const { name, coverImage, color } = req.body
 
-    if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
     if (!isNonEmptyString(name)) {
-      return res.status(400).json({ error: 'Tên playlist là bắt buộc' })
+      return sendError(res, 400, 'INVALID_PLAYLIST_NAME', 'Tên playlist là bắt buộc')
     }
 
     const newPlaylist = await prisma.playlist.create({
@@ -55,7 +56,7 @@ export const createPlaylist = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(newPlaylist)
   } catch (error) {
-    res.status(500).json({ error: 'Không thể tạo playlist' })
+    sendInternalError(res, 'PLAYLIST_CREATE_ERROR', 'Không thể tạo playlist')
   }
 }
 
@@ -66,19 +67,19 @@ export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
     const { id: playlistId } = req.params
     const { songId } = req.body
 
-    if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
     const numericSongId = parsePositiveInteger(songId)
     if (numericSongId === null) {
-      return res.status(400).json({ error: 'songId không hợp lệ' })
+      return sendError(res, 400, 'INVALID_SONG_ID', 'songId không hợp lệ')
     }
 
     const playlist = await prisma.playlist.findUnique({ where: { id: playlistId } })
     if (!playlist || playlist.userId !== userId) {
-      return res.status(403).json({ error: 'Bạn không có quyền chỉnh sửa playlist này' })
+      return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền chỉnh sửa playlist này')
     }
 
     const song = await prisma.song.findUnique({ where: { id: numericSongId } })
-    if (!song) return res.status(404).json({ error: 'Không tìm thấy bài hát' })
+    if (!song) return sendError(res, 404, 'SONG_NOT_FOUND', 'Không tìm thấy bài hát')
 
     const playlistSong = await prisma.playlistSong.create({
       data: { playlistId, songId: numericSongId },
@@ -86,7 +87,7 @@ export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(playlistSong)
   } catch (error) {
-    res.status(500).json({ error: 'Không thể thêm bài hát vào playlist' })
+    sendInternalError(res, 'PLAYLIST_SONG_CREATE_ERROR', 'Không thể thêm bài hát vào playlist')
   }
 }
 
@@ -96,11 +97,11 @@ export const removeSongFromPlaylist = async (req: AuthRequest, res: Response) =>
     const userId = req.user?.id
     const { id: playlistId, songId } = req.params
 
-    if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
 
     const playlist = await prisma.playlist.findUnique({ where: { id: playlistId } })
     if (!playlist || playlist.userId !== userId) {
-      return res.status(403).json({ error: 'Bạn không có quyền chỉnh sửa playlist này' })
+      return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền chỉnh sửa playlist này')
     }
 
     await prisma.playlistSong.delete({
@@ -111,7 +112,7 @@ export const removeSongFromPlaylist = async (req: AuthRequest, res: Response) =>
 
     res.json({ message: 'Đã xóa bài hát khỏi playlist' })
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi khi xóa bài hát khỏi playlist' })
+    sendInternalError(res, 'PLAYLIST_SONG_DELETE_ERROR', 'Lỗi khi xóa bài hát khỏi playlist')
   }
 }
 
@@ -119,15 +120,15 @@ export const deletePlaylist = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
     const { id } = req.params
-    if (!userId) return res.status(401).json({ error: 'Yêu cầu đăng nhập' })
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
 
     const playlist = await prisma.playlist.findUnique({ where: { id } })
-    if (!playlist) return res.status(404).json({ error: 'Không tìm thấy playlist' })
-    if (playlist.userId !== userId) return res.status(403).json({ error: 'Bạn không có quyền xóa playlist này' })
+    if (!playlist) return sendError(res, 404, 'PLAYLIST_NOT_FOUND', 'Không tìm thấy playlist')
+    if (playlist.userId !== userId) return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền xóa playlist này')
 
     await prisma.playlist.delete({ where: { id } })
     res.json({ message: 'Đã xóa playlist' })
   } catch (error) {
-    res.status(500).json({ error: 'Không thể xóa playlist' })
+    sendInternalError(res, 'PLAYLIST_DELETE_ERROR', 'Không thể xóa playlist')
   }
 }

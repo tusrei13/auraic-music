@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { prisma } from '../lib/prisma'
+import { sendInternalError } from '../lib/api-error'
 
 export const searchAll = async (req: Request, res: Response) => {
   try {
@@ -23,6 +24,6 @@ export const searchAll = async (req: Request, res: Response) => {
 
     res.json({ songs, artists, playlists })
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi khi tìm kiếm' })
+    sendInternalError(res, 'SEARCH_ERROR', 'Lỗi khi tìm kiếm')
   }
 }
