@@ -14,7 +14,7 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, status, signOut } = useAuthStore();
+  const { user, status, signOut, openAuthModal } = useAuthStore();
 
   return (
     <aside className="w-64 bg-white/[0.02] border-r border-white/10 p-6 flex flex-col justify-between h-full">
@@ -35,6 +35,12 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={(event) => {
+                  if (item.href === "/library" && status !== "authenticated") {
+                    event.preventDefault();
+                    openAuthModal();
+                  }
+                }}
                 className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-xs font-semibold transition-all duration-300 ${
                   isActive
                     ? "bg-indigo-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]"

@@ -5,10 +5,13 @@ interface AuthState {
   user: CurrentUser | null;
   status: "idle" | "loading" | "authenticated" | "unauthenticated";
   error: string | null;
+  isAuthModalOpen: boolean;
   initialize: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<void>;
   signOut: () => void;
+  openAuthModal: () => void;
+  closeAuthModal: () => void;
 }
 
 const getToken = () => typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -23,6 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   status: "idle",
   error: null,
+  isAuthModalOpen: false,
 
   initialize: async () => {
     if (!getToken()) {
@@ -33,7 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ status: "loading", error: null });
     try {
       const user = await getCurrentUser();
-      set({ user, status: "authenticated" });
+      set({ user, status: "authenticated", isAuthModalOpen: false });
     } catch {
       localStorage.removeItem("token");
       set({ user: null, status: "unauthenticated" });
@@ -47,7 +51,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (!response.token) throw new Error("Đăng nhập không trả về token");
       localStorage.setItem("token", response.token);
       const user = await getCurrentUser();
-      set({ user, status: "authenticated" });
+      set({ user, status: "authenticated", isAuthModalOpen: false });
     } catch (error) {
       set({ user: null, status: "unauthenticated", error: getErrorMessage(error) });
       throw error;
@@ -61,7 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (response.token) {
         localStorage.setItem("token", response.token);
         const user = await getCurrentUser();
-        set({ user, status: "authenticated" });
+        set({ user, status: "authenticated", isAuthModalOpen: false });
       } else {
         set({ status: "unauthenticated" });
       }
@@ -75,4 +79,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem("token");
     set({ user: null, status: "unauthenticated", error: null });
   },
+
+  openAuthModal: () => set({ isAuthModalOpen: true, error: null }),
+  closeAuthModal: () => set({ isAuthModalOpen: false, error: null }),
 }));

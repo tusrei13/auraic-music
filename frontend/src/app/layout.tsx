@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import Player from '@/components/Player';
 import ToastContainer from '@/components/ToastContainer';
 import AuthProvider from '@/context/AuthProvider';
+import AuthModal from '@/components/AuthModal';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -34,6 +35,7 @@ export default function RootLayout({
           </div>
 
           <ToastContainer />
+          <AuthModal />
         </AuthProvider>
       </body>
     </html>

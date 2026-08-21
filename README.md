@@ -22,6 +22,11 @@ SUPABASE_ANON_KEY=...
 PORT=5000
 ```
 
+`SUPABASE_URL` và `SUPABASE_ANON_KEY` lấy trong Supabase Dashboard tại
+`Project Settings > API`. Không commit file `.env`; có thể dùng
+`backend/.env.example` làm mẫu. Sau khi cập nhật biến môi trường, hãy khởi động
+lại backend để Supabase client được tạo lại.
+
 ```bash
 cd backend
 npm install

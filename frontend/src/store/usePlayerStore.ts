@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useToastStore } from "./useToastStore";
 import { toggleLikeSong } from "../lib/api";
+import { useAuthStore } from "./useAuthStore";
 
 export interface Track {
   id: number | string;
@@ -289,6 +290,10 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       toggleLike: async (trackOrId) => {
+        if (typeof window !== "undefined" && !localStorage.getItem("token")) {
+          useAuthStore.getState().openAuthModal();
+          return;
+        }
         let id: number | string;
         let trackTitle = "";
         const state = get();

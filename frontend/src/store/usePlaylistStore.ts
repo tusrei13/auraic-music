@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Track } from "./usePlayerStore";
 import { useToastStore } from "./useToastStore";
+import { useAuthStore } from "./useAuthStore";
 import {
   addSongToPlaylist as addSongToPlaylistApi,
   createPlaylist as createPlaylistApi,
@@ -21,7 +22,7 @@ export interface Playlist {
 
 interface PlaylistState {
   playlists: Playlist[];
-  createPlaylist: (title: string, initialTrack?: Track) => Playlist;
+  createPlaylist: (title: string, initialTrack?: Track) => Playlist | null;
   addTrackToPlaylist: (playlistId: string, track: Track) => void;
   removeTrackFromPlaylist: (playlistId: string, trackId: string | number) => void;
   deletePlaylist: (playlistId: string) => void;
@@ -60,6 +61,10 @@ export const usePlaylistStore = create<PlaylistState>()(
       ],
 
       createPlaylist: (title, initialTrack) => {
+        if (!hasToken()) {
+          useAuthStore.getState().openAuthModal();
+          return null;
+        }
         const newId = Math.random().toString(36).substring(2, 9);
         const newPlaylist: Playlist = {
           id: newId,
@@ -99,6 +104,10 @@ export const usePlaylistStore = create<PlaylistState>()(
       },
 
       addTrackToPlaylist: (playlistId, track) => {
+        if (!hasToken()) {
+          useAuthStore.getState().openAuthModal();
+          return;
+        }
         const { playlists } = get();
         const targetPlaylist = playlists.find((p) => p.id === playlistId);
 
@@ -132,6 +141,10 @@ export const usePlaylistStore = create<PlaylistState>()(
       },
 
       removeTrackFromPlaylist: (playlistId, trackId) => {
+        if (!hasToken()) {
+          useAuthStore.getState().openAuthModal();
+          return;
+        }
         set((state) => ({
           playlists: state.playlists.map((p) =>
             p.id === playlistId
@@ -148,6 +161,10 @@ export const usePlaylistStore = create<PlaylistState>()(
       },
 
       deletePlaylist: (playlistId) => {
+        if (!hasToken()) {
+          useAuthStore.getState().openAuthModal();
+          return;
+        }
         set((state) => ({
           playlists: state.playlists.filter((p) => p.id !== playlistId),
         }));
