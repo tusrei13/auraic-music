@@ -21,6 +21,7 @@ import {
 import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import QueuePanel from "@/components/QueuePanel";
+import AudioVisualizer from "@/components/AudioVisualizer";
 
 export default function Player() {
   const pathname = usePathname();
@@ -280,6 +281,7 @@ export default function Player() {
             onError={handleAudioError}
             onEnded={handleEnded}
           />
+          <AudioVisualizer audioRef={audioRef} isPlaying={isPlaying} />
 
           {/* BÊN TRÁI: THÔNG TIN BÀI HÁT */}
           <div className="flex items-center gap-3 w-full md:w-1/3 mb-2 md:mb-0 relative z-10 min-w-0">
