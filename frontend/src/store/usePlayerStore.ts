@@ -12,7 +12,7 @@ export interface Track {
   audioUrl: string;
   genre?: string | { name: string } | null;
   duration?: string;
-  lyrics?: { time: number; text: string }[];
+  lyrics?: string | { time: number; text: string }[];
 }
 
 export type RepeatMode = "off" | "all" | "one";

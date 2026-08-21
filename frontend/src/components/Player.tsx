@@ -22,6 +22,7 @@ import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import QueuePanel from "@/components/QueuePanel";
 import AudioVisualizer from "@/components/AudioVisualizer";
+import { normalizeLyrics } from "@/lib/lyrics";
 
 export default function Player() {
   const pathname = usePathname();
@@ -203,6 +204,7 @@ export default function Player() {
   };
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const lyrics = normalizeLyrics(currentTrack?.lyrics);
 
   if (!currentTrack) {
     return (
@@ -232,10 +234,10 @@ export default function Player() {
           </button>
           
           <div className="w-full max-w-2xl space-y-6 text-center max-h-[60vh] overflow-y-auto scrollbar-none px-4">
-            {currentTrack.lyrics && currentTrack.lyrics.length > 0 ? (
-              currentTrack.lyrics.map((line, index) => {
+            {lyrics.length > 0 ? (
+              lyrics.map((line, index) => {
                 const isPassed = currentTime >= line.time;
-                const isCurrent = isPassed && (index === currentTrack.lyrics!.length - 1 || currentTime < currentTrack.lyrics![index + 1].time);
+                const isCurrent = isPassed && (index === lyrics.length - 1 || currentTime < lyrics[index + 1].time);
 
                 return (
                   <h2 
