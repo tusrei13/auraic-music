@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Shuffle, Repeat, Repeat1, Mic2, Music, X, Heart, ListMusic } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
+import QueuePanel from "@/components/QueuePanel";
 
 export default function Player() {
   const pathname = usePathname();
 
   const { 
     currentTrack, 
-    currentIndex,
     isPlaying,
     togglePlay,
     nextTrack, 
@@ -21,9 +21,7 @@ export default function Player() {
     isShuffle,
     repeatMode,
     toggleShuffle,
-    toggleRepeat,
-    queue,
-    playTrack
+    toggleRepeat
   } = usePlayerStore();
   
   const [volume, setVolume] = useState(0.7);
@@ -50,10 +48,6 @@ export default function Player() {
   const artistName = typeof currentTrack?.artist === "object" 
     ? (currentTrack?.artist as any)?.name 
     : (currentTrack?.artist || "Ca sĩ chưa xác định");
-
-  // Lấy danh sách bài hát tiếp theo dựa trên currentIndex từ store
-  const playlistQueue = queue || [];
-  const upNextTracks = playlistQueue.slice(currentIndex + 1);
 
   // 1. Âm lượng
   useEffect(() => {
@@ -178,82 +172,8 @@ export default function Player() {
 
   return (
     <>
-      {/* PANEL HÀNG CHỜ (QUEUE OVERLAY) */}
-      {showQueue && (
-        <div className="fixed bottom-28 right-4 md:right-8 w-80 md:w-96 max-h-[70vh] bg-black/85 backdrop-blur-3xl border border-white/15 rounded-3xl p-5 shadow-2xl z-50 flex flex-col transition-all duration-300">
-          <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
-            <div className="flex items-center gap-2">
-              <ListMusic className="w-5 h-5 text-indigo-400" />
-              <h3 className="font-bold text-white text-base">Danh sách phát</h3>
-            </div>
-            <button 
-              onClick={() => setShowQueue(false)}
-              className="text-white/50 hover:text-white p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto scrollbar-none space-y-4 pr-1">
-            {/* ĐANG PHÁT */}
-            <div>
-              <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-2">Đang phát</p>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30">
-                <div className="flex items-center gap-3 min-w-0">
-                  <img src={currentTrack.image} alt={currentTrack.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                  <div className="truncate">
-                    <h4 className="text-sm font-bold text-white truncate">{currentTrack.title}</h4>
-                    <p className="text-xs text-white/60 truncate">{artistName}</p>
-                  </div>
-                </div>
-                {isPlaying && (
-                  <div className="flex items-center gap-0.5 ml-2">
-                    <span className="w-1 h-3 bg-indigo-400 rounded-full animate-bounce"></span>
-                    <span className="w-1 h-4 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                    <span className="w-1 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* BÀI HÁT TIẾP THEO */}
-            <div>
-              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
-                Tiếp theo ({upNextTracks.length})
-              </p>
-              {upNextTracks.length > 0 ? (
-                <div className="space-y-1">
-                  {upNextTracks.map((track: any, idx: number) => {
-                    const trackArtist = typeof track.artist === "object" ? track.artist?.name : track.artist;
-                    const targetIndex = currentIndex + 1 + idx;
-
-                    return (
-                      <div 
-                        key={`${track.id}-${targetIndex}`}
-                        onClick={() => playTrack(track, playlistQueue, targetIndex)}
-                        className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <img src={track.image} alt={track.title} className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
-                          <div className="truncate">
-                            <h5 className="text-xs font-medium text-white group-hover:text-indigo-300 truncate">{track.title}</h5>
-                            <p className="text-[11px] text-white/40 truncate">{trackArtist}</p>
-                          </div>
-                        </div>
-                        <span className="text-[11px] font-mono text-white/30">{track.duration || "03:30"}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-xs text-white/30 py-4 text-center border border-dashed border-white/10 rounded-xl">
-                  Không có bài hát tiếp theo trong danh sách
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* PANEL HÀNG CHỜ PHÁT NHẠC (SỬ DỤNG COMPONENT QUEUEPANEL) */}
+      <QueuePanel isOpen={showQueue} onClose={() => setShowQueue(false)} />
 
       {/* MÀN HÌNH KARAOKE OVERLAY */}
       {showLyrics && (
