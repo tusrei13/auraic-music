@@ -45,7 +45,7 @@ interface PlayerState {
   toggleLike: (trackOrId: number | string | Track) => Promise<void>;
 }
 
-const removeDuplicateTracks = (tracks: Track[]): Track[] => {
+export const removeDuplicateTracks = (tracks: Track[]): Track[] => {
   const seen = new Set<string | number>();
   return tracks.filter((t) => {
     if (!t || seen.has(t.id)) return false;
@@ -319,13 +319,13 @@ export const usePlayerStore = create<PlayerState>()(
         if (typeof window !== "undefined" && localStorage.getItem("token")) {
           try {
             const result = await toggleLikeSong(id);
-            if (result.liked === wasLiked) {
-              set((current) => ({
-                likedIds: wasLiked
-                  ? [...current.likedIds, id]
-                  : current.likedIds.filter((item) => String(item) !== String(id)),
-              }));
-            }
+            set((current) => ({
+              likedIds: result.liked
+                ? current.likedIds.some((item) => String(item) === String(id))
+                  ? current.likedIds
+                  : [...current.likedIds, id]
+                : current.likedIds.filter((item) => String(item) !== String(id)),
+            }));
           } catch {
             set((current) => ({
               likedIds: wasLiked
