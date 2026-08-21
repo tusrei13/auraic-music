@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Play, Sparkles, Flame, Headphones, Search, X, Heart, Clock, Loader2 } from "lucide-react";
-import { usePlayerStore } from "@/store/usePlayerStore";
+import { usePlayerStore } from "@/src/store/usePlayerStore";
 import { getSongs } from "@/lib/api";
 
 export default function HomePage() {
