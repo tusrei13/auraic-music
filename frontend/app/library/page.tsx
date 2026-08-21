@@ -11,7 +11,7 @@ export interface Track {
   image: string;
   audioUrl: string;
   genre?: string;
-  duration?: string;
+  duration: string;
   lyrics?: { time: number; text: string }[];
 }
 
@@ -22,6 +22,8 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     artist: "Sơn Tùng M-TP", 
     image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    genre: "R&B / V-Pop",
+    duration: "4:05",
     lyrics: [
       { time: 0, text: "Chạy ngay đi trước khi mọi chuyện dần xấu hơn" },
       { time: 5, text: "Chạy ngay đi trước khi dòng người lại đông hơn" },
@@ -33,8 +35,10 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     id: 2, 
     title: "Waiting For You", 
     artist: "MONO", 
-    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    genre: "City Pop",
+    duration: "3:25",
     lyrics: [
       { time: 0, text: "Em ơi nhắn cho anh một câu" },
       { time: 5, text: "Để anh biết em vẫn còn chờ" },
@@ -46,8 +50,10 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     id: 3, 
     title: "Chìm Sâu", 
     artist: "RPT MCK", 
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
+    image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    genre: "Rap / Hip-Hop",
+    duration: "2:58",
     lyrics: [
       { time: 0, text: "Tại vì anh chìm sâu vào trong ánh mắt em" },
       { time: 5, text: "Tại vì anh chìm sâu vào từng nụ cười ngây thơ" },
@@ -59,8 +65,10 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     id: 4, 
     title: "See Tình", 
     artist: "Hoàng Thùy Linh", 
-    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
+    image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    genre: "Dance Pop",
+    duration: "3:10",
     lyrics: [
       { time: 0, text: "Giá như em không gặp anh" },
       { time: 5, text: "Giá như em không nhìn thấy anh" },
@@ -77,6 +85,8 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     artist: "Chillies", 
     image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    genre: "Indie Vietnam",
+    duration: "4:15",
     lyrics: [
       { time: 0, text: "Những nốt nhạc nhẹ nhàng trôi theo làn gió" },
       { time: 5, text: "Mang theo bao tâm tư gửi gắm vào không gian" },
@@ -89,6 +99,8 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     artist: "Hoàng Dũng", 
     image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    genre: "Indie Vietnam",
+    duration: "3:48",
     lyrics: [
       { time: 0, text: "Điệu nhảy dưới ánh đèn lung linh" },
       { time: 5, text: "Bên nhau trao nụ cười dưới đêm thâu" },
@@ -101,6 +113,8 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     artist: "M83", 
     image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+    genre: "Synthwave",
+    duration: "4:03",
     lyrics: [
       { time: 0, text: "Waiting in a car, waiting for a ride in the dark" },
       { time: 5, text: "The night city is my playground" },
@@ -113,6 +127,8 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     artist: "Lofi Girl", 
     image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    genre: "Lofi Chill",
+    duration: "2:50",
     lyrics: [
       { time: 0, text: "Tách cà phê ấm trên tay" },
       { time: 5, text: "Tiếng mưa rơi tí tách bên hiên nhà" },
@@ -125,6 +141,8 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     artist: "Đen Vâu", 
     image: "https://images.unsplash.com/photo-1493225457124-a1a2a5f52860?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+    genre: "Rap / Hip-Hop",
+    duration: "4:12",
     lyrics: [
       { time: 0, text: "Em vào đời bằng đại lộ, còn anh vào đời bằng lối nhỏ" },
       { time: 5, text: "Anh nhớ mình đã từng cùng nhau, qua những con đường đỏ" },
@@ -140,6 +158,8 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     artist: "Hà Anh Tuấn", 
     image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+    genre: "Ballad",
+    duration: "5:15",
     lyrics: [
       { time: 0, text: "Mùa xuân giấu đi những lời nói dối" },
       { time: 5, text: "Tháng tư về, nắng nhẹ trên bờ vai" },
@@ -155,6 +175,8 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     artist: "Phan Mạnh Quỳnh", 
     image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
+    genre: "Pop Ballad",
+    duration: "4:40",
     lyrics: [
       { time: 0, text: "Có chàng trai viết lên cây" },
       { time: 5, text: "Lời yêu thương gửi theo ngọn gió bay" },
@@ -170,6 +192,8 @@ export const ALL_SYSTEM_SONGS: Track[] = [
     artist: "Vũ.", 
     image: "https://images.unsplash.com/photo-1619983081563-430f63602796?q=80&w=500&auto=format&fit=crop", 
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
+    genre: "Indie Pop",
+    duration: "4:17",
     lyrics: [
       { time: 0, text: "Và rồi chúng ta bước qua nhau" },
       { time: 5, text: "Như hai người dưng ngược lối" },
@@ -275,7 +299,7 @@ export default function LibraryPage() {
         </section>
       )}
 
-      {/* SECTION 2: BÀI HÁT ĐÃ LƯU (DẠNG BẢNG THÔNG TIN) */}
+      {/* SECTION 2: BÀI HÁT ĐÃ LƯU */}
       {(activeTab === "all" || activeTab === "liked") && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -348,7 +372,7 @@ export default function LibraryPage() {
                         </div>
                       </div>
 
-                      {/* Cột Thao Tác & Thời Lượng */}
+                      {/* Cột Thao Tác & Thời Lượng Thực Tế */}
                       <div className="col-span-3 md:col-span-2 flex items-center justify-end gap-4">
                         <button
                           onClick={(e) => {
@@ -360,7 +384,7 @@ export default function LibraryPage() {
                         >
                           <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
                         </button>
-                        <span className="text-xs font-mono text-white/40">{song.duration || "3:30"}</span>
+                        <span className="text-xs font-mono text-white/40">{song.duration}</span>
                       </div>
                     </div>
                   );
