@@ -33,6 +33,11 @@ export interface JamendoSong {
 }
 
 const JAMENDO_API_URL = 'https://api.jamendo.com/v3.0/tracks/'
+const CACHE_TTL_MS = 60_000
+const MAX_ATTEMPTS = 3
+const cache = new Map<string, { expiresAt: number; tracks: JamendoSong[] }>()
+
+const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
 export const getJamendoTracks = async (options: { limit?: number; offset?: number; tags?: string } = {}) => {
   const clientId = process.env.JAMENDO_CLIENT_ID
@@ -51,17 +56,32 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
   })
   if (options.tags?.trim()) params.set('fuzzytags', options.tags.trim())
 
-  const response = await fetch(`${JAMENDO_API_URL}?${params}`, {
-    signal: AbortSignal.timeout(8000),
-  })
-  if (!response.ok) throw new Error(`Jamendo request failed with ${response.status}`)
+  const cacheKey = params.toString()
+  const cached = cache.get(cacheKey)
+  if (cached && cached.expiresAt > Date.now()) return cached.tracks
+
+  let response: Response | undefined
+  let lastError: unknown
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    try {
+      response = await fetch(`${JAMENDO_API_URL}?${params}`, {
+        signal: AbortSignal.timeout(8000),
+      })
+      if (response.ok || (response.status < 500 && response.status !== 429)) break
+      lastError = new Error(`Jamendo request failed with ${response.status}`)
+    } catch (error) {
+      lastError = error
+    }
+    if (attempt < MAX_ATTEMPTS) await wait(250 * 2 ** (attempt - 1))
+  }
+  if (!response?.ok) throw lastError instanceof Error ? lastError : new Error('Jamendo request failed')
 
   const payload = await response.json() as JamendoResponse
   if (payload.headers?.status !== 'success') {
     throw new Error(payload.headers?.error_message || 'Jamendo request failed')
   }
 
-  return (payload.results || []).filter((track) => track.audio).map((track): JamendoSong => ({
+  const tracks = (payload.results || []).filter((track) => track.audio).map((track): JamendoSong => ({
     id: `jamendo:${track.id}`,
     title: track.name,
     audioUrl: track.audio,
@@ -81,4 +101,6 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     source: 'jamendo',
     licenseUrl: track.license_ccurl,
   }))
+  cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, tracks })
+  return tracks
 }
