@@ -29,11 +29,12 @@ export const authenticate = async (
     const devUserId = req.headers['x-user-id'] as string
 
     // 1. Nếu gửi Token từ Supabase Auth
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if (authHeader?.startsWith('Bearer ')) {
       if (!supabase) {
         return sendInternalError(res, 'SUPABASE_NOT_CONFIGURED', 'Backend chưa cấu hình Supabase')
       }
-      const token = authHeader.split(' ')[1]
+      const token = authHeader.slice('Bearer '.length).trim()
+      if (!token) return sendError(res, 401, 'INVALID_TOKEN', 'Token không hợp lệ hoặc đã hết hạn')
       const { data: { user }, error } = await supabase.auth.getUser(token)
 
       if (error || !user) {
@@ -57,7 +58,7 @@ export const authenticate = async (
     }
 
     // 2. Hỗ trợ test nhanh khi Dev bằng Header x-user-id
-    if (devUserId) {
+    if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEV_AUTH === 'true' && devUserId) {
       const dbUser = await prisma.user.findUnique({ where: { id: devUserId } })
       if (dbUser) {
         req.user = { id: dbUser.id, email: dbUser.email, role: dbUser.role }
