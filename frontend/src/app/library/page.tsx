@@ -22,11 +22,10 @@ import {
 import { usePlayerStore, Track as StoreTrack } from "@/store/usePlayerStore";
 import { usePlaylistStore } from "@/store/usePlaylistStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
-import { getSongs } from "@/lib/api";
+import { formatDuration, getSongs } from "@/lib/api";
 
 export type Track = StoreTrack & {
   addedAt?: string;
-  duration?: string;
   [key: string]: any;
 };
 
@@ -410,7 +409,7 @@ export default function LibraryPage() {
                         <TrackActionMenu track={song} />
 
                         <span className="text-xs font-mono font-semibold text-white/50 ml-1">
-                          {getStringValue(song.duration, "03:30")}
+                          {formatDuration(song.duration)}
                         </span>
                       </div>
                     </div>
@@ -706,7 +705,7 @@ export default function LibraryPage() {
 
                         <TrackActionMenu track={song} />
 
-                        <span className="text-xs font-mono text-white/40 ml-1">{getStringValue(song.duration, "03:30")}</span>
+                        <span className="text-xs font-mono text-white/40 ml-1">{formatDuration(song.duration)}</span>
                       </div>
                     </div>
                   );

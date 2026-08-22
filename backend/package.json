@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "search:sync": "tsx src/scripts/sync-search-index.ts",
+    "admin:grant": "tsx src/scripts/make-admin.ts",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed"

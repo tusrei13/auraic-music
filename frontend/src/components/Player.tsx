@@ -57,8 +57,14 @@ export default function Player() {
   const activeLyricRef = useRef<HTMLHeadingElement>(null);
   const recordedTrackIdRef = useRef<string | number | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const hlsReadyRef = useRef(false);
+  const isPlayingRef = useRef(isPlaying);
   const mediaUrl = resolveMediaUrl(currentTrack?.audioUrl || "");
   const isHlsSource = /\.m3u8(?:\?|$)/i.test(mediaUrl);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   // Tự động đóng Queue và Karaoke khi chuyển trang
   useEffect(() => {
@@ -89,25 +95,51 @@ export default function Player() {
 
     hlsRef.current?.destroy();
     hlsRef.current = null;
+    hlsReadyRef.current = false;
+    audio.pause();
+    audio.autoplay = isPlayingRef.current;
+    audio.removeAttribute("src");
+    audio.load();
+    setCurrentTime(0);
+    setDuration(typeof currentTrack.duration === "number" ? currentTrack.duration : 0);
 
     if (!isHlsSource) {
       audio.src = mediaUrl;
+      audio.load();
+      hlsReadyRef.current = true;
       return;
     }
 
     if (Hls.isSupported()) {
       const hls = new Hls({ enableWorker: true });
       hlsRef.current = hls;
-      hls.loadSource(mediaUrl);
-      hls.attachMedia(audio);
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+        hls.loadSource(mediaUrl);
+      });
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        if (isPlaying) audio.play().catch(() => setPlaybackStatus("error", "Không thể phát HLS stream"));
+        hlsReadyRef.current = true;
+        if (isPlayingRef.current) {
+          audio.autoplay = true;
+          audio.play().catch(() => setPlaybackStatus("error", "Không thể phát HLS stream"));
+        }
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) setPlaybackStatus("error", "Không thể tải HLS stream");
+        if (!data.fatal) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.startLoad();
+          return;
+        }
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+          return;
+        }
+        setPlaybackStatus("error", "Không thể tải HLS stream");
       });
+      hls.attachMedia(audio);
     } else if (audio.canPlayType("application/vnd.apple.mpegurl")) {
       audio.src = mediaUrl;
+      audio.load();
+      hlsReadyRef.current = true;
     } else {
       setPlaybackStatus("error", "Trình duyệt không hỗ trợ HLS");
     }
@@ -115,6 +147,7 @@ export default function Player() {
     return () => {
       hlsRef.current?.destroy();
       hlsRef.current = null;
+      hlsReadyRef.current = false;
     };
   }, [currentTrack, isHlsSource, mediaUrl, setPlaybackStatus]);
 
@@ -126,12 +159,15 @@ export default function Player() {
   useEffect(() => {
     if (currentTrack && audioRef.current) {
       setPlaybackStatus("loading");
-      if (isPlaying) {
+      if (isPlaying && (!isHlsSource || hlsReadyRef.current)) {
         audioRef.current.play().catch(() => {
           setPlaybackStatus("error", "Không thể phát bài hát này");
         });
-      } else {
+      } else if (!isPlaying) {
+        audioRef.current.autoplay = false;
         audioRef.current.pause();
+      } else {
+        audioRef.current.autoplay = true;
       }
 
       if ("mediaSession" in navigator) {
@@ -147,7 +183,7 @@ export default function Player() {
         navigator.mediaSession.setActionHandler("nexttrack", nextTrack);
       }
     }
-  }, [currentTrack, isPlaying, artistName, togglePlay, prevTrack, nextTrack, setPlaybackStatus]);
+  }, [currentTrack, isPlaying, isHlsSource, artistName, togglePlay, prevTrack, nextTrack, setPlaybackStatus]);
 
   // 3. Phím tắt Bàn phím
   useEffect(() => {
@@ -205,12 +241,19 @@ export default function Player() {
 
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
-      setDuration(audioRef.current.duration);
+      if (Number.isFinite(audioRef.current.duration) && audioRef.current.duration > 0) {
+        setDuration(audioRef.current.duration);
+      }
       setPlaybackStatus("paused");
     }
   };
 
-  const handleCanPlay = () => setPlaybackStatus(isPlaying ? "playing" : "paused");
+  const handleCanPlay = () => {
+    setPlaybackStatus(isPlaying ? "playing" : "paused");
+    if (isPlaying && isHlsSource && audioRef.current?.paused) {
+      audioRef.current.play().catch(() => setPlaybackStatus("error", "Không thể phát HLS stream"));
+    }
+  };
   const handlePlaying = () => setPlaybackStatus("playing");
   const handleWaiting = () => setPlaybackStatus("buffering");
   const handlePause = () => {

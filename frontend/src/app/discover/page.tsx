@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Compass, Play, Hash, Heart, Mic2, Radio, Sparkles, Loader2 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { getSongs, getArtists } from "@/lib/api";
+import { formatDuration, getSongs, getArtists } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
 export default function DiscoverPage() {
@@ -182,7 +182,7 @@ export default function DiscoverPage() {
 
                   <div className="flex items-center gap-2 flex-shrink-0 ml-4">
                     {song.duration && (
-                      <span className="text-xs font-mono text-white/40 mr-1">{song.duration}</span>
+                      <span className="text-xs font-mono text-white/40 mr-1">{formatDuration(song.duration)}</span>
                     )}
 
                     <button

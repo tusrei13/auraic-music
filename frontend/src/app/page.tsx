@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Play, Sparkles, Flame, Headphones, Search, X, Heart, Clock, Loader2 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { getSongs } from "@/lib/api";
+import { formatDuration, getSongs } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
 export default function HomePage() {
@@ -208,7 +208,7 @@ export default function HomePage() {
 
                       <TrackActionMenu track={song} />
 
-                      <span className="text-xs font-mono text-white/40 ml-1">{song.duration || "03:30"}</span>
+                        <span className="text-xs font-mono text-white/40 ml-1">{formatDuration(song.duration)}</span>
                     </div>
                   </div>
                 );

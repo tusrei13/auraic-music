@@ -11,7 +11,7 @@ export interface Track {
   image: string;
   audioUrl: string;
   genre?: string | { name: string } | null;
-  duration?: string;
+  duration?: number | string | null;
   lyrics?: string | { time: number; text: string }[];
 }
 

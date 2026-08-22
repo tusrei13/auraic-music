@@ -1,11 +1,12 @@
 import { Request, Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { sendError, sendInternalError } from '../lib/api-error'
-import { transcodeToHls } from '../services/transcoding.service'
+import { getFfmpegPath, transcodeToHls } from '../services/transcoding.service'
 import { publishMediaDirectory } from '../services/media-storage.service'
 import fs from 'node:fs/promises'
+import { AuthRequest } from '../middlewares/auth.middleware'
 
-export const uploadSong = async (req: Request, res: Response) => {
+export const uploadSong = async (req: AuthRequest, res: Response) => {
   const file = req.file
   const { title, artistId, image, genreId, albumId, moodId } = req.body
 
@@ -44,6 +45,9 @@ export const uploadSong = async (req: Request, res: Response) => {
     res.status(201).json(song)
   } catch (error) {
     console.error('Song upload/transcoding failed:', error)
-    sendInternalError(res, 'SONG_UPLOAD_ERROR', 'Không thể xử lý file audio')
+    const message = error instanceof Error && /ffmpeg|spawn|ENOENT|executable/i.test(error.message)
+      ? `Không thể chạy FFmpeg (${getFfmpegPath()}). Hãy cài FFmpeg Windows đầy đủ hoặc cấu hình FFMPEG_PATH.`
+      : 'Không thể xử lý file audio'
+    sendError(res, 500, 'SONG_UPLOAD_ERROR', message)
   }
 }

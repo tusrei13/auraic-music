@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
-import { getArtistById } from "@/lib/api";
+import { formatDuration, getArtistById } from "@/lib/api";
 import { 
   Play, 
   Music, 
@@ -171,7 +171,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
                       <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
                     </button>
 
-                    <span className="text-xs font-mono text-white/40">{song.duration || "03:30"}</span>
+                    <span className="text-xs font-mono text-white/40">{formatDuration(song.duration)}</span>
                     <TrackActionMenu track={song} />
                   </div>
                 </div>

@@ -15,6 +15,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: string
     email?: string
+    role: 'USER' | 'ADMIN'
   }
 }
 
@@ -51,7 +52,7 @@ export const authenticate = async (
         })
       }
 
-      req.user = { id: dbUser.id, email: dbUser.email }
+      req.user = { id: dbUser.id, email: dbUser.email, role: dbUser.role }
       return next()
     }
 
@@ -59,7 +60,7 @@ export const authenticate = async (
     if (devUserId) {
       const dbUser = await prisma.user.findUnique({ where: { id: devUserId } })
       if (dbUser) {
-        req.user = { id: dbUser.id, email: dbUser.email }
+        req.user = { id: dbUser.id, email: dbUser.email, role: dbUser.role }
         return next()
       }
     }
@@ -68,4 +69,11 @@ export const authenticate = async (
   } catch (err) {
     return sendInternalError(res, 'AUTHENTICATION_ERROR', 'Lỗi xác thực người dùng')
   }
+}
+
+export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.user?.role !== 'ADMIN') {
+    return sendError(res, 403, 'ADMIN_REQUIRED', 'Chỉ quản trị viên mới được thực hiện thao tác này')
+  }
+  next()
 }

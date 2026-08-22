@@ -6,14 +6,22 @@ export const resolveMediaUrl = (url: string) => {
   return new URL(url, `${apiUrl.origin}/`).toString();
 };
 
+export const formatDuration = (duration?: number | string | null) => {
+  if (typeof duration === "string") return duration;
+  if (duration === undefined || duration === null || duration < 0) return "--:--";
+  const minutes = Math.floor(duration / 60);
+  const seconds = Math.floor(duration % 60);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
 export interface Artist { id: string; name: string; avatar: string; listeners?: number; songs?: Song[] }
 export interface Genre { id: string; name: string; image: string; color?: string | null }
 export interface Mood { id: string; title: string; color: string; icon: string }
 export interface Album { id: string; title: string; coverImage: string; releaseYear?: number | null; artistId: string }
-export interface Song { id: number; title: string; audioUrl: string; image: string; lyrics?: string | Array<{ time: number; text: string }>; playCount?: number; artist: Artist | string; genre?: Genre | string | null; album?: Album | null; mood?: Mood | null }
+export interface Song { id: number; title: string; audioUrl: string; image: string; duration?: number | null; hlsUrl?: string | null; lyrics?: string | Array<{ time: number; text: string }>; playCount?: number; artist: Artist | string; genre?: Genre | string | null; album?: Album | null; mood?: Mood | null }
 export interface Playlist { id: string; name: string; coverImage?: string | null; color?: string | null; userId?: string; songs?: Array<{ song: Song }> }
 export interface SearchResult { songs: Song[]; artists: Artist[]; playlists: Playlist[] }
-export interface CurrentUser { id: string; email: string; name?: string | null; playlists: Playlist[] }
+export interface CurrentUser { id: string; email: string; name?: string | null; role: "USER" | "ADMIN"; playlists: Playlist[] }
 export interface AuthResponse { message: string; token?: string; user?: { id: string; email?: string | null; user_metadata?: { full_name?: string } } }
 export interface ApiErrorPayload { code: string; message: string; details?: unknown }
 
@@ -107,3 +115,18 @@ export const recordListening = (songId: string | number) =>
   fetcher<{ id: string; listenedAt: string }>(`/songs/${songId}/listen`, { method: "POST" });
 export const getListeningHistory = () =>
   fetcher<Array<{ id: string; listenedAt: string; song: Song }>>("/songs/history");
+
+export const uploadSong = async (formData: FormData): Promise<Song> => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const response = await fetch(`${API_BASE_URL}/upload/songs`, {
+    method: "POST",
+    body: formData,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = payload?.error;
+    throw new ApiError(response.status, typeof error === "object" ? error : { code: "UPLOAD_ERROR", message: error || response.statusText });
+  }
+  return payload as Song;
+};

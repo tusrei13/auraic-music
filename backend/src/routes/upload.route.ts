@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import multer from 'multer'
 import os from 'node:os'
-import { authenticate } from '../middlewares/auth.middleware'
+import { authenticate, requireAdmin } from '../middlewares/auth.middleware'
 import { uploadSong } from '../controllers/upload.controller'
 
 const router = Router()
@@ -13,6 +13,6 @@ const upload = multer({
   },
 })
 
-router.post('/songs', authenticate, upload.single('audio'), uploadSong)
+router.post('/songs', authenticate, requireAdmin, upload.single('audio'), uploadSong)
 
 export default router

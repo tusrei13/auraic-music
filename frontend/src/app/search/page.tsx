@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 import { usePlayerStore, Track as StoreTrack } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
+import { formatDuration } from "@/lib/api";
 
 export type Track = StoreTrack & {
   addedAt?: string;
-  duration?: string;
   album?: string;
   genre?: string;
 };
@@ -456,7 +456,7 @@ export default function SearchPage() {
                                   <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
                                 </button>
                                 <TrackActionMenu track={song as any} />
-                                <span className="text-xs font-mono text-white/40 ml-1">{song.duration}</span>
+                                <span className="text-xs font-mono text-white/40 ml-1">{formatDuration(song.duration)}</span>
                               </div>
                             </div>
                           );
@@ -588,7 +588,7 @@ export default function SearchPage() {
                           <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
                         </button>
                         <TrackActionMenu track={song as any} />
-                        <span className="text-xs font-mono text-white/40 ml-1">{song.duration}</span>
+                        <span className="text-xs font-mono text-white/40 ml-1">{formatDuration(song.duration)}</span>
                       </div>
                     </div>
                   );

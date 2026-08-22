@@ -7,21 +7,32 @@ import { randomUUID } from 'node:crypto'
 const BITRATES = [128, 256, 320] as const
 const mediaRoot = path.resolve(process.env.MEDIA_ROOT || path.join(process.cwd(), 'media'))
 
-if (process.env.FFMPEG_PATH) ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH)
+const ffmpegPath = process.env.FFMPEG_PATH
+if (ffmpegPath) ffmpeg.setFfmpegPath(ffmpegPath)
+
+export const getFfmpegPath = () => ffmpegPath || 'ffmpeg'
+const ffprobePath = ffmpegPath
+  ? path.join(path.dirname(ffmpegPath), process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe')
+  : 'ffprobe'
+if (ffmpegPath) ffmpeg.setFfprobePath(ffprobePath)
 
 const runFfmpeg = (inputPath: string, outputPath: string, bitrate: number) => new Promise<void>((resolve, reject) => {
+  let stderr = ''
   ffmpeg(inputPath)
     .audioCodec('aac')
     .audioBitrate(`${bitrate}k`)
     .format('hls')
-    .outputOptions([
-      '-hls_time 6',
-      '-hls_playlist_type vod',
+    .outputOptions(
+      '-hls_time',
+      '6',
+      '-hls_playlist_type',
+      'vod',
       '-hls_segment_filename',
       path.join(path.dirname(outputPath), `${bitrate}_%03d.ts`),
-    ])
+    )
     .on('end', () => resolve())
-    .on('error', reject)
+    .on('stderr', (line) => { stderr += `${line}\n` })
+    .on('error', (error) => reject(new Error(`${error.message}\n${stderr}`)))
     .save(outputPath)
 })
 
@@ -38,9 +49,9 @@ export const transcodeToHls = async (inputPath: string): Promise<TranscodingResu
   await fs.mkdir(outputDirectory, { recursive: true })
 
   try {
-    await Promise.all(BITRATES.map((bitrate) =>
-      runFfmpeg(inputPath, path.join(outputDirectory, `${bitrate}.m3u8`), bitrate)
-    ))
+    for (const bitrate of BITRATES) {
+      await runFfmpeg(inputPath, path.join(outputDirectory, `${bitrate}.m3u8`), bitrate)
+    }
 
     const masterPlaylist = [
       '#EXTM3U',
@@ -70,6 +81,6 @@ export const transcodeToHls = async (inputPath: string): Promise<TranscodingResu
     await fs.rm(outputDirectory, { recursive: true, force: true })
     throw error
   } finally {
-    await fs.rm(inputPath, { force: true })
+    await fs.rm(inputPath, { force: true, maxRetries: 10, retryDelay: 250 })
   }
 }
