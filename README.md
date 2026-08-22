@@ -21,13 +21,7 @@ SUPABASE_URL=...
 SUPABASE_ANON_KEY=...
 PORT=5000
 
-# Optional Typesense fuzzy search
-TYPESENSE_HOST=...
-TYPESENSE_PORT=443
-TYPESENSE_PROTOCOL=https
-TYPESENSE_API_KEY=...
-
-# Optional Jamendo international catalog
+# Jamendo international catalog
 JAMENDO_CLIENT_ID=...
 ```
 
@@ -41,12 +35,6 @@ cd backend
 npm install
 npm run prisma:generate
 npm run dev
-```
-
-When Typesense variables are configured, synchronize the PostgreSQL catalog with:
-
-```bash
-npm run search:sync
 ```
 
 `JAMENDO_CLIENT_ID` is required. Auraic's public song catalog is sourced only
