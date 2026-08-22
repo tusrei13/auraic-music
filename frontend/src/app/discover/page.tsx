@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Search, Compass, Play, Hash, Heart, Mic2, Radio, Sparkles, Loader2 } from "lucide-react";
+import { Search, Compass, Play, Hash, Heart, Radio, Sparkles, Loader2 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { formatDuration, getArtists, getJamendoTracks, getSongs, type JamendoSong } from "@/lib/api";
+import { formatDuration, getJamendoTracks, getSongs, type JamendoSong } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
 export default function DiscoverPage() {
   const [songs, setSongs] = useState<any[]>([]);
-  const [artists, setArtists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [jamendoTracks, setJamendoTracks] = useState<JamendoSong[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,10 +19,9 @@ export default function DiscoverPage() {
   const toggleLike = store.toggleLike || (() => {});
 
   useEffect(() => {
-    Promise.all([getSongs(), getArtists()])
-      .then(([songsData, artistsData]) => {
+    getSongs()
+      .then((songsData) => {
         setSongs(Array.isArray(songsData) ? songsData : []);
-        setArtists(Array.isArray(artistsData) ? artistsData : []);
       })
       .catch((err) => console.error("Lỗi tải dữ liệu Khám phá:", err))
       .finally(() => setLoading(false));
@@ -247,35 +244,8 @@ export default function DiscoverPage() {
         </section>
       )}
 
-      {/* SECTION NGHỆ SĨ XU HƯỚNG TỪ DATABASE */}
-      {!searchQuery && false && artists.length > 0 && (
-        <>
-          <section className="space-y-4 pt-4 border-t border-white/5">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Mic2 className="w-5 h-5 text-indigo-400" /> Nghệ sĩ xu hướng
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {artists.map((artist) => (
-                <Link
-                  key={artist.id}
-                  href={`/artist/${encodeURIComponent(artist.name)}`}
-                  className="bg-white/[0.02] hover:bg-white/[0.06] p-4 rounded-2xl border border-white/5 text-center transition-all group cursor-pointer hover:border-indigo-500/30"
-                >
-                  <img
-                    src={artist.avatar || artist.image || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop"}
-                    alt={artist.name}
-                    className="w-20 h-20 rounded-full object-cover mx-auto mb-3 shadow-lg group-hover:scale-105 transition-transform"
-                  />
-                  <h4 className="font-bold text-sm text-white truncate">{artist.name}</h4>
-                  <p className="text-[11px] text-white/40 mt-0.5 truncate">
-                    {artist.listeners ? `${(artist.listeners / 1000000).toFixed(1)}M người nghe` : `${artist.songs?.length || 0} bài hát`}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {/* SECTION TÂM TRẠNG & HOẠT ĐỘNG */}
+      {/* SECTION TÂM TRẠNG & HOẠT ĐỘNG */}
+      {!searchQuery && (
           <section className="space-y-4 pt-4 border-t border-white/5">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-indigo-400" /> Tâm trạng & Hoạt động
@@ -297,7 +267,6 @@ export default function DiscoverPage() {
               ))}
             </div>
           </section>
-        </>
       )}
     </div>
   );
