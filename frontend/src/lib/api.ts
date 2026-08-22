@@ -6,6 +6,8 @@ export const resolveMediaUrl = (url: string) => {
   return new URL(url, `${apiUrl.origin}/`).toString();
 };
 
+export const isJamendoTrackId = (id: string | number) => String(id).startsWith("jamendo:");
+
 export const formatDuration = (duration?: number | string | null) => {
   if (typeof duration === "string") return duration;
   if (duration === undefined || duration === null || duration < 0) return "--:--";

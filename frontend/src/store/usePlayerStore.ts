@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useToastStore } from "./useToastStore";
-import { recordListening, toggleLikeSong } from "../lib/api";
+import { isJamendoTrackId, recordListening, toggleLikeSong } from "../lib/api";
 import { useAuthStore } from "./useAuthStore";
 
 export interface Track {
@@ -214,7 +214,7 @@ export const usePlayerStore = create<PlayerState>()(
         set({ playbackStatus, playbackError }),
 
       recordListening: async (songId) => {
-        if (typeof window === "undefined" || !localStorage.getItem("token")) return;
+        if (isJamendoTrackId(songId) || typeof window === "undefined" || !localStorage.getItem("token")) return;
         try {
           await recordListening(songId);
         } catch {
@@ -348,7 +348,7 @@ export const usePlayerStore = create<PlayerState>()(
           `${wasLiked ? "Đã xóa" : "Đã thêm"} ${formattedTitle} ${wasLiked ? "khỏi" : "vào"} Yêu thích`,
           wasLiked ? "info" : "success"
         );
-        if (typeof window !== "undefined" && localStorage.getItem("token")) {
+        if (!isJamendoTrackId(id) && typeof window !== "undefined" && localStorage.getItem("token")) {
           try {
             const result = await toggleLikeSong(id);
             set((current) => ({

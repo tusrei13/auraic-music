@@ -9,6 +9,7 @@ import {
   deletePlaylist as deletePlaylistApi,
   getCurrentUser,
   removeSongFromPlaylist as removeSongFromPlaylistApi,
+  isJamendoTrackId,
 } from "../lib/api";
 
 export interface Playlist {
@@ -94,7 +95,7 @@ export const usePlaylistStore = create<PlaylistState>()(
                 playlist.id === newId ? { ...playlist, id: remote.id } : playlist
               ),
             }));
-            if (initialTrack) await addSongToPlaylistApi(remote.id, initialTrack.id);
+            if (initialTrack && !isJamendoTrackId(initialTrack.id)) await addSongToPlaylistApi(remote.id, initialTrack.id);
           }).catch(() => {
             useToastStore.getState().addToast("Không thể đồng bộ playlist với máy chủ", "error");
           });
@@ -133,7 +134,7 @@ export const usePlaylistStore = create<PlaylistState>()(
           "success"
         );
 
-        if (hasToken()) {
+        if (hasToken() && !isJamendoTrackId(track.id)) {
           void addSongToPlaylistApi(playlistId, track.id).catch(() => {
             useToastStore.getState().addToast("Không thể đồng bộ bài hát với playlist", "error");
           });
@@ -153,7 +154,7 @@ export const usePlaylistStore = create<PlaylistState>()(
           ),
         }));
         useToastStore.getState().addToast("Đã xóa bài hát khỏi playlist", "info");
-        if (hasToken()) {
+        if (hasToken() && !isJamendoTrackId(trackId)) {
           void removeSongFromPlaylistApi(playlistId, trackId).catch(() => {
             useToastStore.getState().addToast("Không thể đồng bộ thay đổi với máy chủ", "error");
           });
