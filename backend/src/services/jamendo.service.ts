@@ -13,6 +13,7 @@ interface JamendoTrack {
   audio: string
   audiodownload_allowed?: boolean
   license_ccurl?: string
+  musicinfo?: { tags?: { genres?: string[] } }
 }
 
 interface JamendoResponse {
@@ -30,6 +31,7 @@ export interface JamendoSong {
   album: { id: string; title: string; coverImage: string; artistId: string } | null
   source: 'jamendo'
   licenseUrl?: string
+  genres: string[]
 }
 
 const JAMENDO_API_URL = 'https://api.jamendo.com/v3.0/tracks/'
@@ -39,7 +41,7 @@ const cache = new Map<string, { expiresAt: number; tracks: JamendoSong[] }>()
 
 const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
-export const getJamendoTracks = async (options: { limit?: number; offset?: number; tags?: string } = {}) => {
+export const getJamendoTracks = async (options: { limit?: number; offset?: number; tags?: string; search?: string } = {}) => {
   const clientId = process.env.JAMENDO_CLIENT_ID
   if (!clientId) throw new Error('Jamendo is not configured')
 
@@ -52,9 +54,10 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     order: 'popularity_month_desc',
     audioformat: 'mp32',
     imagesize: '300',
-    include: 'licenses',
+    include: 'musicinfo licenses',
   })
-  if (options.tags?.trim()) params.set('fuzzytags', options.tags.trim())
+  if (options.tags?.trim()) params.set('tags', options.tags.trim().toLowerCase())
+  if (options.search?.trim()) params.set('search', options.search.trim())
 
   const cacheKey = params.toString()
   const cached = cache.get(cacheKey)
@@ -100,6 +103,7 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     } : null,
     source: 'jamendo',
     licenseUrl: track.license_ccurl,
+    genres: track.musicinfo?.tags?.genres || [],
   }))
   cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, tracks })
   return tracks

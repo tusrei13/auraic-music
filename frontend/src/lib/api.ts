@@ -33,6 +33,7 @@ export interface JamendoSong {
   album: { id: string; title: string; coverImage: string; artistId: string } | null;
   source: "jamendo";
   licenseUrl?: string;
+  genres: string[];
 }
 export interface CurrentUser { id: string; email: string; name?: string | null; role: "USER" | "ADMIN"; playlists: Playlist[] }
 export interface AuthResponse { message: string; token?: string; user?: { id: string; email?: string | null; user_metadata?: { full_name?: string } } }
@@ -84,7 +85,7 @@ async function fetcher<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 // 1. BÀI HÁT (SONGS)
-export const getSongs = () => fetcher<Song[]>("/songs");
+export const getSongs = () => getJamendoTracks({ limit: 48 });
 export const getSongById = (id: string | number) => fetcher<Song>(`/songs/${id}`);
 
 // 2. PLAYLISTS
@@ -116,11 +117,12 @@ export const getArtistById = (id: string) => fetcher<Artist>(`/artists/${encodeU
 
 // 4. TÌM KIẾM (SEARCH)
 export const searchAll = (query: string) => fetcher<SearchResult>(`/search?q=${encodeURIComponent(query)}`);
-export const getJamendoTracks = (options: { limit?: number; offset?: number; tags?: string } = {}) => {
+export const getJamendoTracks = (options: { limit?: number; offset?: number; tags?: string; search?: string } = {}) => {
   const params = new URLSearchParams();
   if (options.limit) params.set("limit", String(options.limit));
   if (options.offset) params.set("offset", String(options.offset));
   if (options.tags) params.set("tags", options.tags);
+  if (options.search) params.set("search", options.search);
   return fetcher<JamendoSong[]>(`/catalog/jamendo${params.size ? `?${params}` : ""}`);
 };
 

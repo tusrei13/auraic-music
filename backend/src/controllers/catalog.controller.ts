@@ -10,6 +10,7 @@ export const getJamendoCatalog = async (req: Request, res: Response) => {
       limit: Number.isFinite(limit) ? limit : undefined,
       offset: Number.isFinite(offset) ? offset : undefined,
       tags: typeof req.query.tags === 'string' ? req.query.tags : undefined,
+      search: typeof req.query.search === 'string' ? req.query.search : undefined,
     })
     res.json(tracks)
   } catch (error) {

@@ -6,7 +6,7 @@ import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import { formatDuration, getJamendoTracks, type JamendoSong } from "@/lib/api";
 
-const suggestedTags = ["Electronic", "Ambient", "Jazz", "Rock", "Chill", "Instrumental"];
+const suggestedTags = ["Lounge", "Classical", "Electronic", "Jazz", "Pop", "Hip Hop", "Relaxation", "Rock", "Songwriter", "World", "Metal", "Soundtrack"];
 
 export default function SearchPage() {
   const { likedIds, currentTrack, isPlaying, toggleLike, playTrack } = usePlayerStore();
@@ -15,12 +15,18 @@ export default function SearchPage() {
   const [activeTag, setActiveTag] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
-  const loadTracks = (tag = "") => {
+  const loadTracks = (tag = "", nextOffset = 0, append = false) => {
     setLoading(true);
     setError(false);
-    getJamendoTracks({ limit: 48, tags: tag || undefined })
-      .then(setTracks)
+    getJamendoTracks({ limit: 48, offset: nextOffset, tags: tag || undefined })
+      .then((nextTracks) => {
+        setTracks((current) => append ? [...current, ...nextTracks] : nextTracks);
+        setOffset(nextOffset + nextTracks.length);
+        setHasMore(nextTracks.length === 48);
+      })
       .catch(() => {
         setTracks([]);
         setError(true);
@@ -172,6 +178,11 @@ export default function SearchPage() {
                 );
               })}
             </div>
+          )}
+          {!loading && !error && hasMore && filteredTracks.length > 0 && (
+            <button type="button" onClick={() => loadTracks(activeTag, offset, true)} className="mx-auto flex items-center gap-2 rounded-full border border-white/10 px-5 py-2.5 text-xs font-semibold text-white/65 transition hover:border-indigo-400/60 hover:text-white active:scale-95">
+              <Loader2 className="h-4 w-4" /> Tải thêm bài hát
+            </button>
           )}
         </section>
       </div>

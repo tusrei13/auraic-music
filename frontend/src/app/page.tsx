@@ -148,7 +148,7 @@ export default function HomePage() {
                 const liked = likedIds.some((id: any) => String(id) === String(song.id));
                 const isCurrent = String(currentTrack?.id) === String(song.id);
                 const artistName = typeof song.artist === "object" ? song.artist?.name : song.artist;
-                const genreName = typeof song.genre === "object" ? song.genre?.name : song.genre || "Jamendo";
+                const genreName = song.genres?.slice(0, 2).join(" · ") || "Jamendo";
 
                 return (
                   <div

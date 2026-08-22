@@ -46,24 +46,19 @@ export default function DiscoverPage() {
   };
 
   // Trích xuất tự động danh sách thể loại từ Database
-  const extractedGenres = Array.from(
-    new Set(
-      songs
-        .map((s) => (typeof s.genre === "object" ? s.genre?.name : s.genre))
-        .filter(Boolean)
-    )
-  );
-  const genres = ["Tất cả", ...extractedGenres];
+  const extractedGenres = Array.from(new Set(songs.flatMap((song) => song.genres || [])));
+  const featuredGenres = ["lounge", "classical", "electronic", "jazz", "pop", "hiphop", "relaxation", "rock", "songwriter", "world", "metal", "soundtrack"];
+  const genres = ["Tất cả", ...Array.from(new Set([...featuredGenres, ...extractedGenres]))];
 
   // Lọc bài hát theo Tìm kiếm và Thể loại chọn
   const filteredTracks = songs.filter((track) => {
     const artistName = typeof track.artist === "object" ? track.artist?.name : track.artist || "";
-    const genreName = typeof track.genre === "object" ? track.genre?.name : track.genre || "";
+    const trackGenres = track.genres || [];
 
     const matchSearch =
       track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       artistName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchGenre = selectedGenre === "Tất cả" || genreName === selectedGenre;
+    const matchGenre = selectedGenre === "Tất cả" || trackGenres.includes(selectedGenre);
 
     return matchSearch && matchGenre;
   });
@@ -135,7 +130,7 @@ export default function DiscoverPage() {
               const liked = isLiked(song.id);
               const isPlayingThis = String(currentTrack?.id) === String(song.id);
               const artistName = typeof song.artist === "object" ? song.artist?.name : song.artist || "Nghệ sĩ";
-              const genreName = typeof song.genre === "object" ? song.genre?.name : song.genre || "N/A";
+              const genreName = song.genres?.slice(0, 2).join(" · ") || "Jamendo";
               const songCover = song.image || song.coverUrl || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
               return (
