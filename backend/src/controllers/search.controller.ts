@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { sendInternalError } from '../lib/api-error'
+import { searchIndex } from '../services/search-index.service'
 
 export const searchAll = async (req: Request, res: Response) => {
   try {
@@ -8,6 +9,9 @@ export const searchAll = async (req: Request, res: Response) => {
     if (!q.trim()) {
       return res.json({ songs: [], artists: [], playlists: [] })
     }
+
+    const indexedResult = await searchIndex(q).catch(() => null)
+    if (indexedResult) return res.json(indexedResult)
 
     const [songs, artists, playlists] = await Promise.all([
       prisma.song.findMany({

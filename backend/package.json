@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest run",
+    "search:sync": "tsx src/scripts/sync-search-index.ts",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed"
@@ -21,6 +22,7 @@
     "express": "^4.21.0",
     "fluent-ffmpeg": "^2.1.3",
     "multer": "^2.2.0",
+    "typesense": "^3.0.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {
