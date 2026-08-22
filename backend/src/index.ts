@@ -9,7 +9,7 @@ import playlistRoutes from './routes/playlist.route'
 import searchRoutes from './routes/search.route'
 import authRoutes from './routes/auth.route'
 import likeRoutes from './routes/like.route'
-import uploadRoutes from './routes/upload.route'
+import catalogRoutes from './routes/catalog.route'
 import { sendError } from './lib/api-error'
 import path from 'node:path'
 
@@ -28,7 +28,7 @@ app.use('/api/artists', artistRoutes)
 app.use('/api/playlists', playlistRoutes)
 app.use('/api/likes', likeRoutes)
 app.use('/api/search', searchRoutes)
-app.use('/api/upload', uploadRoutes)
+app.use('/api/catalog', catalogRoutes)
 app.use('/api', genreRoutes)
 app.use('/media', express.static(path.resolve(process.env.MEDIA_ROOT || path.join(process.cwd(), 'media'))))
 

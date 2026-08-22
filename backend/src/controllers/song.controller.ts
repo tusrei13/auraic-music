@@ -3,20 +3,13 @@ import { AuthRequest } from '../middlewares/auth.middleware'
 import { prisma } from '../lib/prisma'
 import { parsePositiveInteger } from '../lib/validation'
 import { sendError, sendInternalError } from '../lib/api-error'
+import { getJamendoTracks } from '../services/jamendo.service'
 
 export const getSongs = async (_req: Request, res: Response) => {
   try {
-    const songs = await prisma.song.findMany({
-      include: {
-        artist: true,
-        genre: true,
-        album: true,
-        mood: true,
-      },
-    })
-    res.json(songs)
+    res.json(await getJamendoTracks({ limit: 48 }))
   } catch (error) {
-    sendInternalError(res, 'SONG_LIST_ERROR', 'Không thể lấy danh sách bài hát')
+    sendInternalError(res, 'SONG_LIST_ERROR', 'Không thể lấy catalog Jamendo')
   }
 }
 

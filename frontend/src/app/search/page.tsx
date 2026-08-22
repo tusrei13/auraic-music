@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   Search, 
   Play, 
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { usePlayerStore, Track as StoreTrack } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
-import { formatDuration } from "@/lib/api";
+import { formatDuration, getJamendoTracks, type JamendoSong } from "@/lib/api";
 
 export type Track = StoreTrack & {
   addedAt?: string;
@@ -186,6 +186,13 @@ export default function SearchPage() {
   const { likedIds, currentTrack, toggleLike, playTrack } = usePlayerStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
+  const [jamendoSongs, setJamendoSongs] = useState<JamendoSong[]>([]);
+
+  useEffect(() => {
+    getJamendoTracks({ limit: 200 })
+      .then(setJamendoSongs)
+      .catch(() => setJamendoSongs([]));
+  }, []);
 
   const isLiked = (id: number | string) => {
     return (likedIds || []).some((likedId) => String(likedId) === String(id));
@@ -198,27 +205,28 @@ export default function SearchPage() {
       return { songs: [], artists: [], albums: [], playlists: [], topResult: null as TopResult };
     }
 
-    const songs = SEARCH_DATABASE.songs.filter(
-      (s) => s.title.toLowerCase().includes(query) || s.artist.toLowerCase().includes(query) || s.genre.toLowerCase().includes(query)
+    const songs = jamendoSongs.map((song) => ({
+      id: song.id,
+      title: song.title,
+      artist: song.artist.name,
+      album: song.album?.title || "Jamendo",
+      image: song.image,
+      audioUrl: song.audioUrl,
+      genre: "Jamendo",
+      duration: formatDuration(song.duration),
+    })).filter(
+      (s) => s.title.toLowerCase().includes(query) || s.artist.toLowerCase().includes(query)
     );
 
-    const artists = SEARCH_DATABASE.artists.filter(
-      (a) => a.name.toLowerCase().includes(query)
-    );
-
-    const albums = SEARCH_DATABASE.albums.filter(
-      (al) => al.title.toLowerCase().includes(query) || al.artist.toLowerCase().includes(query)
-    );
-
-    const playlists = SEARCH_DATABASE.playlists.filter(
-      (p) => p.name.toLowerCase().includes(query) || p.owner.toLowerCase().includes(query)
-    );
+    const artists: typeof SEARCH_DATABASE.artists = [];
+    const albums: typeof SEARCH_DATABASE.albums = [];
+    const playlists: typeof SEARCH_DATABASE.playlists = [];
 
     let topResult: TopResult = null;
     if (artists.length > 0 && artists[0].name.toLowerCase() === query) {
       topResult = { type: "artist", data: artists[0] };
     } else if (songs.length > 0) {
-      topResult = { type: "song", data: songs[0] };
+      topResult = { type: "song", data: songs[0] as any };
     } else if (artists.length > 0) {
       topResult = { type: "artist", data: artists[0] };
     } else if (albums.length > 0) {
@@ -228,7 +236,7 @@ export default function SearchPage() {
     }
 
     return { songs, artists, albums, playlists, topResult };
-  }, [searchQuery]);
+  }, [jamendoSongs, searchQuery]);
 
   const totalResultsCount = 
     filteredResults.songs.length + 

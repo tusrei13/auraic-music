@@ -21,6 +21,17 @@ export interface Album { id: string; title: string; coverImage: string; releaseY
 export interface Song { id: number; title: string; audioUrl: string; image: string; duration?: number | null; hlsUrl?: string | null; lyrics?: string | Array<{ time: number; text: string }>; playCount?: number; artist: Artist | string; genre?: Genre | string | null; album?: Album | null; mood?: Mood | null }
 export interface Playlist { id: string; name: string; coverImage?: string | null; color?: string | null; userId?: string; songs?: Array<{ song: Song }> }
 export interface SearchResult { songs: Song[]; artists: Artist[]; playlists: Playlist[] }
+export interface JamendoSong {
+  id: string;
+  title: string;
+  audioUrl: string;
+  image: string;
+  duration: number;
+  artist: { id: string; name: string; avatar: string };
+  album: { id: string; title: string; coverImage: string; artistId: string } | null;
+  source: "jamendo";
+  licenseUrl?: string;
+}
 export interface CurrentUser { id: string; email: string; name?: string | null; role: "USER" | "ADMIN"; playlists: Playlist[] }
 export interface AuthResponse { message: string; token?: string; user?: { id: string; email?: string | null; user_metadata?: { full_name?: string } } }
 export interface ApiErrorPayload { code: string; message: string; details?: unknown }
@@ -103,6 +114,13 @@ export const getArtistById = (id: string) => fetcher<Artist>(`/artists/${encodeU
 
 // 4. TÌM KIẾM (SEARCH)
 export const searchAll = (query: string) => fetcher<SearchResult>(`/search?q=${encodeURIComponent(query)}`);
+export const getJamendoTracks = (options: { limit?: number; offset?: number; tags?: string } = {}) => {
+  const params = new URLSearchParams();
+  if (options.limit) params.set("limit", String(options.limit));
+  if (options.offset) params.set("offset", String(options.offset));
+  if (options.tags) params.set("tags", options.tags);
+  return fetcher<JamendoSong[]>(`/catalog/jamendo${params.size ? `?${params}` : ""}`);
+};
 
 // 5. YÊU THÍCH (LIKES)
 export const getLikedSongs = () => fetcher<Array<{ song: Song }>>("/likes/my-likes");
@@ -116,17 +134,3 @@ export const recordListening = (songId: string | number) =>
 export const getListeningHistory = () =>
   fetcher<Array<{ id: string; listenedAt: string; song: Song }>>("/songs/history");
 
-export const uploadSong = async (formData: FormData): Promise<Song> => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const response = await fetch(`${API_BASE_URL}/upload/songs`, {
-    method: "POST",
-    body: formData,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    const error = payload?.error;
-    throw new ApiError(response.status, typeof error === "object" ? error : { code: "UPLOAD_ERROR", message: error || response.statusText });
-  }
-  return payload as Song;
-};

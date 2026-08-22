@@ -87,8 +87,8 @@ export default function HomePage() {
                 <span className="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-full border border-indigo-500/30 backdrop-blur-md uppercase mb-3 inline-block">
                   Album Mới Phát Hành
                 </span>
-                <h2 className="text-4xl font-black text-white drop-shadow-lg">Vũ Trụ Cò Bay</h2>
-                <p className="text-white/70 font-medium mt-1">Phương Mỹ Chi • 10 Bài Hát</p>
+                <h2 className="text-4xl font-black text-white drop-shadow-lg">Jamendo International</h2>
+                <p className="text-white/70 font-medium mt-1">Tuyển chọn nhạc quốc tế từ Jamendo</p>
               </div>
               <button 
                 onClick={() => songs.length > 0 && playMix(songs)}
@@ -102,7 +102,7 @@ export default function HomePage() {
           <div className="group relative h-64 rounded-3xl overflow-hidden border border-white/10 p-6 flex flex-col justify-between cursor-pointer bg-gradient-to-br from-purple-900/40 to-indigo-900/40 hover:from-purple-800/50 hover:to-indigo-800/50 transition-colors">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
             <div className="relative z-10 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white leading-tight">Top 50<br/>Việt Nam</h3>
+              <h3 className="text-xl font-bold text-white leading-tight">Jamendo<br/>Worldwide</h3>
               <Flame className="w-8 h-8 text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.8)]" />
             </div>
             <div className="relative z-10">
@@ -148,7 +148,7 @@ export default function HomePage() {
                 const liked = likedIds.some((id: any) => String(id) === String(song.id));
                 const isCurrent = String(currentTrack?.id) === String(song.id);
                 const artistName = typeof song.artist === "object" ? song.artist?.name : song.artist;
-                const genreName = typeof song.genre === "object" ? song.genre?.name : song.genre || "V-Pop";
+                const genreName = typeof song.genre === "object" ? song.genre?.name : song.genre || "Jamendo";
 
                 return (
                   <div

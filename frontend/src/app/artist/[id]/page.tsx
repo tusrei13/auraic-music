@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
-import { formatDuration, getArtistById } from "@/lib/api";
+import { formatDuration, getJamendoTracks } from "@/lib/api";
 import { 
   Play, 
   Music, 
@@ -27,10 +27,14 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
 
   useEffect(() => {
     setLoading(true);
-    getArtistById(artistIdOrName)
-      .then((data) => setArtist(data))
+    getJamendoTracks({ limit: 200, tags: artistIdOrName })
+      .then((songs) => setArtist({
+        name: songs[0]?.artist.name || artistIdOrName,
+        avatar: songs[0]?.artist.avatar || songs[0]?.image,
+        songs,
+      }))
       .catch((err) => {
-        console.error("Lỗi tải thông tin nghệ sĩ từ API:", err);
+        console.error("Lỗi tải nghệ sĩ từ Jamendo:", err);
         setArtist(null);
       })
       .finally(() => setLoading(false));

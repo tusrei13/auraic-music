@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, Compass, Library, Radio, LogIn, LogOut, Shield } from "lucide-react";
+import { Home, Search, Compass, Library, Radio, LogIn, LogOut } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
@@ -53,14 +53,6 @@ export default function Sidebar() {
             );
           })}
         </nav>
-        {user?.role === "ADMIN" && (
-          <Link
-            href="/admin"
-            className={`flex items-center gap-3.5 rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${pathname === "/admin" ? "bg-indigo-600 text-white" : "text-white/50 hover:bg-white/5 hover:text-white"}`}
-          >
-            <Shield className="h-4 w-4" /> Quản trị
-          </Link>
-        )}
       </div>
 
       {status === "authenticated" && user ? (

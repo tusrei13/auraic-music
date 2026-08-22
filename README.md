@@ -21,18 +21,14 @@ SUPABASE_URL=...
 SUPABASE_ANON_KEY=...
 PORT=5000
 
-# Optional Cloudflare R2/CDN media storage
-R2_ACCOUNT_ID=...
-R2_ACCESS_KEY_ID=...
-R2_SECRET_ACCESS_KEY=...
-R2_BUCKET=...
-R2_PUBLIC_BASE_URL=https://cdn.example.com
-
 # Optional Typesense fuzzy search
 TYPESENSE_HOST=...
 TYPESENSE_PORT=443
 TYPESENSE_PROTOCOL=https
 TYPESENSE_API_KEY=...
+
+# Optional Jamendo international catalog
+JAMENDO_CLIENT_ID=...
 ```
 
 `SUPABASE_URL` và `SUPABASE_ANON_KEY` lấy trong Supabase Dashboard tại
@@ -47,15 +43,17 @@ npm run prisma:generate
 npm run dev
 ```
 
-When all R2 variables are configured, uploaded HLS playlists and segments are
-published under `media/<mediaId>/` and songs use `R2_PUBLIC_BASE_URL`. If they
-are omitted, development uploads remain available from the local `/media` route.
-
 When Typesense variables are configured, synchronize the PostgreSQL catalog with:
 
 ```bash
 npm run search:sync
 ```
+
+`JAMENDO_CLIENT_ID` is required. Auraic's public song catalog is sourced only
+from Jamendo through the backend proxy at `GET /api/catalog/jamendo` and
+`GET /api/songs`. Create the client ID in the Jamendo Developer Portal.
+Jamendo stream URLs are used directly and must follow the Jamendo API terms and
+the license information returned for each track.
 
 ### Frontend
 

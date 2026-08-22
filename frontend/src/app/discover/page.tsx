@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Compass, Play, Hash, Heart, Mic2, Radio, Sparkles, Loader2 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { formatDuration, getSongs, getArtists } from "@/lib/api";
+import { formatDuration, getArtists, getJamendoTracks, getSongs, type JamendoSong } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
 export default function DiscoverPage() {
   const [songs, setSongs] = useState<any[]>([]);
   const [artists, setArtists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [jamendoTracks, setJamendoTracks] = useState<JamendoSong[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("Tất cả");
 
@@ -27,6 +28,12 @@ export default function DiscoverPage() {
       })
       .catch((err) => console.error("Lỗi tải dữ liệu Khám phá:", err))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    getJamendoTracks({ limit: 12, tags: "pop rock electronic" })
+      .then(setJamendoTracks)
+      .catch(() => setJamendoTracks([]));
   }, []);
 
   const handlePlayTrack = (track: any, list: any[]) => {
@@ -211,8 +218,37 @@ export default function DiscoverPage() {
         )}
       </section>
 
+      {jamendoTracks.length > 0 && (
+        <section className="space-y-4 border-t border-white/10 pt-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-white">Nhạc quốc tế</h2>
+              <p className="mt-1 text-xs text-white/40">Tuyển chọn từ Jamendo</p>
+            </div>
+            <span className="text-xs text-white/50">{jamendoTracks.length} bài hát</span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {jamendoTracks.map((track) => (
+              <button
+                key={track.id}
+                type="button"
+                onClick={() => handlePlayTrack(track, jamendoTracks)}
+                className="group flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.04] p-3 text-left transition hover:border-indigo-400/40 hover:bg-white/[0.08]"
+              >
+                <img src={track.image} alt={track.title} className="h-14 w-14 rounded-xl object-cover" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold text-white group-hover:text-indigo-300">{track.title}</span>
+                  <span className="mt-1 block truncate text-xs text-white/50">{track.artist.name}</span>
+                  <span className="mt-1 block text-[11px] font-mono text-white/35">{formatDuration(track.duration)}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* SECTION NGHỆ SĨ XU HƯỚNG TỪ DATABASE */}
-      {!searchQuery && artists.length > 0 && (
+      {!searchQuery && false && artists.length > 0 && (
         <>
           <section className="space-y-4 pt-4 border-t border-white/5">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
