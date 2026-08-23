@@ -46,6 +46,10 @@ export interface AdminSong { id: number; title: string; image: string; duration?
 export interface AdminSongsResponse { songs: AdminSong[] }
 export interface AdminPlaylist { id: string; name: string; createdAt: string; updatedAt: string; user: { name?: string | null; email: string }; _count: { songs: number } }
 export interface AdminPlaylistsResponse { playlists: AdminPlaylist[] }
+export interface AdminTopSong { trackId: string; title: string; artistName: string; image: string; plays: number }
+export interface AdminTopSongsResponse { songs: AdminTopSong[] }
+export interface AdminArtist { id: string; name: string; avatar: string; trackCount: number; albumCount: number }
+export interface AdminArtistsResponse { artists: AdminArtist[] }
 
 export class ApiError extends Error {
   code: string;
@@ -145,6 +149,8 @@ export const getAdminOverview = () => fetcher<AdminOverview>("/admin/overview");
 export const getAdminUsers = () => fetcher<AdminUsersResponse>("/admin/users");
 export const getAdminSongs = () => fetcher<AdminSongsResponse>("/admin/songs");
 export const getAdminPlaylists = () => fetcher<AdminPlaylistsResponse>("/admin/playlists");
+export const getAdminTopJamendo = () => fetcher<AdminTopSongsResponse>("/admin/top-jamendo");
+export const getAdminArtists = () => fetcher<AdminArtistsResponse>("/admin/artists");
 
 // 5. YÊU THÍCH (LIKES)
 export const getLikedSongs = () => fetcher<Array<{ song: Song }>>("/likes/my-likes");
@@ -157,4 +163,6 @@ export const recordListening = (songId: string | number) =>
   fetcher<{ id: string; listenedAt: string }>(`/songs/${songId}/listen`, { method: "POST" });
 export const getListeningHistory = () =>
   fetcher<Array<{ id: string; listenedAt: string; song: Song }>>("/songs/history");
+export const recordJamendoListening = (data: { trackId: string; title: string; artistName: string; image: string; audioUrl: string; duration?: number | null }) =>
+  fetcher("/songs/jamendo-listen", { method: "POST", body: JSON.stringify(data) });
 

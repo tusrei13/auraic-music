@@ -5,19 +5,24 @@ async function main() {
   const songs = await prisma.song.findMany({ select: { id: true } })
   const songIds = songs.map((song) => song.id)
 
-  if (songIds.length === 0) {
-    console.log('Không có bài hát local nào trong database.')
-    return
-  }
-
   const result = await prisma.$transaction(async (transaction) => {
-    await transaction.listeningHistory.deleteMany({ where: { songId: { in: songIds } } })
-    await transaction.like.deleteMany({ where: { songId: { in: songIds } } })
-    await transaction.playlistSong.deleteMany({ where: { songId: { in: songIds } } })
-    return transaction.song.deleteMany({ where: { id: { in: songIds } } })
+    if (songIds.length > 0) {
+      await transaction.listeningHistory.deleteMany({ where: { songId: { in: songIds } } })
+      await transaction.like.deleteMany({ where: { songId: { in: songIds } } })
+      await transaction.playlistSong.deleteMany({ where: { songId: { in: songIds } } })
+    }
+    const deletedSongs = songIds.length > 0
+      ? await transaction.song.deleteMany({ where: { id: { in: songIds } } })
+      : { count: 0 }
+    await transaction.follow.deleteMany({})
+    await transaction.album.deleteMany({})
+    await transaction.artist.deleteMany({})
+    await transaction.genre.deleteMany({})
+    await transaction.mood.deleteMany({})
+    return deletedSongs
   })
 
-  console.log(`Đã xóa ${result.count} bài hát local và các quan hệ liên quan.`)
+  console.log(`Đã xóa ${result.count} bài hát local và toàn bộ catalog nội bộ liên quan.`)
 }
 
 main()

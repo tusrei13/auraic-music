@@ -25,6 +25,7 @@ model User {
   likes     Like[]
   histories ListeningHistory[]
   playlists Playlist[]
+  jamendoHistory JamendoListening[]
 }
 
 model Artist {
@@ -134,6 +135,22 @@ model ListeningHistory {
 
   @@index([userId, listenedAt])
   @@index([songId, listenedAt])
+}
+
+model JamendoListening {
+  id         String   @id @default(uuid())
+  userId     String
+  trackId    String
+  title      String
+  artistName String
+  image      String
+  audioUrl   String
+  duration   Int?
+  listenedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, listenedAt])
+  @@index([trackId, listenedAt])
 }
 
 model Follow {

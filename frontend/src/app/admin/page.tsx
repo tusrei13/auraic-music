@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { ApiError, getAdminOverview, getAdminPlaylists, getAdminSongs, getAdminUsers, type AdminOverview, type AdminPlaylist, type AdminSong, type AdminUser } from "@/lib/api";
+import { ApiError, getAdminArtists, getAdminOverview, getAdminPlaylists, getAdminSongs, getAdminTopJamendo, getAdminUsers, type AdminArtist, type AdminOverview, type AdminPlaylist, type AdminSong, type AdminTopSong, type AdminUser } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const metrics = [
@@ -30,6 +30,8 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [songs, setSongs] = useState<AdminSong[]>([]);
   const [playlists, setPlaylists] = useState<AdminPlaylist[]>([]);
+  const [topJamendo, setTopJamendo] = useState<AdminTopSong[]>([]);
+  const [artists, setArtists] = useState<AdminArtist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,11 +39,13 @@ export default function AdminPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const [nextOverview, nextUsers, nextSongs, nextPlaylists] = await Promise.all([getAdminOverview(), getAdminUsers(), getAdminSongs(), getAdminPlaylists()]);
+      const [nextOverview, nextUsers, nextSongs, nextPlaylists, nextTopJamendo, nextArtists] = await Promise.all([getAdminOverview(), getAdminUsers(), getAdminSongs(), getAdminPlaylists(), getAdminTopJamendo(), getAdminArtists()]);
       setOverview(nextOverview);
       setUsers(nextUsers.users);
       setSongs(nextSongs.songs);
       setPlaylists(nextPlaylists.playlists);
+      setTopJamendo(nextTopJamendo.songs);
+      setArtists(nextArtists.artists);
     } catch (requestError) {
       if (requestError instanceof ApiError && requestError.status === 403) {
         setError("Tài khoản này không có quyền quản trị.");
@@ -63,8 +67,6 @@ export default function AdminPage() {
     if (status === "authenticated" && user?.role === "ADMIN") void loadOverview();
     if (status === "unauthenticated") setIsLoading(false);
   }, [status, user?.role]);
-
-  const topSongs = [...songs].sort((firstSong, secondSong) => secondSong.playCount - firstSong.playCount).slice(0, 5);
 
   if (status === "idle" || status === "loading") {
     return <AdminState icon={<Loader2 className="h-6 w-6 animate-spin" />} title="Đang xác thực quyền truy cập" />;
@@ -130,7 +132,7 @@ export default function AdminPage() {
             ))}
           </div>
         </article>
-        <div className="space-y-5"><article className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.06] p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Phiên hiện tại</p><h2 className="mt-4 text-xl font-bold">{user.name || user.email}</h2><p className="mt-2 break-all text-sm text-white/50">{user.email}</p><div className="mt-6 flex items-center gap-2 text-xs text-cyan-100"><span className="h-2 w-2 rounded-full bg-emerald-300" /> Quyền ADMIN đang hoạt động</div></article><article className="rounded-2xl border border-white/10 bg-black/20 p-6"><div className="flex items-center gap-3"><BarChart3 className="h-5 w-5 text-amber-300" /><h2 className="text-lg font-bold">Top bài hát</h2></div><div className="mt-5 space-y-4">{topSongs.map((song, index) => <div key={song.id} className="flex items-center gap-3"><span className="w-5 text-xs font-bold text-white/35">{index + 1}</span><img src={song.image} alt="" className="h-9 w-9 rounded-lg object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-white">{song.title}</p><p className="truncate text-xs text-white/40">{song.artist.name}</p></div><span className="text-xs tabular-nums text-amber-200">{song.playCount.toLocaleString("vi-VN")}</span></div>)}{topSongs.length === 0 && !isLoading ? <p className="text-sm text-white/40">Chưa có dữ liệu lượt nghe.</p> : null}</div></article></div>
+        <div className="space-y-5"><article className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.06] p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Phiên hiện tại</p><h2 className="mt-4 text-xl font-bold">{user.name || user.email}</h2><p className="mt-2 break-all text-sm text-white/50">{user.email}</p><div className="mt-6 flex items-center gap-2 text-xs text-cyan-100"><span className="h-2 w-2 rounded-full bg-emerald-300" /> Quyền ADMIN đang hoạt động</div></article><article className="rounded-2xl border border-white/10 bg-black/20 p-6"><div className="flex items-center gap-3"><BarChart3 className="h-5 w-5 text-amber-300" /><h2 className="text-lg font-bold">Top bài hát Jamendo</h2></div><div className="mt-5 space-y-4">{topJamendo.map((song, index) => <div key={song.trackId} className="flex items-center gap-3"><span className="w-5 text-xs font-bold text-white/35">{index + 1}</span><img src={song.image} alt="" className="h-9 w-9 rounded-lg object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-white">{song.title}</p><p className="truncate text-xs text-white/40">{song.artistName}</p></div><span className="text-xs tabular-nums text-amber-200">{song.plays.toLocaleString("vi-VN")}</span></div>)}{topJamendo.length === 0 && !isLoading ? <p className="text-sm text-white/40">Chưa có dữ liệu lượt nghe.</p> : null}</div></article></div>
       </section>
 
       <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
@@ -139,6 +141,11 @@ export default function AdminPage() {
           <table className="w-full min-w-[640px] text-left text-sm"><thead className="border-b border-white/10 text-xs uppercase tracking-wider text-white/35"><tr><th className="px-3 py-3 font-semibold">Tài khoản</th><th className="px-3 py-3 font-semibold">Vai trò</th><th className="px-3 py-3 font-semibold">Playlist</th><th className="px-3 py-3 font-semibold">Yêu thích</th><th className="px-3 py-3 font-semibold">Tham gia</th></tr></thead><tbody className="divide-y divide-white/5">{users.map((adminUser) => (<tr key={adminUser.id} className="text-white/70"><td className="px-3 py-4"><p className="font-semibold text-white">{adminUser.name || "Chưa đặt tên"}</p><p className="mt-1 text-xs text-white/40">{adminUser.email}</p></td><td className="px-3 py-4"><span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${adminUser.role === "ADMIN" ? "bg-cyan-300/15 text-cyan-200" : "bg-white/8 text-white/55"}`}>{adminUser.role}</span></td><td className="px-3 py-4 tabular-nums">{adminUser._count.playlists}</td><td className="px-3 py-4 tabular-nums">{adminUser._count.likes}</td><td className="px-3 py-4 text-xs text-white/45">{new Date(adminUser.createdAt).toLocaleDateString("vi-VN")}</td></tr>))}</tbody></table>
           {users.length === 0 && !isLoading ? <p className="py-8 text-center text-sm text-white/40">Chưa có dữ liệu người dùng.</p> : null}
         </div>
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
+        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center"><div><h2 className="text-lg font-bold">Nghệ sĩ nổi bật</h2><p className="mt-1 text-sm text-white/45">Xếp theo số người nghe trong thư viện.</p></div><span className="text-xs font-semibold text-white/40">{artists.length} nghệ sĩ</span></div>
+        <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="border-b border-white/10 text-xs uppercase tracking-wider text-white/35"><tr><th className="px-3 py-3 font-semibold">Nghệ sĩ Jamendo</th><th className="px-3 py-3 font-semibold">Bài trong catalog</th><th className="px-3 py-3 font-semibold">Album</th></tr></thead><tbody className="divide-y divide-white/5">{artists.map((artist) => (<tr key={artist.id} className="text-white/70"><td className="px-3 py-4"><div className="flex items-center gap-3"><img src={artist.avatar} alt="" className="h-10 w-10 rounded-full object-cover" /><span className="font-semibold text-white">{artist.name}</span></div></td><td className="px-3 py-4 tabular-nums">{artist.trackCount}</td><td className="px-3 py-4 tabular-nums">{artist.albumCount}</td></tr>))}</tbody></table>{artists.length === 0 && !isLoading ? <p className="py-8 text-center text-sm text-white/40">Jamendo chưa trả về nghệ sĩ nào.</p> : null}</div>
       </section>
 
       <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
