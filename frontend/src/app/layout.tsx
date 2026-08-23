@@ -6,6 +6,7 @@ import ToastContainer from '@/components/ToastContainer';
 import AuthProvider from '@/context/AuthProvider';
 import AuthModal from '@/components/AuthModal';
 import DynamicTheme from '@/components/DynamicTheme';
+import GlobalSearchBar from '@/components/GlobalSearchBar';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -29,6 +30,7 @@ export default function RootLayout({
         <div className="flex flex-1 overflow-hidden p-4 gap-4 pb-2">
             <Sidebar />
             <main className="flex-1 overflow-y-auto bg-black/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl relative">
+              <GlobalSearchBar />
               {children}
             </main>
         </div>

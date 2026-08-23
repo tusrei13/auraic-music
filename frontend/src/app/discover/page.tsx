@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Compass, Play, Hash, Heart, Radio, Sparkles, Loader2 } from "lucide-react";
+import { Compass, Play, Hash, Heart, Radio, Sparkles, Loader2 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { formatDuration, getJamendoTracks, getSongs, type JamendoSong } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
@@ -10,7 +10,6 @@ export default function DiscoverPage() {
   const [songs, setSongs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [jamendoTracks, setJamendoTracks] = useState<JamendoSong[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("Tất cả");
 
   const store = usePlayerStore() as any;
@@ -55,12 +54,9 @@ export default function DiscoverPage() {
     const artistName = typeof track.artist === "object" ? track.artist?.name : track.artist || "";
     const trackGenres = track.genres || [];
 
-    const matchSearch =
-      track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      artistName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchGenre = selectedGenre === "Tất cả" || trackGenres.includes(selectedGenre);
 
-    return matchSearch && matchGenre;
+    return matchGenre;
   });
 
   const moodCategories = [
@@ -80,20 +76,6 @@ export default function DiscoverPage() {
 
   return (
     <div className="p-8 space-y-10 h-full overflow-y-auto scrollbar-none pb-28">
-      {/* THANH TÌM KIẾM NỔI */}
-      <div className="relative max-w-2xl mx-auto">
-        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-white/40" />
-        </div>
-        <input
-          type="text"
-          placeholder="Tìm bài hát, nghệ sĩ..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-white/[0.05] border border-white/10 text-white rounded-full py-3.5 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white/[0.08] transition-all backdrop-blur-md shadow-lg font-medium text-sm placeholder-white/40"
-        />
-      </div>
-
       {/* FILTER THỂ LOẠI */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -240,7 +222,7 @@ export default function DiscoverPage() {
       )}
 
       {/* SECTION TÂM TRẠNG & HOẠT ĐỘNG */}
-      {!searchQuery && (
+      {
           <section className="space-y-4 pt-4 border-t border-white/5">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-indigo-400" /> Tâm trạng & Hoạt động
@@ -262,7 +244,7 @@ export default function DiscoverPage() {
               ))}
             </div>
           </section>
-      )}
+      }
     </div>
   );
 }

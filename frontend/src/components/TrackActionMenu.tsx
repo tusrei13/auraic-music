@@ -43,6 +43,7 @@ export default function TrackActionMenu({
   }, []);
 
   const artistName = typeof track.artist === "object" ? track.artist?.name : track.artist;
+  const artistId = typeof track.artist === "object" ? track.artist?.id : null;
 
   const handleOpenCreateModal = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -82,7 +83,8 @@ export default function TrackActionMenu({
   const handleGoToArtist = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (artistName) {
-      router.push(`/artist/${encodeURIComponent(artistName)}`);
+      const artistPath = artistId || artistName;
+      router.push(`/artist/${encodeURIComponent(artistPath)}?name=${encodeURIComponent(artistName)}`);
     }
     setIsOpen(false);
   };

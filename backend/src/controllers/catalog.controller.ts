@@ -11,6 +11,9 @@ export const getJamendoCatalog = async (req: Request, res: Response) => {
       offset: Number.isFinite(offset) ? offset : undefined,
       tags: typeof req.query.tags === 'string' ? req.query.tags : undefined,
       search: typeof req.query.search === 'string' ? req.query.search : undefined,
+      artistId: typeof req.query.artistId === 'string' ? req.query.artistId : undefined,
+      artistName: typeof req.query.artistName === 'string' ? req.query.artistName : undefined,
+      albumId: typeof req.query.albumId === 'string' ? req.query.albumId : undefined,
     })
     res.json(tracks)
   } catch (error) {

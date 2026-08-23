@@ -117,12 +117,16 @@ export const getArtistById = (id: string) => fetcher<Artist>(`/artists/${encodeU
 
 // 4. TÌM KIẾM (SEARCH)
 export const searchAll = (query: string) => fetcher<SearchResult>(`/search?q=${encodeURIComponent(query)}`);
-export const getJamendoTracks = (options: { limit?: number; offset?: number; tags?: string; search?: string } = {}) => {
+export const getJamendoTracks = (options: { limit?: number; offset?: number; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}) => {
   const params = new URLSearchParams();
   if (options.limit) params.set("limit", String(options.limit));
   if (options.offset) params.set("offset", String(options.offset));
   if (options.tags) params.set("tags", options.tags);
   if (options.search) params.set("search", options.search);
+  if (options.artistId) params.set("artistId", options.artistId);
+  if (options.artistName) params.set("artistName", options.artistName);
+  if (options.albumId) params.set("albumId", options.albumId);
+  if (options.order) params.set("order", options.order);
   return fetcher<JamendoSong[]>(`/catalog/jamendo${params.size ? `?${params}` : ""}`);
 };
 

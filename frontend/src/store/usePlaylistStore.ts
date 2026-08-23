@@ -28,6 +28,7 @@ interface PlaylistState {
   removeTrackFromPlaylist: (playlistId: string, trackId: string | number) => void;
   deletePlaylist: (playlistId: string) => void;
   hydrate: () => Promise<void>;
+  switchUser: (userId: string | null) => void;
 }
 
 const hasToken = () => typeof window !== "undefined" && Boolean(localStorage.getItem("token"));
@@ -44,22 +45,12 @@ const toLocalPlaylist = (playlist: any): Playlist => ({
 export const usePlaylistStore = create<PlaylistState>()(
   persist(
     (set, get) => ({
-      playlists: [
-        {
-          id: "1",
-          title: "you",
-          description: "Playlist cá nhân mới tạo trên AURAIC Sound Space.",
-          tracks: [],
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          title: "chill",
-          description: "Playlist cá nhân mới tạo trên AURAIC Sound Space.",
-          tracks: [],
-          createdAt: new Date().toISOString(),
-        },
-      ],
+      playlists: [],
+
+      switchUser: (userId) => {
+        set({ playlists: [] });
+        if (userId) void get().hydrate();
+      },
 
       createPlaylist: (title, initialTrack) => {
         if (!hasToken()) {
@@ -187,8 +178,6 @@ export const usePlaylistStore = create<PlaylistState>()(
         }
       },
     }),
-    {
-      name: "auraic-playlist-storage",
-    }
+    { name: "auraic-playlist-storage" }
   )
 );

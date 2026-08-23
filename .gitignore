@@ -48,3 +48,6 @@ node_modules/
 .env*.local
 dist/
 backend/media/
+# Local AI agent skills and prompts
+.agents/
+.github/prompts/

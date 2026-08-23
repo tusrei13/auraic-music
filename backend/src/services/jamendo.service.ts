@@ -35,13 +35,23 @@ export interface JamendoSong {
 }
 
 const JAMENDO_API_URL = 'https://api.jamendo.com/v3.0/tracks/'
+const JAMENDO_ARTISTS_API_URL = 'https://api.jamendo.com/v3.0/artists/'
 const CACHE_TTL_MS = 60_000
 const MAX_ATTEMPTS = 3
 const cache = new Map<string, { expiresAt: number; tracks: JamendoSong[] }>()
 
 const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
-export const getJamendoTracks = async (options: { limit?: number; offset?: number; tags?: string; search?: string } = {}) => {
+const resolveJamendoArtistId = async (clientId: string, artistName: string) => {
+  const params = new URLSearchParams({ client_id: clientId, format: 'json', limit: '10', namesearch: artistName })
+  const response = await fetch(`${JAMENDO_ARTISTS_API_URL}?${params}`, { signal: AbortSignal.timeout(8000) })
+  if (!response.ok) return undefined
+  const payload = await response.json() as { results?: Array<{ id: number; name: string }> }
+  const exact = payload.results?.find((artist) => artist.name.toLowerCase() === artistName.toLowerCase())
+  return exact ? String(exact.id) : payload.results?.[0] ? String(payload.results[0].id) : undefined
+}
+
+export const getJamendoTracks = async (options: { limit?: number; offset?: number; tags?: string; search?: string; nameSearch?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}): Promise<JamendoSong[]> => {
   const clientId = process.env.JAMENDO_CLIENT_ID
   if (!clientId) throw new Error('Jamendo is not configured')
 
@@ -51,13 +61,21 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     limit: String(Math.min(Math.max(options.limit || 24, 1), 200)),
     offset: String(Math.max(options.offset || 0, 0)),
     type: 'single albumtrack',
-    order: 'popularity_month_desc',
+    order: options.order || 'relevance',
     audioformat: 'mp32',
     imagesize: '300',
     include: 'musicinfo licenses',
   })
   if (options.tags?.trim()) params.set('tags', options.tags.trim().toLowerCase())
   if (options.search?.trim()) params.set('search', options.search.trim())
+  if (options.nameSearch?.trim()) params.set('namesearch', options.nameSearch.trim())
+  const resolvedArtistId = options.artistId?.trim()
+    ? options.artistId.replace(/^jamendo:/, '')
+    : options.artistName?.trim()
+      ? await resolveJamendoArtistId(clientId, options.artistName.trim())
+      : undefined
+  if (resolvedArtistId) params.set('artist_id', resolvedArtistId)
+  if (options.albumId?.trim()) params.set('album_id', options.albumId.replace(/^jamendo:/, ''))
 
   const cacheKey = params.toString()
   const cached = cache.get(cacheKey)
@@ -105,6 +123,16 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     licenseUrl: track.license_ccurl,
     genres: track.musicinfo?.tags?.genres || [],
   }))
-  cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, tracks })
+
+  if (tracks.length === 0 && !options.tags?.trim() && !options.search?.trim() && params.get('order') !== 'name') {
+    params.set('order', 'name')
+    cache.delete(cacheKey)
+    return getJamendoTracks({ ...options, order: 'name', limit: Number(params.get('limit')), offset: Number(params.get('offset')) })
+  }
+  if (tracks.length === 0 && options.search?.trim() && !options.nameSearch?.trim()) {
+    cache.delete(cacheKey)
+    return getJamendoTracks({ ...options, search: undefined, nameSearch: options.search })
+  }
+  if (tracks.length > 0) cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, tracks })
   return tracks
 }

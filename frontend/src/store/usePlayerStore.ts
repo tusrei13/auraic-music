@@ -7,7 +7,7 @@ import { useAuthStore } from "./useAuthStore";
 export interface Track {
   id: number | string;
   title: string;
-  artist: string | { name: string };
+  artist: string | { id?: string; name: string; avatar?: string };
   image: string;
   audioUrl: string;
   genre?: string | { name: string } | null;
@@ -49,6 +49,7 @@ interface PlayerState {
   toggleLike: (trackOrId: number | string | Track) => Promise<void>;
   setPlaybackStatus: (status: PlaybackStatus, error?: string | null) => void;
   recordListening: (songId: number | string) => Promise<void>;
+  switchUser: (userId: string | null) => void;
 }
 
 export const removeDuplicateTracks = (tracks: Track[]): Track[] => {
@@ -69,6 +70,14 @@ const shuffleArray = <T>(array: T[]): T[] => {
   return arr;
 };
 
+let activeUserId: string | null = null;
+
+const saveLikes = (userId: string | null, likedIds: (number | string)[]) => {
+  if (typeof window !== "undefined" && userId) {
+    localStorage.setItem(`auraic-likes-${userId}`, JSON.stringify(likedIds));
+  }
+};
+
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => ({
@@ -84,6 +93,22 @@ export const usePlayerStore = create<PlayerState>()(
       isShuffle: false,
       repeatMode: "off",
       likedIds: [],
+
+      switchUser: (userId) => {
+        saveLikes(activeUserId, get().likedIds);
+        activeUserId = userId;
+        const storageKey = userId ? `auraic-likes-${userId}` : null;
+        let likedIds: (number | string)[] = [];
+        if (storageKey && typeof window !== "undefined") {
+          try {
+            const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
+            if (Array.isArray(stored)) likedIds = stored;
+          } catch {
+            likedIds = [];
+          }
+        }
+        set({ currentTrack: null, userQueue: [], contextQueue: [], originalQueue: [], contextIndex: 0, isPlaying: false, playbackStatus: "idle", playbackError: null, likedIds });
+      },
 
       playTrack: (track, pageQueue, title) => {
         const currentList = pageQueue && pageQueue.length > 0 ? [...pageQueue] : [track];
@@ -343,6 +368,7 @@ export const usePlayerStore = create<PlayerState>()(
             ? current.likedIds.filter((item) => String(item) !== String(id))
             : [...current.likedIds, id],
         }));
+        saveLikes(activeUserId, get().likedIds);
         const formattedTitle = trackTitle.trim() ? `"${trackTitle}"` : "bài hát";
         useToastStore.getState().addToast(
           `${wasLiked ? "Đã xóa" : "Đã thêm"} ${formattedTitle} ${wasLiked ? "khỏi" : "vào"} Yêu thích`,

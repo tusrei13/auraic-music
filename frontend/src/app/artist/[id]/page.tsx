@@ -1,6 +1,8 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import { formatDuration, getJamendoTracks } from "@/lib/api";
@@ -12,33 +14,57 @@ import {
   UserPlus, 
   UserCheck, 
   BadgeCheck,
-  Loader2 
+  Loader2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 export default function ArtistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const artistIdOrName = decodeURIComponent(id);
+  const artistId = decodeURIComponent(id);
+  const searchParams = useSearchParams();
+  const artistNameHint = searchParams.get("name") || artistId;
 
   const [artist, setArtist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [showAllSongs, setShowAllSongs] = useState(false);
+  const [showAllAlbums, setShowAllAlbums] = useState(false);
 
   const { currentTrack, isPlaying, playTrack, likedIds = [], toggleLike } = usePlayerStore();
 
   useEffect(() => {
+    let active = true;
     setLoading(true);
-    getJamendoTracks({ limit: 200, tags: artistIdOrName })
-      .then((songs) => setArtist({
-        name: songs[0]?.artist.name || artistIdOrName,
-        avatar: songs[0]?.artist.avatar || songs[0]?.image,
-        songs,
-      }))
-      .catch((err) => {
-        console.error("Lỗi tải nghệ sĩ từ Jamendo:", err);
-        setArtist(null);
-      })
-      .finally(() => setLoading(false));
-  }, [artistIdOrName]);
+    const loadArtist = async () => {
+      try {
+        const isJamendoId = artistId.startsWith("jamendo:");
+        let songs = isJamendoId
+          ? await getJamendoTracks({ limit: 200, artistId })
+          : await getJamendoTracks({ limit: 200, artistName: artistNameHint });
+        if (isJamendoId && songs.length === 0 && artistNameHint !== artistId) {
+          const fallbackSongs = await getJamendoTracks({ limit: 200, search: artistNameHint });
+          songs = fallbackSongs.filter((song) => song.artist.name.toLowerCase() === artistNameHint.toLowerCase());
+        }
+        if (active) setArtist({
+          name: songs[0]?.artist.name || artistNameHint,
+          avatar: songs[0]?.artist.avatar || songs[0]?.image,
+          songs,
+        });
+      } catch {
+        if (active) setArtist(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    loadArtist();
+    return () => { active = false; };
+  }, [artistId, artistNameHint]);
+
+  useEffect(() => {
+    setShowAllSongs(false);
+    setShowAllAlbums(false);
+  }, [artistId]);
 
   if (loading) {
     return (
@@ -49,14 +75,16 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
     );
   }
 
-  const artistName = artist?.name || artistIdOrName;
+  const artistName = artist?.name || artistNameHint;
   const artistSongs: any[] = artist?.songs || [];
   const artistImage = artist?.avatar || artist?.image || artistSongs[0]?.image || artistSongs[0]?.coverUrl || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
   // Gom nhóm danh sách Album từ bài hát
-  const albums = Array.from(
-    new Set(artistSongs.map((s: any) => typeof s.album === "object" ? s.album?.title : s.album).filter(Boolean))
-  );
+  const albums = Array.from(new Map(
+    artistSongs.filter((song: any) => song.album).map((song: any) => [song.album.id, song.album])
+  ).values()) as Array<{ id: string; title: string; coverImage: string }>;
+  const visibleSongs = showAllSongs ? artistSongs : artistSongs.slice(0, 8);
+  const visibleAlbums = showAllAlbums ? albums : albums.slice(0, 6);
 
   const isLiked = (songId: number | string) =>
     (likedIds || []).some((likedId: any) => String(likedId) === String(songId));
@@ -123,7 +151,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
 
         <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-visible backdrop-blur-xl">
           {artistSongs.length > 0 ? (
-            artistSongs.map((song: any, index: number) => {
+            visibleSongs.map((song: any, index: number) => {
               const isCurrent = String(currentTrack?.id) === String(song.id);
               const liked = isLiked(song.id);
               const songCover = song.image || song.coverUrl || artistImage;
@@ -182,9 +210,20 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
               );
             })
           ) : (
-            <div className="p-8 text-center text-white/40 text-sm">Chưa có bài hát nào của nghệ sĩ này trong Database.</div>
+            <div className="p-8 text-center text-white/40 text-sm">Không thể tải bài hát của nghệ sĩ này từ Jamendo. Hãy thử tải lại trang.</div>
           )}
         </div>
+        {artistSongs.length > 8 && (
+          <button
+            type="button"
+            aria-expanded={showAllSongs}
+            onClick={() => setShowAllSongs((value) => !value)}
+            className="mx-auto flex min-h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-white/75 transition hover:border-indigo-400/50 hover:bg-indigo-500/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          >
+            {showAllSongs ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
+            {showAllSongs ? "Thu gọn bài hát" : `Xem thêm ${artistSongs.length - 8} bài hát`}
+          </button>
+        )}
       </section>
 
       {/* Album & Đĩa đơn */}
@@ -195,23 +234,24 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {albums.length > 0 ? (
-            albums.map((albumName: any, idx: number) => (
-              <div
-                key={idx}
+            visibleAlbums.map((album) => (
+              <Link
+                href={`/album/${encodeURIComponent(album.id)}?name=${encodeURIComponent(album.title)}`}
+                key={album.id}
                 className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3 hover:border-indigo-500/50 hover:bg-white/[0.08] transition-all group cursor-pointer"
               >
                 <div className="aspect-square rounded-xl overflow-hidden bg-white/10 shadow-lg">
                   <img
-                    src={artistSongs[idx]?.image || artistSongs[idx]?.coverUrl || artistImage}
-                    alt={albumName || "Album"}
+                    src={album.coverImage || artistImage}
+                    alt={album.title || "Album"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white truncate">{albumName}</h3>
+                  <h3 className="text-sm font-bold text-white truncate">{album.title}</h3>
                   <p className="text-xs text-white/40 mt-0.5">Album chính thức</p>
                 </div>
-              </div>
+              </Link>
             ))
           ) : (
             <div className="col-span-full bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center gap-4">
@@ -227,6 +267,17 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
             </div>
           )}
         </div>
+        {albums.length > 6 && (
+          <button
+            type="button"
+            aria-expanded={showAllAlbums}
+            onClick={() => setShowAllAlbums((value) => !value)}
+            className="mx-auto flex min-h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-white/75 transition hover:border-purple-400/50 hover:bg-purple-500/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+          >
+            {showAllAlbums ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
+            {showAllAlbums ? "Thu gọn album" : `Xem thêm ${albums.length - 6} album`}
+          </button>
+        )}
       </section>
     </div>
   );
