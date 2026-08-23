@@ -43,7 +43,7 @@ export interface AdminOverview { role: "ADMIN"; metrics: { users: number; playli
 export interface AdminUser { id: string; email: string; name?: string | null; role: "USER" | "ADMIN"; createdAt: string; _count: { playlists: number; likes: number; histories: number } }
 export interface AdminUsersResponse { users: AdminUser[] }
 export interface AdminUserRoleResponse { user: Pick<AdminUser, "id" | "email" | "name" | "role"> }
-export interface AdminSong { id: number; title: string; image: string; duration?: number | null; playCount: number; lyrics?: unknown; createdAt: string; artist: { name: string }; genre?: { name: string } | null }
+export interface AdminSong { id: string; title: string; image: string; duration?: number | null; playCount: number; lyrics?: unknown; createdAt?: string | null; artist: { name: string }; genre?: { name: string } | null }
 export interface AdminSongsResponse { songs: AdminSong[] }
 export interface AdminPlaylist { id: string; name: string; createdAt: string; updatedAt: string; user: { name?: string | null; email: string }; _count: { songs: number } }
 export interface AdminPlaylistsResponse { playlists: AdminPlaylist[] }

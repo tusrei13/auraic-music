@@ -67,21 +67,23 @@ export const getAdminSongs = async (req: AuthRequest, res: Response) => {
   if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
 
   try {
-    const songs = await prisma.song.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: {
-        id: true,
-        title: true,
-        image: true,
-        duration: true,
-        playCount: true,
-        lyrics: true,
-        createdAt: true,
-        artist: { select: { name: true } },
-        genre: { select: { name: true } },
-      },
-    })
+    const [tracks, events] = await Promise.all([
+      getJamendoTracks({ limit: 50, order: 'name' }),
+      prisma.jamendoListening.findMany({ select: { trackId: true } }),
+    ])
+    const playCounts = new Map<string, number>()
+    for (const event of events) playCounts.set(event.trackId, (playCounts.get(event.trackId) || 0) + 1)
+    const songs = tracks.map((track) => ({
+      id: track.id,
+      title: track.title,
+      image: track.image,
+      duration: track.duration,
+      playCount: playCounts.get(track.id) || 0,
+      lyrics: null,
+      createdAt: null,
+      artist: { name: track.artist.name },
+      genre: track.genres[0] ? { name: track.genres[0] } : null,
+    }))
 
     return res.json({ songs })
   } catch {
