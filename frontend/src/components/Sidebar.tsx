@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Library, LogIn, LogOut } from "lucide-react";
+import { Home, Compass, Library, LogIn, LogOut, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
@@ -50,6 +50,13 @@ export default function Sidebar() {
             );
           })}
         </nav>
+        {status === "authenticated" && user?.role === "ADMIN" ? (
+          <nav>
+            <Link href="/admin" className={`flex min-h-12 items-center gap-4 rounded-2xl px-3 text-xs font-semibold transition-all ${pathname.startsWith("/admin") ? "bg-fuchsia-500/20 text-white" : "text-white/50 hover:bg-white/5 hover:text-white"}`} title="Admin">
+              <ShieldCheck className="h-5 w-5 shrink-0" /><span className="whitespace-nowrap opacity-0 transition-opacity group-hover/sidebar:opacity-100">Admin</span>
+            </Link>
+          </nav>
+        ) : null}
       </div>
 
       {status === "authenticated" && user ? (

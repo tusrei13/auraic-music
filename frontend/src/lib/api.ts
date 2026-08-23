@@ -39,6 +39,7 @@ export interface CurrentUser { id: string; email: string; name?: string | null; 
 export interface AuthResponse { message: string; token?: string; user?: { id: string; email?: string | null; user_metadata?: { full_name?: string } } }
 export interface ApiErrorPayload { code: string; message: string; details?: unknown }
 export interface LyricsResponse { syncedLyrics: string | null; plainLyrics: string | null }
+export interface AdminOverview { role: "ADMIN"; metrics: { users: number; playlists: number; songs: number; likes: number } }
 
 export class ApiError extends Error {
   code: string;
@@ -133,6 +134,8 @@ export const getJamendoTracks = (options: { limit?: number; offset?: number; tag
 
 export const getLyrics = (trackName: string, artistName: string) =>
   fetcher<LyricsResponse>(`/lyrics?trackName=${encodeURIComponent(trackName)}&artistName=${encodeURIComponent(artistName)}`);
+
+export const getAdminOverview = () => fetcher<AdminOverview>("/admin/overview");
 
 // 5. YÊU THÍCH (LIKES)
 export const getLikedSongs = () => fetcher<Array<{ song: Song }>>("/likes/my-likes");
