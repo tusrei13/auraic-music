@@ -40,6 +40,8 @@ export interface AuthResponse { message: string; token?: string; user?: { id: st
 export interface ApiErrorPayload { code: string; message: string; details?: unknown }
 export interface LyricsResponse { syncedLyrics: string | null; plainLyrics: string | null }
 export interface AdminOverview { role: "ADMIN"; metrics: { users: number; playlists: number; songs: number; likes: number } }
+export interface AdminUser { id: string; email: string; name?: string | null; role: "USER" | "ADMIN"; createdAt: string; _count: { playlists: number; likes: number; histories: number } }
+export interface AdminUsersResponse { users: AdminUser[] }
 
 export class ApiError extends Error {
   code: string;
@@ -136,6 +138,7 @@ export const getLyrics = (trackName: string, artistName: string) =>
   fetcher<LyricsResponse>(`/lyrics?trackName=${encodeURIComponent(trackName)}&artistName=${encodeURIComponent(artistName)}`);
 
 export const getAdminOverview = () => fetcher<AdminOverview>("/admin/overview");
+export const getAdminUsers = () => fetcher<AdminUsersResponse>("/admin/users");
 
 // 5. YÊU THÍCH (LIKES)
 export const getLikedSongs = () => fetcher<Array<{ song: Song }>>("/likes/my-likes");

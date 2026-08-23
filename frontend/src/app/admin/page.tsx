@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { ApiError, getAdminOverview, type AdminOverview } from "@/lib/api";
+import { ApiError, getAdminOverview, getAdminUsers, type AdminOverview, type AdminUser } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const metrics = [
@@ -27,6 +27,7 @@ const metrics = [
 export default function AdminPage() {
   const { user, status, initialize, signOut } = useAuthStore();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +35,9 @@ export default function AdminPage() {
     setIsLoading(true);
     setError(null);
     try {
-      setOverview(await getAdminOverview());
+      const [nextOverview, nextUsers] = await Promise.all([getAdminOverview(), getAdminUsers()]);
+      setOverview(nextOverview);
+      setUsers(nextUsers.users);
     } catch (requestError) {
       if (requestError instanceof ApiError && requestError.status === 403) {
         setError("Tài khoản này không có quyền quản trị.");
@@ -122,6 +125,14 @@ export default function AdminPage() {
           </div>
         </article>
         <article className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.06] p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Phiên hiện tại</p><h2 className="mt-4 text-xl font-bold">{user.name || user.email}</h2><p className="mt-2 break-all text-sm text-white/50">{user.email}</p><div className="mt-6 flex items-center gap-2 text-xs text-cyan-100"><span className="h-2 w-2 rounded-full bg-emerald-300" /> Quyền ADMIN đang hoạt động</div></article>
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
+        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center"><div><h2 className="text-lg font-bold">Người dùng gần đây</h2><p className="mt-1 text-sm text-white/45">50 tài khoản mới nhất trong hệ thống.</p></div><span className="text-xs font-semibold text-white/40">{users.length} tài khoản</span></div>
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-sm"><thead className="border-b border-white/10 text-xs uppercase tracking-wider text-white/35"><tr><th className="px-3 py-3 font-semibold">Tài khoản</th><th className="px-3 py-3 font-semibold">Vai trò</th><th className="px-3 py-3 font-semibold">Playlist</th><th className="px-3 py-3 font-semibold">Yêu thích</th><th className="px-3 py-3 font-semibold">Tham gia</th></tr></thead><tbody className="divide-y divide-white/5">{users.map((adminUser) => (<tr key={adminUser.id} className="text-white/70"><td className="px-3 py-4"><p className="font-semibold text-white">{adminUser.name || "Chưa đặt tên"}</p><p className="mt-1 text-xs text-white/40">{adminUser.email}</p></td><td className="px-3 py-4"><span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${adminUser.role === "ADMIN" ? "bg-cyan-300/15 text-cyan-200" : "bg-white/8 text-white/55"}`}>{adminUser.role}</span></td><td className="px-3 py-4 tabular-nums">{adminUser._count.playlists}</td><td className="px-3 py-4 tabular-nums">{adminUser._count.likes}</td><td className="px-3 py-4 text-xs text-white/45">{new Date(adminUser.createdAt).toLocaleDateString("vi-VN")}</td></tr>))}</tbody></table>
+          {users.length === 0 && !isLoading ? <p className="py-8 text-center text-sm text-white/40">Chưa có dữ liệu người dùng.</p> : null}
+        </div>
       </section>
     </div>
   );
