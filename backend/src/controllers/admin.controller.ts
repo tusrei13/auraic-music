@@ -47,6 +47,22 @@ export const getAdminUsers = async (req: AuthRequest, res: Response) => {
   }
 }
 
+export const updateAdminUserRole = async (req: AuthRequest, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
+  if (req.user.id === req.params.id) return sendError(res, 400, 'SELF_ROLE_CHANGE_FORBIDDEN', 'Không thể tự thay đổi quyền của chính mình')
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { role: req.body.role },
+      select: { id: true, email: true, name: true, role: true },
+    })
+    return res.json({ user })
+  } catch {
+    return sendError(res, 404, 'ADMIN_USER_NOT_FOUND', 'Không tìm thấy người dùng')
+  }
+}
+
 export const getAdminSongs = async (req: AuthRequest, res: Response) => {
   if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
 

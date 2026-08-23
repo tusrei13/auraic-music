@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { ApiError, getAdminArtists, getAdminOverview, getAdminPlaylists, getAdminSongs, getAdminTopJamendo, getAdminUsers, type AdminArtist, type AdminOverview, type AdminPlaylist, type AdminSong, type AdminTopSong, type AdminUser } from "@/lib/api";
+import { ApiError, getAdminArtists, getAdminOverview, getAdminPlaylists, getAdminSongs, getAdminTopJamendo, getAdminUsers, updateAdminUserRole, type AdminArtist, type AdminOverview, type AdminPlaylist, type AdminSong, type AdminTopSong, type AdminUser } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const metrics = [
@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [artists, setArtists] = useState<AdminArtist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   const loadOverview = async () => {
     setIsLoading(true);
@@ -56,6 +57,18 @@ export default function AdminPage() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (userId: string, role: "USER" | "ADMIN") => {
+    setUpdatingUserId(userId);
+    try {
+      const response = await updateAdminUserRole(userId, role);
+      setUsers((currentUsers) => currentUsers.map((currentUser) => currentUser.id === userId ? { ...currentUser, role: response.user.role } : currentUser));
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : "Không thể cập nhật quyền người dùng.");
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
@@ -138,7 +151,7 @@ export default function AdminPage() {
       <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center"><div><h2 className="text-lg font-bold">Người dùng gần đây</h2><p className="mt-1 text-sm text-white/45">50 tài khoản mới nhất trong hệ thống.</p></div><span className="text-xs font-semibold text-white/40">{users.length} tài khoản</span></div>
         <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm"><thead className="border-b border-white/10 text-xs uppercase tracking-wider text-white/35"><tr><th className="px-3 py-3 font-semibold">Tài khoản</th><th className="px-3 py-3 font-semibold">Vai trò</th><th className="px-3 py-3 font-semibold">Playlist</th><th className="px-3 py-3 font-semibold">Yêu thích</th><th className="px-3 py-3 font-semibold">Tham gia</th></tr></thead><tbody className="divide-y divide-white/5">{users.map((adminUser) => (<tr key={adminUser.id} className="text-white/70"><td className="px-3 py-4"><p className="font-semibold text-white">{adminUser.name || "Chưa đặt tên"}</p><p className="mt-1 text-xs text-white/40">{adminUser.email}</p></td><td className="px-3 py-4"><span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${adminUser.role === "ADMIN" ? "bg-cyan-300/15 text-cyan-200" : "bg-white/8 text-white/55"}`}>{adminUser.role}</span></td><td className="px-3 py-4 tabular-nums">{adminUser._count.playlists}</td><td className="px-3 py-4 tabular-nums">{adminUser._count.likes}</td><td className="px-3 py-4 text-xs text-white/45">{new Date(adminUser.createdAt).toLocaleDateString("vi-VN")}</td></tr>))}</tbody></table>
+          <table className="w-full min-w-[640px] text-left text-sm"><thead className="border-b border-white/10 text-xs uppercase tracking-wider text-white/35"><tr><th className="px-3 py-3 font-semibold">Tài khoản</th><th className="px-3 py-3 font-semibold">Vai trò</th><th className="px-3 py-3 font-semibold">Playlist</th><th className="px-3 py-3 font-semibold">Yêu thích</th><th className="px-3 py-3 font-semibold">Tham gia</th></tr></thead><tbody className="divide-y divide-white/5">{users.map((adminUser) => (<tr key={adminUser.id} className="text-white/70"><td className="px-3 py-4"><p className="font-semibold text-white">{adminUser.name || "Chưa đặt tên"}</p><p className="mt-1 text-xs text-white/40">{adminUser.email}</p></td><td className="px-3 py-4"><select value={adminUser.role} disabled={updatingUserId === adminUser.id || adminUser.id === user.id} onChange={(event) => void handleRoleChange(adminUser.id, event.target.value as "USER" | "ADMIN")} className={`min-h-9 rounded-lg border border-white/10 bg-[#121522] px-2 text-[11px] font-bold outline-none focus:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-50 ${adminUser.role === "ADMIN" ? "text-cyan-200" : "text-white/55"}`} aria-label={`Vai trò của ${adminUser.email}`}><option value="USER">USER</option><option value="ADMIN">ADMIN</option></select></td><td className="px-3 py-4 tabular-nums">{adminUser._count.playlists}</td><td className="px-3 py-4 tabular-nums">{adminUser._count.likes}</td><td className="px-3 py-4 text-xs text-white/45">{new Date(adminUser.createdAt).toLocaleDateString("vi-VN")}</td></tr>))}</tbody></table>
           {users.length === 0 && !isLoading ? <p className="py-8 text-center text-sm text-white/40">Chưa có dữ liệu người dùng.</p> : null}
         </div>
       </section>

@@ -42,6 +42,7 @@ export interface LyricsResponse { syncedLyrics: string | null; plainLyrics: stri
 export interface AdminOverview { role: "ADMIN"; metrics: { users: number; playlists: number; songs: number; likes: number } }
 export interface AdminUser { id: string; email: string; name?: string | null; role: "USER" | "ADMIN"; createdAt: string; _count: { playlists: number; likes: number; histories: number } }
 export interface AdminUsersResponse { users: AdminUser[] }
+export interface AdminUserRoleResponse { user: Pick<AdminUser, "id" | "email" | "name" | "role"> }
 export interface AdminSong { id: number; title: string; image: string; duration?: number | null; playCount: number; lyrics?: unknown; createdAt: string; artist: { name: string }; genre?: { name: string } | null }
 export interface AdminSongsResponse { songs: AdminSong[] }
 export interface AdminPlaylist { id: string; name: string; createdAt: string; updatedAt: string; user: { name?: string | null; email: string }; _count: { songs: number } }
@@ -147,6 +148,7 @@ export const getLyrics = (trackName: string, artistName: string) =>
 
 export const getAdminOverview = () => fetcher<AdminOverview>("/admin/overview");
 export const getAdminUsers = () => fetcher<AdminUsersResponse>("/admin/users");
+export const updateAdminUserRole = (userId: string, role: "USER" | "ADMIN") => fetcher<AdminUserRoleResponse>(`/admin/users/${encodeURIComponent(userId)}/role`, { method: "PATCH", body: JSON.stringify({ role }) });
 export const getAdminSongs = () => fetcher<AdminSongsResponse>("/admin/songs");
 export const getAdminPlaylists = () => fetcher<AdminPlaylistsResponse>("/admin/playlists");
 export const getAdminTopJamendo = () => fetcher<AdminTopSongsResponse>("/admin/top-jamendo");

@@ -68,3 +68,22 @@ export const songIdParamsSchema = z.object({
   params: z.object({ id: z.coerce.number().int().positive() }),
   query: z.record(z.string(), z.unknown()).optional(),
 })
+
+export const jamendoListeningSchema = z.object({
+  body: z.object({
+    trackId: z.string().regex(/^jamendo:\\d+$/),
+    title: z.string().trim().min(1).max(300),
+    artistName: z.string().trim().min(1).max(200),
+    image: z.string().url().max(2000),
+    audioUrl: z.string().url().max(2000),
+    duration: z.coerce.number().int().nonnegative().nullable().optional(),
+  }),
+  params: z.record(z.string(), z.unknown()).optional(),
+  query: z.record(z.string(), z.unknown()).optional(),
+})
+
+export const adminUserRoleSchema = z.object({
+  body: z.object({ role: z.enum(['USER', 'ADMIN']) }),
+  params: z.object({ id: z.string().uuid() }),
+  query: z.record(z.string(), z.unknown()).optional(),
+})
