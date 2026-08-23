@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Library, Radio, LogIn, LogOut } from "lucide-react";
+import { Home, Compass, Library, LogIn, LogOut } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
@@ -20,10 +20,8 @@ export default function Sidebar() {
       <div className="space-y-10">
         {/* LOGO */}
         <div className="flex items-center gap-3 px-1">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-fuchsia-500 to-cyan-400 shadow-[0_0_22px_rgba(192,100,255,0.5)]">
-            <Radio className="w-5 h-5 text-white animate-pulse" />
-          </div>
-          <span className="whitespace-nowrap text-lg font-black tracking-[0.2em] text-white opacity-0 transition-opacity group-hover/sidebar:opacity-100">AURAIC</span>
+          <img src="/favicon.ico" alt="Auraic" className="h-10 w-10 shrink-0 object-cover mix-blend-screen drop-shadow-[0_0_16px_rgba(192,100,255,0.5)]" />
+          <span className="whitespace-nowrap bg-gradient-to-r from-fuchsia-300 via-violet-300 to-cyan-300 bg-clip-text text-lg font-black tracking-[0.2em] text-transparent opacity-0 drop-shadow-[0_0_10px_rgba(192,100,255,0.35)] transition-opacity group-hover/sidebar:opacity-100">AURAIC</span>
         </div>
 
         {/* NAVIGATION LINKS */}
@@ -56,13 +54,15 @@ export default function Sidebar() {
 
       {status === "authenticated" && user ? (
         <div className="space-y-3 border-t border-white/10 pt-4">
-          <div className="truncate px-2 text-xs text-white/60">{user.name || user.email}</div>
+          <div className="truncate px-2 text-xs text-white/60 opacity-0 transition-opacity group-hover/sidebar:opacity-100">{user.name || user.email}</div>
           <button
             type="button"
             onClick={signOut}
-            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-xs font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
+            title="Đăng xuất"
+            aria-label="Đăng xuất"
+            className="flex min-h-12 w-full items-center gap-4 rounded-2xl px-3 text-xs font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
           >
-            <LogOut className="h-4 w-4" /> Đăng xuất
+            <LogOut className="h-5 w-5 shrink-0" /><span className="whitespace-nowrap opacity-0 transition-opacity group-hover/sidebar:opacity-100">Đăng xuất</span>
           </button>
         </div>
       ) : (
