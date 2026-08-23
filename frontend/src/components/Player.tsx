@@ -348,10 +348,10 @@ export default function Player() {
       )}
 
       {/* PLAYER CONTAINER CHÍNH */}
-      <div className="px-4 pb-4 w-full z-50 relative">
-        <div className="h-24 md:h-20 bg-white/10 backdrop-blur-2xl border border-white/20 flex flex-col md:flex-row items-center justify-between px-6 py-2 md:py-0 w-full rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden">
+      <div className="relative z-50 w-full px-3 pb-3 sm:px-4 sm:pb-4">
+        <div className="relative flex min-h-28 w-full flex-col items-center justify-between overflow-hidden rounded-[24px] border border-white/20 bg-[#11101d]/80 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,0.65)] backdrop-blur-2xl md:min-h-24 md:flex-row md:px-6 md:py-2">
           
-          <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-transparent to-white/5 opacity-50 mix-blend-overlay pointer-events-none"></div>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-fuchsia-500/10 via-transparent to-cyan-400/10 opacity-80 mix-blend-screen"></div>
 
           <audio 
             ref={audioRef} 
@@ -369,8 +369,8 @@ export default function Player() {
           <AudioVisualizer audioRef={audioRef} isPlaying={isPlaying} />
 
           {/* BÊN TRÁI: THÔNG TIN BÀI HÁT */}
-          <div className="flex items-center gap-3 w-full md:w-1/3 mb-2 md:mb-0 relative z-10 min-w-0">
-            <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-black/50 shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-500 ${isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
+          <div className="relative z-10 mb-2 flex min-w-0 w-full items-center gap-3 md:mb-0 md:w-1/3">
+            <div className={`h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-white/25 shadow-[0_0_24px_rgba(192,100,255,0.28)] transition-all duration-500 ${isPlaying ? 'scale-[1.03]' : ''}`}>
               <img src={currentTrack.image} alt={currentTrack.title} className="w-full h-full object-cover" />
             </div>
             <div className="truncate min-w-0 flex-1 pr-1">
@@ -378,7 +378,7 @@ export default function Player() {
               <p className="text-xs text-white/50 mt-0.5 truncate">{artistName}</p>
             </div>
 
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex shrink-0 items-center gap-1">
               <button
                 onClick={() => toggleLike(currentTrack)}
                 className="text-white/40 hover:text-pink-500 transition-colors p-1.5 hover:bg-white/5 rounded-lg cursor-pointer"
@@ -392,8 +392,8 @@ export default function Player() {
           </div>
 
           {/* Ở GIỮA: NÚT ĐIỀU KHIỂN & THANH TIẾN TRÌNH */}
-          <div className="flex flex-col items-center max-w-[400px] w-full relative z-10">
-            <div className="flex items-center gap-8 mb-1">
+          <div className="relative z-10 flex w-full max-w-[430px] flex-col items-center">
+            <div className="mb-1 flex items-center gap-7">
               <button 
                 onClick={toggleShuffle} 
                 className={`transition-all p-1 cursor-pointer ${isShuffle ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'text-white/40 hover:text-white'}`}
@@ -406,7 +406,7 @@ export default function Player() {
                 <SkipBack className="w-5 h-5 fill-current" />
               </button>
               
-              <button onClick={togglePlay} className="w-10 h-10 flex items-center justify-center bg-white rounded-full hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.3)] cursor-pointer">
+              <button onClick={togglePlay} aria-label={isPlaying ? "Tạm dừng" : "Phát"} className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-white to-fuchsia-100 shadow-[0_0_26px_rgba(217,140,255,0.55)] transition-transform hover:scale-105">
                 {isPlaying ? <Pause className="w-5 h-5 fill-black text-black" /> : <Play className="w-5 h-5 fill-black text-black ml-0.5" />}
               </button>
               
@@ -436,7 +436,7 @@ export default function Player() {
                 />
                 <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
                   <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full transition-all duration-75 relative"
+                    className="relative h-full rounded-full bg-gradient-to-r from-cyan-300 via-violet-400 to-fuchsia-400 transition-all duration-75"
                     style={{ width: `${progressPercent}%` }}
                   ></div>
                 </div>
@@ -455,7 +455,7 @@ export default function Player() {
           </div>
 
           {/* BÊN PHẢI: PHÍM TẮT & ÂM LƯỢNG */}
-          <div className="hidden md:flex items-center justify-end gap-3 w-1/3 text-white/50 relative z-10">
+          <div className="relative z-10 hidden w-1/3 items-center justify-end gap-3 text-white/50 md:flex">
             <button 
               onClick={() => setShowLyrics(!showLyrics)} 
               className={`transition-all p-2 rounded-full cursor-pointer ${showLyrics ? 'text-indigo-400 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'hover:text-white'}`}

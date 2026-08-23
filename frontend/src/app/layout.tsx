@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Space_Grotesk } from 'next/font/google';
 import Sidebar from '@/components/Sidebar';
 import Player from '@/components/Player';
 import ToastContainer from '@/components/ToastContainer';
@@ -9,7 +9,7 @@ import DynamicTheme from '@/components/DynamicTheme';
 import GlobalSearchBar from '@/components/GlobalSearchBar';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Auraic | Cảm nhận âm nhạc',
@@ -23,13 +23,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi">
-      <body className={`${inter.className} h-screen flex flex-col overflow-hidden text-white`}>
+      <body className={`${spaceGrotesk.className} h-screen flex flex-col overflow-hidden text-white`}>
         <AuthProvider>
         <DynamicTheme />
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-        <div className="flex flex-1 overflow-hidden p-4 gap-4 pb-2">
+        <div className="flex flex-1 gap-3 overflow-hidden p-3 pb-2 sm:gap-4 sm:p-4">
             <Sidebar />
-            <main className="flex-1 overflow-y-auto bg-black/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl relative">
+          <main className="relative flex-1 overflow-y-auto rounded-[28px] border border-white/10 bg-black/25 shadow-2xl backdrop-blur-2xl">
               <GlobalSearchBar />
               {children}
             </main>

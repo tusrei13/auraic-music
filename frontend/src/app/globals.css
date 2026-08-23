@@ -2,7 +2,7 @@
 
 body {
   isolation: isolate;
-  background: #050508;
+  background: #050509;
   color: #EDEDED;
 }
 
@@ -13,9 +13,14 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 82% 8%, var(--auraic-accent-soft, rgba(99, 102, 241, 0.22)), transparent 38%),
-    radial-gradient(circle at 12% 90%, color-mix(in srgb, var(--auraic-accent, #6366f1) 12%, transparent), transparent 44%);
-  filter: blur(34px);
-  opacity: 0.8;
+    radial-gradient(circle at 82% 8%, var(--auraic-accent-soft, rgba(168, 85, 247, 0.24)), transparent 34%),
+    radial-gradient(circle at 16% 88%, rgba(14, 165, 233, 0.14), transparent 38%),
+    linear-gradient(135deg, #050509 0%, #080817 52%, #0d0920 100%);
+  filter: blur(30px);
+  opacity: 0.95;
   transition: background 700ms ease, opacity 700ms ease;
 }
+
+button, a, input { touch-action: manipulation; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid #e879f9; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }

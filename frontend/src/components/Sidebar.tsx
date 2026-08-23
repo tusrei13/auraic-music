@@ -16,18 +16,18 @@ export default function Sidebar() {
   const { user, status, signOut, openAuthModal } = useAuthStore();
 
   return (
-    <aside className="w-64 bg-white/[0.02] border-r border-white/10 p-6 flex flex-col justify-between h-full">
-      <div className="space-y-8">
+    <aside className="group/sidebar flex h-full w-[68px] shrink-0 flex-col justify-between overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.035] p-3 transition-[width] duration-300 hover:w-56 sm:w-[76px] sm:p-4">
+      <div className="space-y-10">
         {/* LOGO */}
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-fuchsia-500 to-cyan-400 shadow-[0_0_22px_rgba(192,100,255,0.5)]">
             <Radio className="w-5 h-5 text-white animate-pulse" />
           </div>
-          <span className="text-xl font-black text-white tracking-widest">AURAIC</span>
+          <span className="whitespace-nowrap text-lg font-black tracking-[0.2em] text-white opacity-0 transition-opacity group-hover/sidebar:opacity-100">AURAIC</span>
         </div>
 
         {/* NAVIGATION LINKS */}
-        <nav className="space-y-2">
+        <nav className="space-y-3">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -40,14 +40,14 @@ export default function Sidebar() {
                     openAuthModal();
                   }
                 }}
-                className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-xs font-semibold transition-all duration-300 ${
+                className={`flex min-h-12 items-center gap-4 rounded-2xl px-3 text-xs font-semibold transition-all duration-300 ${
                   isActive
                     ? "bg-indigo-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]"
                     : "text-white/50 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <item.icon className={`w-4 h-4 ${isActive ? "text-white" : "text-white/50"}`} />
-                {item.name}
+                <item.icon className={`h-5 w-5 shrink-0 ${isActive ? "text-white" : "text-white/50"}`} />
+                <span className="whitespace-nowrap opacity-0 transition-opacity group-hover/sidebar:opacity-100">{item.name}</span>
               </Link>
             );
           })}
@@ -68,9 +68,9 @@ export default function Sidebar() {
       ) : (
         <Link
           href="/login"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-xs font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
+          className="flex min-h-12 items-center gap-3 rounded-2xl px-3 text-xs font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
         >
-          <LogIn className="h-4 w-4" /> Đăng nhập
+          <LogIn className="h-5 w-5 shrink-0" /><span className="whitespace-nowrap opacity-0 transition-opacity group-hover/sidebar:opacity-100">Đăng nhập</span>
         </Link>
       )}
     </aside>
