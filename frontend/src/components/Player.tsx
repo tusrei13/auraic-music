@@ -447,9 +447,7 @@ export default function Player() {
               </div>
               <span>{formatTime(duration)}</span>
             </div>
-            {playbackStatus === "buffering" || playbackStatus === "loading" ? (
-              <span className="mt-1 text-[10px] text-indigo-300">Đang tải âm thanh...</span>
-            ) : playbackStatus === "error" ? (
+            {playbackStatus === "error" ? (
               <span className="mt-1 text-[10px] text-rose-300">{playbackError || "Lỗi phát nhạc"}</span>
             ) : null}
           </div>

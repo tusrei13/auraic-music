@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Play, Sparkles, Heart, Loader2, ArrowUpRight, Waves, Disc3 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { formatDuration, getSongs } from "@/lib/api";
+import { getJamendoTracks } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
 export default function HomePage() {
@@ -12,7 +12,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getSongs()
+    getJamendoTracks({ limit: 12 })
       .then((data) => setSongs(data))
       .catch((err) => console.error("Lỗi tải bài hát từ API:", err))
       .finally(() => setLoading(false));
