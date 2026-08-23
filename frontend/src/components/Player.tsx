@@ -22,7 +22,7 @@ import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import QueuePanel from "@/components/QueuePanel";
 import AudioVisualizer from "@/components/AudioVisualizer";
-import { normalizeLyrics } from "@/lib/lyrics";
+import { normalizeLyrics, type LyricLine } from "@/lib/lyrics";
 import Hls from "hls.js";
 import { resolveMediaUrl } from "@/lib/api";
 import { getLyrics } from "@/lib/api";
@@ -53,7 +53,7 @@ export default function Player() {
   const [duration, setDuration] = useState(0);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
-  const [fetchedLyrics, setFetchedLyrics] = useState<string | null>(null);
+  const [fetchedLyrics, setFetchedLyrics] = useState<string | LyricLine[] | null>(null);
   const [fetchedPlainLyrics, setFetchedPlainLyrics] = useState<string | null>(null);
   
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -93,11 +93,11 @@ export default function Player() {
 
     const existingLyrics = normalizeLyrics(currentTrack.lyrics);
     if (existingLyrics.length > 0) {
-      setFetchedLyrics(typeof currentTrack.lyrics === "string" ? currentTrack.lyrics : null);
+      setFetchedLyrics(currentTrack.lyrics ?? null);
       return;
     }
-    if (typeof currentTrack.lyrics === "string") {
-      setFetchedPlainLyrics(currentTrack.lyrics);
+    if (typeof currentTrack.lyrics === "string" && currentTrack.lyrics.trim()) {
+      setFetchedPlainLyrics(currentTrack.lyrics.trim());
       return;
     }
 
