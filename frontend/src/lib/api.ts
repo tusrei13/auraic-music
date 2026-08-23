@@ -121,6 +121,11 @@ export const addSongToPlaylist = (playlistId: string, songId: string | number, t
   });
 export const removeSongFromPlaylist = (playlistId: string, songId: string | number) =>
   fetcher(`/playlists/${encodeURIComponent(playlistId)}/songs/${songId}`, { method: 'DELETE' });
+export const reorderPlaylistSongs = (playlistId: string, trackIds: Array<string | number>) =>
+  fetcher<{ message: string }>(`/playlists/${encodeURIComponent(playlistId)}/reorder`, {
+    method: 'PUT',
+    body: JSON.stringify({ trackIds }),
+  });
 export const deletePlaylist = (playlistId: string) =>
   fetcher(`/playlists/${encodeURIComponent(playlistId)}`, { method: 'DELETE' });
 export const getCurrentUser = () => fetcher<CurrentUser>('/auth/me');

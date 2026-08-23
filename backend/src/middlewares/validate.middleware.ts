@@ -65,6 +65,12 @@ export const playlistSongParamsSchema = z.object({
   query: z.record(z.string(), z.unknown()).optional(),
 })
 
+export const playlistReorderSchema = z.object({
+  body: z.object({ trackIds: z.array(z.union([z.coerce.number().int().positive(), z.string().trim().min(1)])) }),
+  params: z.object({ id: z.string().uuid() }),
+  query: z.record(z.string(), z.unknown()).optional(),
+})
+
 export const songIdParamsSchema = z.object({
   body: z.record(z.string(), z.unknown()).optional(),
   params: z.object({ id: z.coerce.number().int().positive() }),

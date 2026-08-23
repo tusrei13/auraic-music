@@ -19,6 +19,7 @@ import {
   Disc,
   AlertTriangle,
   Loader2
+  ,ArrowDown, ArrowUp
 } from "lucide-react";
 import { usePlayerStore, Track as StoreTrack, type LocalListeningHistoryItem } from "@/store/usePlayerStore";
 import { usePlaylistStore } from "@/store/usePlaylistStore";
@@ -176,6 +177,13 @@ export default function LibraryPage() {
       if (store.addTrackToPlaylist) store.addTrackToPlaylist(playlistId, song);
       else if (store.addSongToPlaylist) store.addSongToPlaylist(playlistId, song);
     }
+  };
+
+  const handleMoveSong = (index: number, direction: -1 | 1) => {
+    if (!activePlaylist || index + direction < 0 || index + direction >= activePlaylistSongs.length) return;
+    const reordered = [...activePlaylistSongs];
+    [reordered[index], reordered[index + direction]] = [reordered[index + direction], reordered[index]];
+    void playlistStore.reorderTracksInPlaylist?.(activePlaylist.id, reordered.map((song: Track) => song.id));
   };
 
   const activePlaylist = playlists.find((p: any) => String(p.id) === String(selectedPlaylistId));
@@ -416,6 +424,32 @@ export default function LibraryPage() {
                       </div>
 
                       <div className="col-span-6 sm:col-span-4 md:col-span-2 flex items-center justify-end gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveSong(index, -1);
+                          }}
+                          disabled={index === 0}
+                          className="hidden text-white/30 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-20 sm:block"
+                          title="Đưa bài hát lên"
+                          aria-label="Đưa bài hát lên"
+                        >
+                          <ArrowUp className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveSong(index, 1);
+                          }}
+                          disabled={index === activePlaylistSongs.length - 1}
+                          className="hidden text-white/30 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-20 sm:block"
+                          title="Đưa bài hát xuống"
+                          aria-label="Đưa bài hát xuống"
+                        >
+                          <ArrowDown className="w-4 h-4" />
+                        </button>
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

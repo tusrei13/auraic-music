@@ -8,6 +8,7 @@ import {
   createPlaylist as createPlaylistApi,
   deletePlaylist as deletePlaylistApi,
   getCurrentUser,
+  reorderPlaylistSongs as reorderPlaylistSongsApi,
   removeSongFromPlaylist as removeSongFromPlaylistApi,
 } from "../lib/api";
 
@@ -25,6 +26,7 @@ interface PlaylistState {
   createPlaylist: (title: string, initialTrack?: Track) => Playlist | null;
   addTrackToPlaylist: (playlistId: string, track: Track) => void;
   removeTrackFromPlaylist: (playlistId: string, trackId: string | number) => void;
+  reorderTracksInPlaylist: (playlistId: string, trackIds: Array<string | number>) => Promise<void>;
   deletePlaylist: (playlistId: string) => void;
   hydrate: () => Promise<void>;
   switchUser: (userId: string | null) => void;
@@ -160,6 +162,25 @@ export const usePlaylistStore = create<PlaylistState>()(
           void removeSongFromPlaylistApi(playlistId, trackId).catch(() => {
             useToastStore.getState().addToast("Không thể đồng bộ thay đổi với máy chủ", "error");
           });
+        }
+      },
+
+      reorderTracksInPlaylist: async (playlistId, trackIds) => {
+        if (!hasToken()) {
+          useAuthStore.getState().openAuthModal();
+          return;
+        }
+        const nextTrackIds = trackIds.map(String);
+        set((state) => ({
+          playlists: state.playlists.map((playlist) => playlist.id === playlistId
+            ? { ...playlist, tracks: nextTrackIds.map((id) => playlist.tracks.find((track) => String(track.id) === id)).filter(Boolean) as Track[] }
+            : playlist),
+        }));
+        try {
+          await reorderPlaylistSongsApi(playlistId, trackIds);
+        } catch {
+          useToastStore.getState().addToast("Không thể lưu thứ tự playlist", "error");
+          await get().hydrate();
         }
       },
 

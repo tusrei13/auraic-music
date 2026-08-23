@@ -154,6 +154,40 @@ export const removeSongFromPlaylist = async (req: AuthRequest, res: Response) =>
   }
 }
 
+export const reorderPlaylistSongs = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id
+    const { id: playlistId } = req.params
+    const { trackIds } = req.body as { trackIds: Array<string | number> }
+
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
+    const playlist = await prisma.playlist.findUnique({ where: { id: playlistId } })
+    if (!playlist || playlist.userId !== userId) {
+      return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền chỉnh sửa playlist này')
+    }
+
+    await prisma.$transaction(async (transaction) => {
+      for (const [index, rawTrackId] of trackIds.entries()) {
+        const trackId = String(rawTrackId)
+        const addedAt = new Date(Date.now() + index)
+        if (trackId.startsWith('jamendo:') || Number.isNaN(Number(trackId))) {
+          await transaction.jamendoPlaylistSong.updateMany({ where: { playlistId, trackId }, data: { addedAt } })
+        } else {
+          const numericSongId = parsePositiveInteger(trackId)
+          if (numericSongId !== null) {
+            await transaction.playlistSong.updateMany({ where: { playlistId, songId: numericSongId }, data: { addedAt } })
+          }
+        }
+      }
+      await transaction.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
+    })
+
+    return res.json({ message: 'Đã cập nhật thứ tự playlist' })
+  } catch {
+    return sendInternalError(res, 'PLAYLIST_REORDER_ERROR', 'Không thể cập nhật thứ tự playlist')
+  }
+}
+
 export const deletePlaylist = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
