@@ -9,6 +9,7 @@
     "start": "node dist/src/index.js",
     "test": "vitest run",
     "admin:grant": "tsx src/scripts/make-admin.ts",
+    "songs:purge-local": "tsx src/scripts/purge-local-songs.ts",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed"

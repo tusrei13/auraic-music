@@ -87,55 +87,6 @@ async function main() {
     data: { title: "Chill", color: "#6366f1", icon: "cloud" },
   });
 
-  console.log("Tạo Bài hát...");
-  await prisma.song.createMany({
-    data: [
-      {
-        title: "Chúng Ta Của Tương Lai",
-        artistId: sonTung.id,
-        genreId: vpop.id,
-        image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop",
-        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        albumId: albumVpop.id,
-        moodId: chillMood.id,
-      },
-      {
-        title: "Making My Way",
-        artistId: sonTung.id,
-        genreId: vpop.id,
-        image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop",
-        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-        albumId: albumVpop.id,
-        moodId: chillMood.id,
-      },
-      {
-        title: "Nấu Ăn Cho Em",
-        artistId: denVau.id,
-        genreId: hiphop.id,
-        image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=500&auto=format&fit=crop",
-        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-        albumId: albumHiphop.id,
-        moodId: chillMood.id,
-      },
-      {
-        title: "Trốn Tìm",
-        artistId: denVau.id,
-        genreId: hiphop.id,
-        image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=500&auto=format&fit=crop",
-        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-        albumId: albumHiphop.id,
-        moodId: chillMood.id,
-      },
-      {
-        title: "Vũ Trụ Cò Bay",
-        artistId: phuongMyChi.id,
-        genreId: vpop.id,
-        image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=500&auto=format&fit=crop",
-        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-      },
-    ],
-  });
-
   console.log("Tạo Playlist mẫu...");
   await prisma.playlist.create({
     data: {
