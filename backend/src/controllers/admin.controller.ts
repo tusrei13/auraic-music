@@ -69,23 +69,69 @@ export const getAdminSongs = async (req: AuthRequest, res: Response) => {
   try {
     const [tracks, events] = await Promise.all([
       getJamendoTracks({ limit: 50, order: 'name' }),
-      prisma.jamendoListening.findMany({ select: { trackId: true } }),
+      prisma.jamendoListening.findMany({
+        orderBy: { listenedAt: 'desc' },
+        take: 5000,
+        select: { trackId: true, title: true, artistName: true, image: true, audioUrl: true, duration: true },
+      }),
     ])
-    const playCounts = new Map<string, number>()
-    for (const event of events) playCounts.set(event.trackId, (playCounts.get(event.trackId) || 0) + 1)
-    const songs = tracks.map((track) => ({
-      id: track.id,
-      title: track.title,
-      image: track.image,
-      duration: track.duration,
-      playCount: playCounts.get(track.id) || 0,
-      lyrics: null,
-      createdAt: null,
-      artist: { name: track.artist.name },
-      genre: track.genres[0] ? { name: track.genres[0] } : null,
-    }))
 
-    return res.json({ songs })
+    const playCounts = new Map<string, number>()
+    const listenedTracksMap = new Map<string, { id: string; title: string; image: string; duration: number | null; artistName: string; audioUrl: string }>()
+
+    for (const event of events) {
+      const rawId = event.trackId
+      const cleanId = rawId.replace(/^jamendo:/, '')
+      const fullId = rawId.startsWith('jamendo:') ? rawId : `jamendo:${rawId}`
+
+      playCounts.set(rawId, (playCounts.get(rawId) || 0) + 1)
+      if (cleanId !== rawId) playCounts.set(cleanId, (playCounts.get(cleanId) || 0) + 1)
+      if (fullId !== rawId) playCounts.set(fullId, (playCounts.get(fullId) || 0) + 1)
+
+      if (!listenedTracksMap.has(fullId)) {
+        listenedTracksMap.set(fullId, {
+          id: fullId,
+          title: event.title,
+          image: event.image,
+          duration: event.duration,
+          artistName: event.artistName,
+          audioUrl: event.audioUrl,
+        })
+      }
+    }
+
+    const mapTrack = (t: { id: string; title: string; image: string; duration: number | null; artist: { name: string } | string; genres?: string[] }) => {
+      const fullId = t.id.startsWith('jamendo:') ? t.id : `jamendo:${t.id}`
+      const cleanId = t.id.replace(/^jamendo:/, '')
+      const count = Math.max(playCounts.get(t.id) || 0, playCounts.get(fullId) || 0, playCounts.get(cleanId) || 0)
+      const artistName = typeof t.artist === 'string' ? t.artist : t.artist?.name || 'Unknown'
+      const genreName = t.genres?.[0] ? t.genres[0] : null
+      return {
+        id: fullId,
+        title: t.title,
+        image: t.image,
+        duration: t.duration || 0,
+        playCount: count,
+        lyrics: null,
+        createdAt: null,
+        artist: { name: artistName },
+        genre: genreName ? { name: genreName } : null,
+      }
+    }
+
+    const catalogSongs = tracks.map(mapTrack)
+    const existingIds = new Set(catalogSongs.map((s) => s.id))
+    const listenedSongs: ReturnType<typeof mapTrack>[] = []
+
+    for (const [id, item] of listenedTracksMap.entries()) {
+      if (!existingIds.has(id)) {
+        listenedSongs.push(mapTrack({ id: item.id, title: item.title, image: item.image, duration: item.duration, artist: { name: item.artistName } }))
+      }
+    }
+
+    const allSongs = [...listenedSongs, ...catalogSongs].sort((first, second) => second.playCount - first.playCount)
+
+    return res.json({ songs: allSongs })
   } catch {
     return sendInternalError(res, 'ADMIN_SONGS_ERROR', 'Không thể tải thư viện bài hát')
   }
@@ -104,13 +150,37 @@ export const getAdminPlaylists = async (req: AuthRequest, res: Response) => {
         createdAt: true,
         updatedAt: true,
         user: { select: { name: true, email: true } },
-        _count: { select: { songs: true } },
+        _count: { select: { songs: true, jamendoSongs: true } },
       },
     })
 
-    return res.json({ playlists })
+    const mappedPlaylists = playlists.map((p) => ({
+      id: p.id,
+      name: p.name,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      user: p.user,
+      _count: {
+        songs: (p._count?.songs || 0) + (p._count?.jamendoSongs || 0),
+      },
+    }))
+
+    return res.json({ playlists: mappedPlaylists })
   } catch {
     return sendInternalError(res, 'ADMIN_PLAYLISTS_ERROR', 'Không thể tải danh sách playlist')
+  }
+}
+
+export const deleteAdminPlaylist = async (req: AuthRequest, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
+
+  try {
+    const playlist = await prisma.playlist.delete({
+      where: { id: req.params.id },
+    })
+    return res.json({ message: 'Đã xóa playlist', playlistId: playlist.id })
+  } catch {
+    return sendError(res, 404, 'PLAYLIST_NOT_FOUND', 'Không tìm thấy playlist để xóa')
   }
 }
 

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Library, LogIn, LogOut, ShieldCheck } from "lucide-react";
+import { Home, Compass, Library, User as UserIcon, LogIn, LogOut, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
   { name: "Trang chủ", href: "/", icon: Home },
   { name: "Khám phá", href: "/discover", icon: Compass },
   { name: "Thư viện", href: "/library", icon: Library },
+  { name: "Trang cá nhân", href: "/profile", icon: UserIcon },
 ];
 
 export default function Sidebar() {

@@ -35,7 +35,7 @@ export interface JamendoSong {
   licenseUrl?: string;
   genres: string[];
 }
-export interface CurrentUser { id: string; email: string; name?: string | null; role: "USER" | "ADMIN"; playlists: Playlist[] }
+export interface CurrentUser { id: string; email: string; name?: string | null; avatar?: string | null; createdAt?: string; role: "USER" | "ADMIN"; playlists: Playlist[] }
 export interface AuthResponse { message: string; token?: string; user?: { id: string; email?: string | null; user_metadata?: { full_name?: string } } }
 export interface ApiErrorPayload { code: string; message: string; details?: unknown }
 export interface LyricsResponse { syncedLyrics: string | null; plainLyrics: string | null }
@@ -106,10 +106,18 @@ export const getPlaylists = () => fetcher<Playlist[]>("/playlists");
 export const getPlaylistById = (id: string) => fetcher<Playlist>(`/playlists/${id}`);
 export const createPlaylist = (data: { name: string; coverImage?: string; color?: string }) =>
   fetcher<Playlist>('/playlists', { method: 'POST', body: JSON.stringify(data) });
-export const addSongToPlaylist = (playlistId: string, songId: string | number) =>
+export const addSongToPlaylist = (playlistId: string, songId: string | number, trackData?: any) =>
   fetcher(`/playlists/${encodeURIComponent(playlistId)}/songs`, {
     method: 'POST',
-    body: JSON.stringify({ songId }),
+    body: JSON.stringify({
+      songId,
+      trackId: songId,
+      title: trackData?.title,
+      artistName: typeof trackData?.artist === 'string' ? trackData.artist : trackData?.artist?.name || trackData?.artistName,
+      image: trackData?.image,
+      audioUrl: trackData?.audioUrl,
+      duration: trackData?.duration,
+    }),
   });
 export const removeSongFromPlaylist = (playlistId: string, songId: string | number) =>
   fetcher(`/playlists/${encodeURIComponent(playlistId)}/songs/${songId}`, { method: 'DELETE' });
@@ -151,8 +159,10 @@ export const getAdminUsers = () => fetcher<AdminUsersResponse>("/admin/users");
 export const updateAdminUserRole = (userId: string, role: "USER" | "ADMIN") => fetcher<AdminUserRoleResponse>(`/admin/users/${encodeURIComponent(userId)}/role`, { method: "PATCH", body: JSON.stringify({ role }) });
 export const getAdminSongs = () => fetcher<AdminSongsResponse>("/admin/songs");
 export const getAdminPlaylists = () => fetcher<AdminPlaylistsResponse>("/admin/playlists");
+export const deleteAdminPlaylist = (playlistId: string) => fetcher<{ message: string; playlistId: string }>(`/admin/playlists/${encodeURIComponent(playlistId)}`, { method: "DELETE" });
 export const getAdminTopJamendo = () => fetcher<AdminTopSongsResponse>("/admin/top-jamendo");
 export const getAdminArtists = () => fetcher<AdminArtistsResponse>("/admin/artists");
+export const updateUserProfile = (name?: string, avatar?: string) => fetcher<{ message: string; user: CurrentUser }>("/auth/profile", { method: "PATCH", body: JSON.stringify({ ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) }) });
 
 // 5. YÊU THÍCH (LIKES)
 export const getLikedSongs = () => fetcher<Array<{ song: Song }>>("/likes/my-likes");

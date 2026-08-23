@@ -87,3 +87,21 @@ export const getMe = async (req: AuthRequest, res: Response) => {
     sendInternalError(res, 'AUTH_ME_ERROR', 'Lỗi server')
   }
 }
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
+
+  try {
+    const { name, avatar } = req.body
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        ...(typeof name === 'string' ? { name: name.trim() } : {}),
+        ...(typeof avatar === 'string' ? { avatar: avatar.trim() } : {}),
+      },
+    })
+    return res.json({ message: 'Đã cập nhật thông tin cá nhân', user: updatedUser })
+  } catch {
+    return sendInternalError(res, 'AUTH_UPDATE_PROFILE_ERROR', 'Không thể cập nhật hồ sơ')
+  }
+}

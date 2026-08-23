@@ -10,6 +10,7 @@ export const getPlaylists = async (_req: Request, res: Response) => {
       include: {
         user: { select: { name: true, avatar: true } },
         songs: { include: { song: { include: { artist: true } } } },
+        jamendoSongs: true,
       },
     })
     res.json(playlists)
@@ -30,6 +31,7 @@ export const getPlaylistById = async (req: Request, res: Response) => {
             song: { include: { artist: true, genre: true } },
           },
         },
+        jamendoSongs: true,
       },
     })
     if (!playlist) return sendError(res, 404, 'PLAYLIST_NOT_FOUND', 'Không tìm thấy playlist')
@@ -60,22 +62,50 @@ export const createPlaylist = async (req: AuthRequest, res: Response) => {
   }
 }
 
-// Thêm bài hát vào Playlist
+// Thêm bài hát vào Playlist (Hỗ trợ cả Jamendo trackId và DB Song ID)
 export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
     const { id: playlistId } = req.params
-    const { songId } = req.body
+    const { songId, trackId, title, artistName, image, audioUrl, duration } = req.body
 
     if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
-    const numericSongId = parsePositiveInteger(songId)
-    if (numericSongId === null) {
-      return sendError(res, 400, 'INVALID_SONG_ID', 'songId không hợp lệ')
-    }
 
     const playlist = await prisma.playlist.findUnique({ where: { id: playlistId } })
     if (!playlist || playlist.userId !== userId) {
       return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền chỉnh sửa playlist này')
+    }
+
+    const rawId = String(trackId || songId || '')
+
+    if (rawId.startsWith('jamendo:') || isNaN(Number(rawId))) {
+      const actualTrackId = rawId.startsWith('jamendo:') ? rawId : `jamendo:${rawId}`
+      const jamendoSong = await prisma.jamendoPlaylistSong.upsert({
+        where: { playlistId_trackId: { playlistId, trackId: actualTrackId } },
+        update: {
+          title: title || 'Jamendo Track',
+          artistName: artistName || 'Artist',
+          image: image || '',
+          audioUrl: audioUrl || '',
+          duration: typeof duration === 'number' ? duration : null,
+        },
+        create: {
+          playlistId,
+          trackId: actualTrackId,
+          title: title || 'Jamendo Track',
+          artistName: artistName || 'Artist',
+          image: image || '',
+          audioUrl: audioUrl || '',
+          duration: typeof duration === 'number' ? duration : null,
+        },
+      })
+      await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
+      return res.status(201).json(jamendoSong)
+    }
+
+    const numericSongId = parsePositiveInteger(rawId)
+    if (numericSongId === null) {
+      return sendError(res, 400, 'INVALID_SONG_ID', 'songId không hợp lệ')
     }
 
     const song = await prisma.song.findUnique({ where: { id: numericSongId } })
@@ -84,10 +114,11 @@ export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
     const playlistSong = await prisma.playlistSong.create({
       data: { playlistId, songId: numericSongId },
     })
+    await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
 
-    res.status(201).json(playlistSong)
+    return res.status(201).json(playlistSong)
   } catch (error) {
-    sendInternalError(res, 'PLAYLIST_SONG_CREATE_ERROR', 'Không thể thêm bài hát vào playlist')
+    return sendInternalError(res, 'PLAYLIST_SONG_CREATE_ERROR', 'Không thể thêm bài hát vào playlist')
   }
 }
 
@@ -104,15 +135,22 @@ export const removeSongFromPlaylist = async (req: AuthRequest, res: Response) =>
       return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền chỉnh sửa playlist này')
     }
 
-    await prisma.playlistSong.delete({
-      where: {
-        playlistId_songId: { playlistId, songId: Number(songId) },
-      },
-    })
+    const rawId = String(songId)
+    if (rawId.startsWith('jamendo:') || isNaN(Number(rawId))) {
+      const actualTrackId = rawId.startsWith('jamendo:') ? rawId : `jamendo:${rawId}`
+      await prisma.jamendoPlaylistSong.deleteMany({
+        where: { playlistId, trackId: actualTrackId },
+      })
+    } else {
+      await prisma.playlistSong.deleteMany({
+        where: { playlistId, songId: Number(rawId) },
+      })
+    }
 
-    res.json({ message: 'Đã xóa bài hát khỏi playlist' })
+    await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
+    return res.json({ message: 'Đã xóa bài hát khỏi playlist' })
   } catch (error) {
-    sendInternalError(res, 'PLAYLIST_SONG_DELETE_ERROR', 'Lỗi khi xóa bài hát khỏi playlist')
+    return sendInternalError(res, 'PLAYLIST_SONG_DELETE_ERROR', 'Lỗi khi xóa bài hát khỏi playlist')
   }
 }
 
@@ -127,8 +165,8 @@ export const deletePlaylist = async (req: AuthRequest, res: Response) => {
     if (playlist.userId !== userId) return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền xóa playlist này')
 
     await prisma.playlist.delete({ where: { id } })
-    res.json({ message: 'Đã xóa playlist' })
+    return res.json({ message: 'Đã xóa playlist' })
   } catch (error) {
-    sendInternalError(res, 'PLAYLIST_DELETE_ERROR', 'Không thể xóa playlist')
+    return sendInternalError(res, 'PLAYLIST_DELETE_ERROR', 'Không thể xóa playlist')
   }
 }

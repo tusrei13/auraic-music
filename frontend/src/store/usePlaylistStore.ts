@@ -9,7 +9,6 @@ import {
   deletePlaylist as deletePlaylistApi,
   getCurrentUser,
   removeSongFromPlaylist as removeSongFromPlaylistApi,
-  isJamendoTrackId,
 } from "../lib/api";
 
 export interface Playlist {
@@ -33,14 +32,26 @@ interface PlaylistState {
 
 const hasToken = () => typeof window !== "undefined" && Boolean(localStorage.getItem("token"));
 
-const toLocalPlaylist = (playlist: any): Playlist => ({
-  id: playlist.id,
-  title: playlist.title || playlist.name,
-  description: playlist.description,
-  coverImage: playlist.coverImage,
-  createdAt: playlist.createdAt,
-  tracks: playlist.tracks || playlist.songs?.map((item: any) => item.song).filter(Boolean) || [],
-});
+const toLocalPlaylist = (playlist: any): Playlist => {
+  const dbSongs = playlist.songs?.map((item: any) => item.song).filter(Boolean) || [];
+  const dbJamendo = playlist.jamendoSongs?.map((item: any) => ({
+    id: item.trackId,
+    title: item.title,
+    artist: item.artistName,
+    image: item.image,
+    audioUrl: item.audioUrl,
+    duration: item.duration,
+  })) || [];
+
+  return {
+    id: playlist.id,
+    title: playlist.title || playlist.name,
+    description: playlist.description,
+    coverImage: playlist.coverImage,
+    createdAt: playlist.createdAt,
+    tracks: [...dbJamendo, ...dbSongs],
+  };
+};
 
 export const usePlaylistStore = create<PlaylistState>()(
   persist(
@@ -86,7 +97,7 @@ export const usePlaylistStore = create<PlaylistState>()(
                 playlist.id === newId ? { ...playlist, id: remote.id } : playlist
               ),
             }));
-            if (initialTrack && !isJamendoTrackId(initialTrack.id)) await addSongToPlaylistApi(remote.id, initialTrack.id);
+            if (initialTrack) await addSongToPlaylistApi(remote.id, initialTrack.id, initialTrack);
           }).catch(() => {
             useToastStore.getState().addToast("Không thể đồng bộ playlist với máy chủ", "error");
           });
@@ -125,8 +136,8 @@ export const usePlaylistStore = create<PlaylistState>()(
           "success"
         );
 
-        if (hasToken() && !isJamendoTrackId(track.id)) {
-          void addSongToPlaylistApi(playlistId, track.id).catch(() => {
+        if (hasToken()) {
+          void addSongToPlaylistApi(playlistId, track.id, track).catch(() => {
             useToastStore.getState().addToast("Không thể đồng bộ bài hát với playlist", "error");
           });
         }
@@ -145,7 +156,7 @@ export const usePlaylistStore = create<PlaylistState>()(
           ),
         }));
         useToastStore.getState().addToast("Đã xóa bài hát khỏi playlist", "info");
-        if (hasToken() && !isJamendoTrackId(trackId)) {
+        if (hasToken()) {
           void removeSongFromPlaylistApi(playlistId, trackId).catch(() => {
             useToastStore.getState().addToast("Không thể đồng bộ thay đổi với máy chủ", "error");
           });
@@ -171,8 +182,29 @@ export const usePlaylistStore = create<PlaylistState>()(
       hydrate: async () => {
         if (!hasToken()) return;
         try {
+          const currentLocal = get().playlists;
           const user = await getCurrentUser();
-          set({ playlists: user.playlists.map(toLocalPlaylist) });
+          const remotePlaylists = user.playlists.map(toLocalPlaylist);
+
+          // Merge local tracks that haven't synced yet
+          const mergedPlaylists = remotePlaylists.map((remoteP) => {
+            const localP = currentLocal.find((l) => l.id === remoteP.id);
+            if (!localP) return remoteP;
+
+            const missingTracks = localP.tracks.filter(
+              (lTrack) => !remoteP.tracks.some((rTrack) => String(rTrack.id) === String(lTrack.id))
+            );
+
+            if (missingTracks.length > 0) {
+              for (const missing of missingTracks) {
+                void addSongToPlaylistApi(remoteP.id, missing.id, missing).catch(() => undefined);
+              }
+              return { ...remoteP, tracks: [...remoteP.tracks, ...missingTracks] };
+            }
+            return remoteP;
+          });
+
+          set({ playlists: mergedPlaylists });
         } catch {
           useToastStore.getState().addToast("Không thể tải playlist từ máy chủ", "error");
         }
