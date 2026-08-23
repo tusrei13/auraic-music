@@ -71,11 +71,11 @@ export const songIdParamsSchema = z.object({
 
 export const jamendoListeningSchema = z.object({
   body: z.object({
-    trackId: z.string().regex(/^jamendo:\\d+$/),
+      trackId: z.string().trim().regex(/^jamendo:.+$/),
     title: z.string().trim().min(1).max(300),
     artistName: z.string().trim().min(1).max(200),
-    image: z.string().url().max(2000),
-    audioUrl: z.string().url().max(2000),
+      image: z.string().trim().min(1).max(2000),
+      audioUrl: z.string().trim().min(1).max(2000),
     duration: z.coerce.number().int().nonnegative().nullable().optional(),
   }),
   params: z.record(z.string(), z.unknown()).optional(),

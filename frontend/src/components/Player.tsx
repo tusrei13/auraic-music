@@ -284,7 +284,14 @@ export default function Player() {
             history = [{ id: `${String(currentTrack.id)}-${Date.now()}`, listenedAt: new Date().toISOString(), song: currentTrack }, ...history.filter((item) => String(item.song?.id) !== String(currentTrack.id))].slice(0, 50);
             localStorage.setItem(storageKey, JSON.stringify(history));
             window.dispatchEvent(new CustomEvent("auraic:history-updated"));
-            void recordJamendoListening({ trackId: String(currentTrack.id), title: currentTrack.title, artistName, image: currentTrack.image, audioUrl: currentTrack.audioUrl, duration: typeof currentTrack.duration === "number" ? currentTrack.duration : null }).catch(() => undefined);
+            void recordJamendoListening({
+              trackId: String(currentTrack.id),
+              title: currentTrack.title,
+              artistName,
+              image: currentTrack.image,
+              audioUrl: currentTrack.audioUrl,
+              ...(typeof currentTrack.duration === "number" ? { duration: currentTrack.duration } : {}),
+            }).catch(() => undefined);
           }
         } else {
           void recordListening(currentTrack.id);
