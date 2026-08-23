@@ -19,6 +19,8 @@ import {
   ListMusic 
 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
+import { useAuthStore } from "@/store/useAuthStore";
+import { isJamendoTrackId } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import QueuePanel from "@/components/QueuePanel";
 import AudioVisualizer from "@/components/AudioVisualizer";
@@ -268,7 +270,24 @@ export default function Player() {
         recordedTrackIdRef.current !== currentTrack.id
       ) {
         recordedTrackIdRef.current = currentTrack.id;
-        void recordListening(currentTrack.id);
+        if (isJamendoTrackId(currentTrack.id)) {
+          const userId = useAuthStore.getState().user?.id;
+          if (userId) {
+            const storageKey = `auraic-history-${userId}`;
+            let history: Array<{ id: string; listenedAt: string; song: typeof currentTrack }> = [];
+            try {
+              const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
+              if (Array.isArray(stored)) history = stored;
+            } catch {
+              history = [];
+            }
+            history = [{ id: `${String(currentTrack.id)}-${Date.now()}`, listenedAt: new Date().toISOString(), song: currentTrack }, ...history.filter((item) => String(item.song?.id) !== String(currentTrack.id))].slice(0, 50);
+            localStorage.setItem(storageKey, JSON.stringify(history));
+            window.dispatchEvent(new CustomEvent("auraic:history-updated"));
+          }
+        } else {
+          void recordListening(currentTrack.id);
+        }
       }
     }
   };

@@ -19,10 +19,11 @@ import {
   AlertTriangle,
   Loader2
 } from "lucide-react";
-import { usePlayerStore, Track as StoreTrack } from "@/store/usePlayerStore";
+import { usePlayerStore, Track as StoreTrack, type LocalListeningHistoryItem } from "@/store/usePlayerStore";
 import { usePlaylistStore } from "@/store/usePlaylistStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
-import { formatDuration, getSongs } from "@/lib/api";
+import { formatDuration, getListeningHistory, getSongs } from "@/lib/api";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export type Track = StoreTrack & {
   addedAt?: string;
@@ -55,7 +56,8 @@ export default function LibraryPage() {
   const [systemSongs, setSystemSongs] = useState<Track[]>([]);
   const [loadingSongs, setLoadingSongs] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<"all" | "playlists" | "liked">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "playlists" | "liked" | "history">("all");
+  const [listeningHistory, setListeningHistory] = useState<LocalListeningHistoryItem[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddSongsModal, setShowAddSongsModal] = useState(false);
   const [playlistToDelete, setPlaylistToDelete] = useState<{ id: number | string; name: string } | null>(null);
@@ -64,6 +66,7 @@ export default function LibraryPage() {
   const [playlistSearchQuery, setPlaylistSearchQuery] = useState("");
   const [isShuffleActive, setIsShuffleActive] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | string | null>(null);
+  const authStatus = useAuthStore((state) => state.status);
 
   // Tải danh sách bài hát thực tế từ Database
   useEffect(() => {
@@ -78,6 +81,30 @@ export default function LibraryPage() {
   useEffect(() => {
     void playlistStore.hydrate?.();
   }, [playlistStore.hydrate]);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") {
+      setListeningHistory([]);
+      return;
+    }
+
+    const loadHistory = () => {
+      let localHistory: LocalListeningHistoryItem[] = [];
+      try {
+        const stored = JSON.parse(localStorage.getItem(`auraic-history-${useAuthStore.getState().user?.id}`) || "[]");
+        if (Array.isArray(stored)) localHistory = stored;
+      } catch {
+        localHistory = [];
+      }
+      getListeningHistory()
+        .then((history) => setListeningHistory([...localHistory, ...(history as LocalListeningHistoryItem[])].slice(0, 50)))
+        .catch(() => setListeningHistory(localHistory));
+    };
+
+    loadHistory();
+    window.addEventListener("auraic:history-updated", loadHistory);
+    return () => window.removeEventListener("auraic:history-updated", loadHistory);
+  }, [authStatus]);
 
   const sourceTracks: Track[] = systemSongs;
 
@@ -575,6 +602,14 @@ export default function LibraryPage() {
           >
             Playlist cá nhân ({playlists.length})
           </button>
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "history" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" : "text-white/60 hover:text-white"
+            }`}
+          >
+            Đã nghe gần đây ({listeningHistory.length})
+          </button>
         </div>
       </div>
 
@@ -636,6 +671,27 @@ export default function LibraryPage() {
               );
             })}
           </div>
+        </section>
+      )}
+
+      {(activeTab === "all" || activeTab === "history") && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2"><Clock className="w-5 h-5 text-cyan-300" /> Đã nghe gần đây ({listeningHistory.length})</h2>
+            {listeningHistory.length > 0 && <button onClick={() => handlePlaySong(listeningHistory[0].song, listeningHistory.map((item) => item.song), "Đã nghe gần đây")} className="flex items-center gap-2 text-xs font-bold text-black bg-white hover:bg-white/90 px-4 py-2 rounded-full transition-all shadow-lg cursor-pointer"><Play className="w-3.5 h-3.5 fill-black" /> Phát lại</button>}
+          </div>
+          {listeningHistory.length > 0 ? (
+            <div className="bg-white/[0.02] border border-white/5 rounded-2xl backdrop-blur-sm divide-y divide-white/[0.02]">
+              {listeningHistory.slice(0, 10).map((item, index) => {
+                const song = item.song;
+                const isCurrent = String(currentTrack?.id) === String(song.id);
+                const songImage = getStringValue(song.image) || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
+                return <div key={item.id} onClick={() => handlePlaySong(song, listeningHistory.map((historyItem) => historyItem.song), "Đã nghe gần đây")} className={`flex cursor-pointer items-center gap-3 px-5 py-3.5 transition hover:bg-white/[0.06] ${isCurrent ? "bg-indigo-500/15" : ""}`}><span className="w-5 text-xs font-mono text-white/35">{index + 1}</span><img src={songImage} alt={getStringValue(song.title)} className="h-10 w-10 rounded-lg object-cover" /><div className="min-w-0 flex-1"><h4 className={`truncate text-sm font-semibold ${isCurrent ? "text-indigo-300" : "text-white"}`}>{getStringValue(song.title, "Bài hát")}</h4><p className="truncate text-xs text-white/50">{getArtistName(song.artist)} · {new Date(item.listenedAt).toLocaleDateString("vi-VN")}</p></div><span className="text-xs font-mono text-white/40">{formatDuration(song.duration)}</span></div>;
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl bg-white/[0.02]"><Clock className="mx-auto mb-3 h-8 w-8 text-white/20" /><p className="text-white/40 text-sm">Chưa có lịch sử nghe nhạc</p><p className="mt-1 text-xs text-white/30">Các bài hát bạn nghe sẽ xuất hiện ở đây.</p></div>
+          )}
         </section>
       )}
 
