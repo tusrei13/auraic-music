@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Play, Sparkles, Heart, Loader2, ArrowUpRight, Waves, Disc3 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
@@ -10,6 +10,7 @@ import TrackActionMenu from "@/components/TrackActionMenu";
 export default function HomePage() {
   const { playMix, playTrack, toggleLike, likedIds, currentTrack, isPlaying } = usePlayerStore();
   const router = useRouter();
+  const vibeSectionRef = useRef<HTMLElement>(null);
   const [songs, setSongs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +30,14 @@ export default function HomePage() {
     { label: "Dreamy", note: "Soft focus", className: "from-indigo-500/35 to-cyan-500/10", icon: Sparkles },
   ];
 
+  const handleExplore = () => {
+    if (songs.length === 0) return;
+    playMix(songs);
+    window.setTimeout(() => {
+      vibeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 180);
+  };
+
   return (
     <div className="min-h-full overflow-y-auto scrollbar-none px-5 pb-36 pt-3 text-white sm:px-8 lg:px-12">
       <section className="relative isolate grid min-h-[470px] grid-cols-1 items-end overflow-hidden rounded-[28px] border border-white/15 bg-[#080817] p-6 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:p-14">
@@ -38,7 +47,7 @@ export default function HomePage() {
           <p className="mb-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300"><Sparkles className="h-4 w-4" /> The Auraic experience</p>
           <h1 className="max-w-xl text-5xl font-black leading-[0.96] tracking-[-0.06em] sm:text-7xl">Feel the <span className="bg-gradient-to-r from-fuchsia-300 via-violet-400 to-cyan-300 bg-clip-text text-transparent">Aura.</span><br /><em className="font-semibold text-white/85">Live the music.</em></h1>
           <p className="mt-6 max-w-sm text-sm leading-6 text-white/55">A living soundtrack for your late nights, clear mornings, and everything in between.</p>
-          <button onClick={() => songs.length > 0 && playMix(songs)} disabled={songs.length === 0} className="mt-8 inline-flex min-h-12 items-center gap-3 rounded-full bg-white px-5 text-sm font-bold text-[#0b0a14] shadow-[0_0_35px_rgba(196,120,255,0.4)] transition hover:-translate-y-0.5 hover:bg-fuchsia-100 disabled:opacity-50"><Play className="h-4 w-4 fill-current" /> Explore Auraic <ArrowUpRight className="h-4 w-4" /></button>
+          <button onClick={handleExplore} disabled={songs.length === 0} className="mt-8 inline-flex min-h-12 items-center gap-3 rounded-full bg-white px-5 text-sm font-bold text-[#0b0a14] shadow-[0_0_35px_rgba(196,120,255,0.4)] transition hover:-translate-y-0.5 hover:bg-fuchsia-100 disabled:opacity-50"><Play className="h-4 w-4 fill-current" /> Explore Auraic <ArrowUpRight className="h-4 w-4" /></button>
         </div>
         <div className="relative mx-auto mt-8 aspect-square w-full max-w-[370px] lg:mt-0 lg:max-w-[460px]">
           <div className="absolute inset-[-12%] rounded-full bg-gradient-to-br from-fuchsia-500/35 via-violet-500/25 to-cyan-400/30 blur-3xl" />
@@ -48,7 +57,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mt-10">
+      <section ref={vibeSectionRef} className="mt-10 scroll-mt-6">
         <div className="mb-4 flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300">Choose your atmosphere</p><h2 className="mt-2 text-2xl font-bold tracking-tight">What are you feeling?</h2></div><span className="hidden text-xs text-white/35 sm:block">Curated for this moment</span></div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{vibes.map((vibe) => { const Icon = vibe.icon; return <button key={vibe.label} className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br ${vibe.className} p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_rgba(109,78,255,0.18)]`}><Icon className="mb-8 h-5 w-5 text-white/80 transition group-hover:rotate-12" /><p className="font-bold">{vibe.label}</p><p className="mt-1 text-xs text-white/45">{vibe.note}</p></button>; })}</div>
       </section>
