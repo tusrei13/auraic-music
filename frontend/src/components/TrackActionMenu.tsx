@@ -97,14 +97,14 @@ export default function TrackActionMenu({
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
-          className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-all cursor-pointer"
+          className="h-8 w-8 rounded-full p-1.5 text-white/60 transition-all hover:bg-white/10 hover:text-white cursor-pointer"
           title="Tùy chọn"
         >
           <MoreHorizontal className="w-4 h-4" />
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-[#18181c] border border-white/10 shadow-2xl py-2 z-50 text-xs text-white backdrop-blur-xl">
+          <div className="absolute bottom-full right-0 z-[100] mb-2 w-56 rounded-2xl border border-white/10 bg-[#18181c] py-2 text-xs text-white shadow-2xl backdrop-blur-xl">
             {/* Thêm vào Playlist */}
             <div className="relative">
               <button
