@@ -77,8 +77,8 @@ export default function GlobalSearchBar() {
   const albums = Array.from(new Map(results.filter((track) => track.album).map((track) => [track.album?.id, track.album])).values()).slice(0, 4);
 
   return (
-    <div ref={containerRef} className="relative z-30 px-6 pt-5 sm:px-8">
-      <div className="relative mx-auto max-w-3xl">
+    <div ref={containerRef} className="sticky top-0 z-40 border-b border-white/10 bg-[#090910]/80 px-5 py-4 backdrop-blur-2xl sm:px-8">
+      <div className="relative mx-auto max-w-4xl">
         <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
         <input
           value={query}
@@ -98,7 +98,7 @@ export default function GlobalSearchBar() {
           aria-expanded={open && Boolean(query.trim())}
           aria-controls="global-search-results"
           role="combobox"
-          className="w-full rounded-2xl border border-white/10 bg-white/[0.06] py-3 pl-11 pr-11 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/35 focus:border-indigo-400/70 focus:bg-white/[0.09]"
+          className="w-full rounded-2xl border border-white/15 bg-white/[0.07] py-4 pl-12 pr-12 text-base text-white outline-none backdrop-blur-xl transition placeholder:text-white/35 focus:border-fuchsia-400/70 focus:bg-white/[0.1]"
         />
         {loading ? (
           <Loader2 className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-indigo-300" />
