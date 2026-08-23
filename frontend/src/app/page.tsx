@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Play, Sparkles, Heart, Loader2, ArrowUpRight, Waves, Disc3 } from "lucide-react";
+import { Play, Sparkles, Heart, Loader2, ArrowUpRight, Waves, Disc3, Dumbbell, PartyPopper, CloudRain, Sun } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { getJamendoTracks } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
@@ -13,6 +13,8 @@ export default function HomePage() {
   const vibeSectionRef = useRef<HTMLElement>(null);
   const [songs, setSongs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
+  const [vibeLoading, setVibeLoading] = useState<string | null>(null);
 
   useEffect(() => {
     getJamendoTracks({ limit: 12 })
@@ -24,18 +26,41 @@ export default function HomePage() {
   const featured = songs[0];
   const featuredArtist = typeof featured?.artist === "object" ? featured.artist?.name : featured?.artist;
   const vibes = [
-    { label: "Focus", note: "Deep work", className: "from-cyan-500/30 to-blue-600/10", icon: Waves },
-    { label: "Chill", note: "Slow motion", className: "from-violet-500/35 to-fuchsia-500/10", icon: Sparkles },
-    { label: "Night drive", note: "After dark", className: "from-pink-500/30 to-rose-500/10", icon: Disc3 },
-    { label: "Dreamy", note: "Soft focus", className: "from-indigo-500/35 to-cyan-500/10", icon: Sparkles },
+    { label: "Focus", note: "Deep work", tags: "ambient classical piano", className: "from-cyan-500/30 to-blue-600/10", icon: Waves },
+    { label: "Chill", note: "Slow motion", tags: "chillout lofi lounge", className: "from-violet-500/35 to-fuchsia-500/10", icon: Sparkles },
+    { label: "Night drive", note: "After dark", tags: "electronic synthwave dance", className: "from-pink-500/30 to-rose-500/10", icon: Disc3 },
+    { label: "Dreamy", note: "Soft focus", tags: "ambient dreamy cinematic", className: "from-indigo-500/35 to-cyan-500/10", icon: Sparkles },
+    { label: "Workout", note: "Move with it", tags: "energetic rock hiphop", className: "from-orange-500/30 to-rose-500/10", icon: Dumbbell },
+    { label: "Party", note: "Raise the room", tags: "dance pop house", className: "from-yellow-500/25 to-pink-500/15", icon: PartyPopper },
+    { label: "Melancholy", note: "A softer place", tags: "acoustic piano sad", className: "from-sky-500/25 to-indigo-500/15", icon: CloudRain },
+    { label: "Morning", note: "Start gently", tags: "acoustic folk jazz", className: "from-amber-400/30 to-cyan-500/10", icon: Sun },
   ];
 
   const handleExplore = () => {
     if (songs.length === 0) return;
-    playMix(songs);
+    playMix(songs, "Auraic Mix");
     window.setTimeout(() => {
       vibeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 180);
+  };
+
+  const handleVibe = async (vibe: (typeof vibes)[number]) => {
+    if (vibeLoading === vibe.label) return;
+    setSelectedVibe(vibe.label);
+    setVibeLoading(vibe.label);
+    try {
+      const vibeTracks = await getJamendoTracks({ limit: 12, tags: vibe.tags });
+      const nextTracks = vibeTracks.length > 0 ? vibeTracks : songs;
+      if (nextTracks.length > 0) {
+        setSongs(nextTracks);
+        playMix(nextTracks, `${vibe.label} Aura`);
+      }
+    } catch (error) {
+      console.error("Lỗi tải vibe Jamendo:", error);
+      if (songs.length > 0) playMix(songs, `${vibe.label} Aura`);
+    } finally {
+      setVibeLoading(null);
+    }
   };
 
   return (
@@ -59,7 +84,7 @@ export default function HomePage() {
 
       <section ref={vibeSectionRef} className="mt-10 scroll-mt-6">
         <div className="mb-4 flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300">Choose your atmosphere</p><h2 className="mt-2 text-2xl font-bold tracking-tight">What are you feeling?</h2></div><span className="hidden text-xs text-white/35 sm:block">Curated for this moment</span></div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{vibes.map((vibe) => { const Icon = vibe.icon; return <button key={vibe.label} className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br ${vibe.className} p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_rgba(109,78,255,0.18)]`}><Icon className="mb-8 h-5 w-5 text-white/80 transition group-hover:rotate-12" /><p className="font-bold">{vibe.label}</p><p className="mt-1 text-xs text-white/45">{vibe.note}</p></button>; })}</div>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{vibes.map((vibe) => { const Icon = vibe.icon; const isSelected = selectedVibe === vibe.label; const isLoading = vibeLoading === vibe.label; return <button key={vibe.label} type="button" aria-pressed={isSelected} disabled={vibeLoading !== null} onClick={() => void handleVibe(vibe)} className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_rgba(109,78,255,0.18)] disabled:cursor-wait disabled:opacity-80 ${vibe.className} ${isSelected ? "border-white/60 shadow-[0_0_28px_rgba(217,140,255,0.3)]" : "border-white/10"}`}><Icon className={`mb-8 h-5 w-5 text-white/80 transition group-hover:rotate-12 ${isLoading ? "animate-pulse" : ""}`} /><p className="font-bold">{isLoading ? "Tuning..." : vibe.label}</p><p className="mt-1 text-xs text-white/45">{isSelected && !isLoading ? "Now playing" : vibe.note}</p></button>; })}</div>
       </section>
 
       <section className="mt-12 space-y-4">

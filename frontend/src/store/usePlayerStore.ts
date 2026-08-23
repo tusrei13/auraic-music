@@ -33,7 +33,7 @@ interface PlayerState {
   likedIds: (number | string)[];
 
   playTrack: (track: Track, contextQueue?: Track[], contextTitle?: string) => void;
-  playMix: (tracks: Track[]) => void;
+  playMix: (tracks: Track[], contextTitle?: string) => void;
   addToQueue: (track: Track) => void;
   removeFromUserQueue: (index: number) => void;
   removeFromContextQueue: (index: number) => void;
@@ -145,7 +145,7 @@ export const usePlayerStore = create<PlayerState>()(
         });
       },
 
-      playMix: (tracks) => {
+      playMix: (tracks, contextTitle = "Mix ngẫu nhiên") => {
         const pool = tracks && tracks.length > 0 ? tracks : [];
         if (pool.length === 0) return;
         const cleanTracks = removeDuplicateTracks(pool);
@@ -155,7 +155,7 @@ export const usePlayerStore = create<PlayerState>()(
           currentTrack: shuffled[0],
           contextQueue: shuffled,
           originalQueue: cleanTracks,
-          contextTitle: "Mix ngẫu nhiên",
+          contextTitle,
           contextIndex: 0,
           isPlaying: true,
           playbackStatus: "loading",
