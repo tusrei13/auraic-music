@@ -64,6 +64,8 @@ export default function AdminPage() {
     if (status === "unauthenticated") setIsLoading(false);
   }, [status, user?.role]);
 
+  const topSongs = [...songs].sort((firstSong, secondSong) => secondSong.playCount - firstSong.playCount).slice(0, 5);
+
   if (status === "idle" || status === "loading") {
     return <AdminState icon={<Loader2 className="h-6 w-6 animate-spin" />} title="Đang xác thực quyền truy cập" />;
   }
@@ -128,7 +130,7 @@ export default function AdminPage() {
             ))}
           </div>
         </article>
-        <article className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.06] p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Phiên hiện tại</p><h2 className="mt-4 text-xl font-bold">{user.name || user.email}</h2><p className="mt-2 break-all text-sm text-white/50">{user.email}</p><div className="mt-6 flex items-center gap-2 text-xs text-cyan-100"><span className="h-2 w-2 rounded-full bg-emerald-300" /> Quyền ADMIN đang hoạt động</div></article>
+        <div className="space-y-5"><article className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.06] p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Phiên hiện tại</p><h2 className="mt-4 text-xl font-bold">{user.name || user.email}</h2><p className="mt-2 break-all text-sm text-white/50">{user.email}</p><div className="mt-6 flex items-center gap-2 text-xs text-cyan-100"><span className="h-2 w-2 rounded-full bg-emerald-300" /> Quyền ADMIN đang hoạt động</div></article><article className="rounded-2xl border border-white/10 bg-black/20 p-6"><div className="flex items-center gap-3"><BarChart3 className="h-5 w-5 text-amber-300" /><h2 className="text-lg font-bold">Top bài hát</h2></div><div className="mt-5 space-y-4">{topSongs.map((song, index) => <div key={song.id} className="flex items-center gap-3"><span className="w-5 text-xs font-bold text-white/35">{index + 1}</span><img src={song.image} alt="" className="h-9 w-9 rounded-lg object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-white">{song.title}</p><p className="truncate text-xs text-white/40">{song.artist.name}</p></div><span className="text-xs tabular-nums text-amber-200">{song.playCount.toLocaleString("vi-VN")}</span></div>)}{topSongs.length === 0 && !isLoading ? <p className="text-sm text-white/40">Chưa có dữ liệu lượt nghe.</p> : null}</div></article></div>
       </section>
 
       <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
