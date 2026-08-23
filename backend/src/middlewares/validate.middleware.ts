@@ -52,14 +52,16 @@ export const playlistIdParamsSchema = z.object({
 })
 
 export const playlistSongSchema = z.object({
-  body: z.object({ songId: z.coerce.number().int().positive() }),
-  params: z.object({ id: z.string().uuid(), songId: z.coerce.number().int().positive().optional() }),
+  body: z.object({
+    songId: z.union([z.coerce.number().int().positive(), z.string().trim().min(1)]),
+  }),
+  params: z.object({ id: z.string().uuid(), songId: z.string().trim().min(1).optional() }),
   query: z.record(z.string(), z.unknown()).optional(),
 })
 
 export const playlistSongParamsSchema = z.object({
   body: z.record(z.string(), z.unknown()).optional(),
-  params: z.object({ id: z.string().uuid(), songId: z.coerce.number().int().positive() }),
+  params: z.object({ id: z.string().uuid(), songId: z.string().trim().min(1) }),
   query: z.record(z.string(), z.unknown()).optional(),
 })
 
