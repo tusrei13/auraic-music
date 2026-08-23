@@ -25,6 +25,7 @@ import AudioVisualizer from "@/components/AudioVisualizer";
 import { normalizeLyrics } from "@/lib/lyrics";
 import Hls from "hls.js";
 import { resolveMediaUrl } from "@/lib/api";
+import { getLyrics } from "@/lib/api";
 
 export default function Player() {
   const pathname = usePathname();
@@ -52,6 +53,8 @@ export default function Player() {
   const [duration, setDuration] = useState(0);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
+  const [fetchedLyrics, setFetchedLyrics] = useState<string | null>(null);
+  const [fetchedPlainLyrics, setFetchedPlainLyrics] = useState<string | null>(null);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const activeLyricRef = useRef<HTMLHeadingElement>(null);
@@ -81,6 +84,37 @@ export default function Player() {
   const artistName = typeof currentTrack?.artist === "object" 
     ? (currentTrack?.artist as { name: string })?.name 
     : (currentTrack?.artist || "Ca sĩ chưa xác định");
+
+  useEffect(() => {
+    let active = true;
+    setFetchedLyrics(null);
+    setFetchedPlainLyrics(null);
+    if (!currentTrack) return;
+
+    const existingLyrics = normalizeLyrics(currentTrack.lyrics);
+    if (existingLyrics.length > 0) {
+      setFetchedLyrics(typeof currentTrack.lyrics === "string" ? currentTrack.lyrics : null);
+      return;
+    }
+    if (typeof currentTrack.lyrics === "string") {
+      setFetchedPlainLyrics(currentTrack.lyrics);
+      return;
+    }
+
+    void getLyrics(currentTrack.title, artistName)
+      .then((response) => {
+        if (!active) return;
+        setFetchedLyrics(response.syncedLyrics);
+        setFetchedPlainLyrics(response.plainLyrics);
+      })
+      .catch(() => {
+        if (active) setFetchedLyrics(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentTrack?.id, currentTrack?.title, artistName]);
 
   // 1. Cập nhật âm lượng
   useEffect(() => {
@@ -287,7 +321,8 @@ export default function Player() {
   };
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const lyrics = normalizeLyrics(currentTrack?.lyrics);
+  const lyrics = normalizeLyrics(fetchedLyrics);
+  const plainLyrics = fetchedPlainLyrics?.trim() || null;
 
   if (!currentTrack) {
     return (
@@ -308,7 +343,7 @@ export default function Player() {
 
       {/* KARAOKE OVERLAY */}
       {showLyrics && (
-        <div className="fixed inset-0 bottom-28 bg-black/90 backdrop-blur-3xl z-40 flex flex-col items-center justify-center p-8 transition-all duration-300 rounded-t-3xl border-t border-white/10 shadow-2xl">
+        <div className="fixed inset-0 bottom-28 z-40 flex flex-col items-center justify-center rounded-t-3xl border-t border-white/10 bg-black p-8 shadow-2xl transition-all duration-300">
           <button 
             onClick={() => setShowLyrics(false)}
             className="absolute top-6 right-6 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer"
@@ -316,34 +351,88 @@ export default function Player() {
             <X className="w-4 h-4" /> Đóng Karaoke
           </button>
           
-          <div className="w-full max-w-2xl space-y-6 text-center max-h-[60vh] overflow-y-auto scrollbar-none px-4">
-            {lyrics.length > 0 ? (
-              lyrics.map((line, index) => {
-                const isPassed = currentTime >= line.time;
-                const isCurrent = isPassed && (index === lyrics.length - 1 || currentTime < lyrics[index + 1].time);
-
-                return (
-                  <h2 
-                    key={index}
-                    ref={isCurrent ? activeLyricRef : null}
-                    className={`text-2xl md:text-4xl font-extrabold transition-all duration-300 ${
-                      isCurrent 
-                        ? "text-white scale-110 drop-shadow-[0_0_25px_rgba(99,102,241,0.8)]" 
-                        : isPassed 
-                        ? "text-white/40" 
-                        : "text-white/15"
-                    }`}
-                  >
-                    {line.text}
-                  </h2>
-                );
-              })
-            ) : (
-              <div className="text-center space-y-2">
-                <p className="text-white/40 text-lg font-medium">Chưa có lời bài hát đồng bộ cho bài hát này</p>
+          {lyrics.length > 0 ? (
+            <div className="grid w-full max-w-6xl grid-cols-1 items-start gap-10 px-4 text-left lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-20">
+              <div className="hidden self-start lg:block">
+                <img src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-3xl object-cover shadow-[0_0_90px_rgba(217,140,255,0.35)]" />
+                <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
+                <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
               </div>
-            )}
-          </div>
+              <div className="max-h-[68vh] space-y-6 overflow-y-auto px-2 pb-8 text-center scrollbar-none sm:space-y-8 lg:text-left">
+                {lyrics.map((line, index) => {
+                  const isPassed = currentTime >= line.time;
+                  const isCurrent = isPassed && (index === lyrics.length - 1 || currentTime < lyrics[index + 1].time);
+
+                  return (
+                    <h2
+                      key={index}
+                      ref={isCurrent ? activeLyricRef : null}
+                      className={`text-2xl font-extrabold transition-all duration-300 sm:text-4xl ${
+                        isCurrent
+                          ? "scale-[1.03] text-white drop-shadow-[0_0_25px_rgba(99,102,241,0.8)]"
+                          : isPassed
+                          ? "text-white/40"
+                          : "text-white/15"
+                      }`}
+                    >
+                      {line.text}
+                    </h2>
+                  );
+                })}
+              </div>
+            </div>
+          ) : plainLyrics ? (
+            <div className="grid w-full max-w-6xl grid-cols-1 items-start gap-10 px-4 text-left lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-20">
+              <div className="hidden self-start lg:block">
+                <img src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-3xl object-cover shadow-[0_0_90px_rgba(217,140,255,0.35)]" />
+                <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
+                <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
+              </div>
+              <div className="max-h-[68vh] overflow-y-auto px-2 pb-8 text-center scrollbar-none lg:text-left">
+                <p className="mb-8 text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-200/70">Lyrics</p>
+                <div className="whitespace-pre-line text-2xl font-bold leading-[1.8] text-white/85 sm:text-4xl sm:leading-[1.7]">{plainLyrics}</div>
+                <p className="mt-10 text-xs text-white/35">Lyrics are not synced to playback</p>
+              </div>
+            </div>
+          ) : (
+            <div className="relative flex h-[min(78vh,720px)] w-full max-w-[1400px] items-center justify-center overflow-hidden rounded-[32px] border border-white/15 bg-[#080810] p-7 shadow-[0_0_120px_rgba(168,85,247,0.3)] sm:p-12">
+              <img src={currentTrack.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-3xl" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.22),transparent_42%),linear-gradient(180deg,rgba(5,5,12,0.35),rgba(5,5,12,0.96))]" />
+              <div className="relative grid w-full max-w-[1240px] grid-cols-1 items-center gap-10 lg:grid-cols-[280px_minmax(320px,1fr)_300px] lg:gap-16">
+                <div className="hidden self-start lg:block">
+                  <img src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-2xl object-cover shadow-[0_0_55px_rgba(217,140,255,0.28)]" />
+                  <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
+                  <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
+                  <div className="mt-5 flex gap-2 text-white/50">
+                    <button type="button" onClick={() => toggleLike(currentTrack)} aria-label={liked ? "Bỏ thích" : "Yêu thích"} className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] transition hover:border-fuchsia-300/50 hover:text-fuchsia-200"><Heart className={`h-4 w-4 ${liked ? "fill-pink-400 text-pink-400" : ""}`} /></button>
+                    <TrackActionMenu track={currentTrack} placement="up" />
+                  </div>
+                </div>
+                <div className="relative flex flex-col items-center text-center">
+                  <p className="mb-7 text-[10px] font-bold uppercase tracking-[0.28em] text-fuchsia-200/75">Instrumental atmosphere</p>
+                  <div className="relative aspect-square w-[min(58vw,300px)]">
+                  <div className="absolute inset-[-12%] rounded-full bg-fuchsia-500/25 blur-3xl" />
+                  <div className="absolute inset-0 rounded-full border border-white/20 bg-[radial-gradient(circle_at_35%_25%,#34304f_0,#11111d_42%,#030308_72%)] shadow-[0_0_60px_rgba(217,140,255,0.45)]" />
+                  <img src={currentTrack.image} alt={currentTrack.title} className={`absolute inset-[8%] h-[84%] w-[84%] rounded-full object-cover ${isPlaying ? "animate-[spin_12s_linear_infinite]" : ""}`} />
+                  <div className="absolute inset-[43%] rounded-full border-4 border-[#11111d] bg-gradient-to-br from-fuchsia-300 to-cyan-300 shadow-[0_0_18px_rgba(217,140,255,0.8)]" />
+                  </div>
+                  <div className="mt-9 flex h-20 items-center gap-1.5" aria-label="Audio visualizer">
+                  {[24, 44, 68, 36, 58, 76, 46, 64, 32, 54, 72, 40, 60, 28].map((height, index) => <span key={index} className="w-1.5 rounded-full bg-gradient-to-t from-cyan-300 to-fuchsia-400 shadow-[0_0_12px_rgba(217,140,255,0.7)]" style={{ height: `${height}%`, animation: isPlaying ? `pulse ${0.7 + (index % 4) * 0.12}s ease-in-out infinite alternate` : undefined }} />)}
+                  </div>
+                </div>
+                <div className="text-center lg:text-left">
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 text-fuchsia-200 shadow-[0_0_30px_rgba(217,140,255,0.25)] lg:mx-0"><Music className="h-7 w-7" /></div>
+                  <h2 className="text-2xl font-bold leading-tight text-white sm:text-3xl">This track is instrumental</h2>
+                  <p className="mt-4 text-base leading-7 text-white/55">No lyrics available for this song.<br />Feel the vibe and let the music speak for itself.</p>
+                </div>
+                <div className="text-center lg:hidden">
+                  <h2 className="truncate text-xl font-bold text-white">{currentTrack.title}</h2>
+                  <p className="mt-1 text-sm text-white/50">{artistName}</p>
+                </div>
+                <span className="sr-only">No synced lyrics available</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

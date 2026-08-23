@@ -38,6 +38,7 @@ export interface JamendoSong {
 export interface CurrentUser { id: string; email: string; name?: string | null; role: "USER" | "ADMIN"; playlists: Playlist[] }
 export interface AuthResponse { message: string; token?: string; user?: { id: string; email?: string | null; user_metadata?: { full_name?: string } } }
 export interface ApiErrorPayload { code: string; message: string; details?: unknown }
+export interface LyricsResponse { syncedLyrics: string | null; plainLyrics: string | null }
 
 export class ApiError extends Error {
   code: string;
@@ -129,6 +130,9 @@ export const getJamendoTracks = (options: { limit?: number; offset?: number; tag
   if (options.order) params.set("order", options.order);
   return fetcher<JamendoSong[]>(`/catalog/jamendo${params.size ? `?${params}` : ""}`);
 };
+
+export const getLyrics = (trackName: string, artistName: string) =>
+  fetcher<LyricsResponse>(`/lyrics?trackName=${encodeURIComponent(trackName)}&artistName=${encodeURIComponent(artistName)}`);
 
 // 5. YÊU THÍCH (LIKES)
 export const getLikedSongs = () => fetcher<Array<{ song: Song }>>("/likes/my-likes");
