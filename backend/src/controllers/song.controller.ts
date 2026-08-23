@@ -42,15 +42,34 @@ export const getListeningHistory = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id
     if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
 
-    const history = await prisma.listeningHistory.findMany({
+    const [history, jamendoHistory] = await Promise.all([
+      prisma.listeningHistory.findMany({
       where: { userId },
       orderBy: { listenedAt: 'desc' },
       take: 50,
       include: { song: { include: { artist: true, genre: true, album: true, mood: true } } },
-    })
+      }),
+      prisma.jamendoListening.findMany({ where: { userId }, orderBy: { listenedAt: 'desc' }, take: 50 }),
+    ])
 
-    res.json(history)
+    res.json([
+      ...history,
+      ...jamendoHistory.map((item) => ({ id: item.id, listenedAt: item.listenedAt, song: { id: item.trackId, title: item.title, artist: item.artistName, image: item.image, audioUrl: item.audioUrl, duration: item.duration } })),
+    ].sort((first, second) => second.listenedAt.getTime() - first.listenedAt.getTime()).slice(0, 50))
   } catch (error) {
     sendInternalError(res, 'LISTENING_HISTORY_ERROR', 'Không thể lấy lịch sử nghe')
+  }
+}
+
+export const recordJamendoListening = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id
+    if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
+
+    const { trackId, title, artistName, image, audioUrl, duration } = req.body
+    const history = await prisma.jamendoListening.create({ data: { userId, trackId, title, artistName, image, audioUrl, duration } })
+    res.status(201).json(history)
+  } catch {
+    sendInternalError(res, 'JAMENDO_LISTENING_ERROR', 'Không thể ghi nhận lịch sử nghe Jamendo')
   }
 }
