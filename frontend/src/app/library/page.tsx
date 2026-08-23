@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { 
   Heart, 
   Play, 
@@ -49,6 +50,10 @@ const getArtistName = (artist: any): string => {
 };
 
 export default function LibraryPage() {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   const { likedIds, currentTrack, isPlaying, toggleLike, playTrack } = usePlayerStore();
   const playlistStore = usePlaylistStore() as any;
   const playlists = playlistStore.playlists || [];
@@ -461,7 +466,7 @@ export default function LibraryPage() {
           )}
         </div>
 
-        {showAddSongsModal && (
+        {showAddSongsModal && isMounted && createPortal(
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div className="bg-[#121216] border border-white/10 rounded-3xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col space-y-5 shadow-2xl relative">
               <button
@@ -527,10 +532,11 @@ export default function LibraryPage() {
                 Xong
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
-        {playlistToDelete && (
+        {playlistToDelete && isMounted && createPortal(
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-[#121216] border border-white/10 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl relative text-center">
               <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto shadow-inner">
@@ -561,7 +567,8 @@ export default function LibraryPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     );
@@ -792,7 +799,7 @@ export default function LibraryPage() {
         </section>
       )}
 
-      {showCreateModal && (
+      {showCreateModal && isMounted && createPortal(
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#121216] border border-white/10 rounded-3xl p-6 w-full max-w-md space-y-6 shadow-2xl relative">
             <button onClick={() => setShowCreateModal(false)} className="absolute top-5 right-5 text-white/50 hover:text-white p-1">
@@ -824,10 +831,11 @@ export default function LibraryPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {playlistToDelete && (
+      {playlistToDelete && isMounted && createPortal(
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-[#121216] border border-white/10 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl relative text-center">
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto shadow-inner">
@@ -858,7 +866,8 @@ export default function LibraryPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

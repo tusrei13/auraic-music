@@ -210,6 +210,20 @@ export default function AdminPage() {
         </div>
       </header>
 
+      <nav className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" aria-label="Khu vực quản trị">
+        {[
+          ["Catalog Jamendo", "/admin/catalog"],
+          ["Ingestion Feed", "/admin/ingestion"],
+          ["Users", "/admin/users"],
+          ["Analytics", "/admin/analytics"],
+          ["System Settings", "/admin/settings"],
+        ].map(([label, href]) => (
+          <Link key={href} href={href} className="flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-3 text-xs font-semibold text-white/55 transition hover:border-fuchsia-300/40 hover:bg-fuchsia-300/10 hover:text-white">
+            {label}
+          </Link>
+        ))}
+      </nav>
+
       {error ? (
         <div className="mt-7 flex flex-col gap-4 rounded-2xl border border-rose-300/20 bg-rose-300/10 p-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-center gap-3 text-sm text-rose-100">
