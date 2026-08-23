@@ -1,21 +1,25 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { MoreHorizontal, Plus, ListMusic, User, Check, Heart, X, FolderPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { usePlaylistStore } from "@/store/usePlaylistStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export interface TrackActionMenuProps {
   track: any;
   playlists?: any[];
   onAddToPlaylist?: (playlistId: number | string, trackId: number | string) => void;
+  placement?: "down" | "up";
 }
 
 export default function TrackActionMenu({
   track,
   playlists: propPlaylists,
   onAddToPlaylist,
+  placement = "down",
 }: TrackActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showPlaylists, setShowPlaylists] = useState(false);
@@ -27,6 +31,7 @@ export default function TrackActionMenu({
 
   const store = usePlayerStore() as any;
   const { playlists: storePlaylists, createPlaylist, addTrackToPlaylist } = usePlaylistStore();
+  const { status: authStatus, openAuthModal } = useAuthStore();
 
   const activePlaylists = storePlaylists.length > 0 ? storePlaylists : (propPlaylists || []);
   const isLiked = store.likedIds?.some((id: any) => String(id) === String(track.id));
@@ -97,19 +102,25 @@ export default function TrackActionMenu({
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
-          className="h-8 w-8 rounded-full p-1.5 text-white/60 transition-all hover:bg-white/10 hover:text-white cursor-pointer"
+          className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-all cursor-pointer"
           title="Tùy chọn"
         >
           <MoreHorizontal className="w-4 h-4" />
         </button>
 
         {isOpen && (
-          <div className="absolute bottom-full right-0 z-[100] mb-2 w-56 rounded-2xl border border-white/10 bg-[#18181c] py-2 text-xs text-white shadow-2xl backdrop-blur-xl">
+          <div className={`absolute z-50 w-56 rounded-2xl border border-white/10 bg-[#18181c] py-2 text-xs text-white shadow-2xl backdrop-blur-xl ${placement === "up" ? "bottom-full left-0 mb-2" : "right-0 mt-2"}`}>
             {/* Thêm vào Playlist */}
             <div className="relative">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (authStatus !== "authenticated") {
+                    setIsOpen(false);
+                    setShowPlaylists(false);
+                    openAuthModal();
+                    return;
+                  }
                   setShowPlaylists(!showPlaylists);
                 }}
                 className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center justify-between transition-colors cursor-pointer"
@@ -117,19 +128,17 @@ export default function TrackActionMenu({
                 <span className="flex items-center gap-3 font-semibold">
                   <Plus className="w-4 h-4 text-indigo-400" /> Thêm vào playlist
                 </span>
-                <span className="text-[10px] text-white/40">›</span>
               </button>
 
               {/* Submenu chọn / tạo Playlist */}
               {showPlaylists && (
-                <div className="absolute right-full top-0 mr-1.5 w-52 rounded-2xl bg-[#22222a] border border-white/10 shadow-2xl p-1.5 max-h-60 overflow-y-auto scrollbar-none z-50 space-y-1">
+                <div className={`absolute top-0 z-50 w-52 space-y-1 overflow-y-auto rounded-2xl border border-white/10 bg-[#22222a] p-1.5 shadow-2xl scrollbar-none ${placement === "up" ? "left-full ml-1.5" : "right-full mr-1.5"}`}>
                   {/* Nút Tạo playlist mới */}
                   <button
                     onClick={handleOpenCreateModal}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-semibold border border-indigo-500/20 transition-all cursor-pointer text-left"
                   >
-                    <Plus className="w-4 h-4 text-indigo-400 flex-shrink-0" />
-                    <span>+ Tạo playlist mới</span>
+                    <span>Tạo playlist mới</span>
                   </button>
 
                   <div className="h-[1px] bg-white/10 my-1" />
@@ -196,7 +205,7 @@ export default function TrackActionMenu({
       </div>
 
       {/* Modern Custom Modal Pop-up */}
-      {isModalOpen && (
+      {isModalOpen && typeof document !== "undefined" ? createPortal((
         <div
           className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fadeIn"
           onClick={(e) => {
@@ -261,7 +270,7 @@ export default function TrackActionMenu({
             </form>
           </div>
         </div>
-      )}
+      ), document.body) : null}
     </>
   );
 }

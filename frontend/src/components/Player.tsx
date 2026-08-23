@@ -349,7 +349,7 @@ export default function Player() {
 
       {/* PLAYER CONTAINER CHÍNH */}
       <div className="relative z-50 w-full px-3 pb-3 sm:px-4 sm:pb-4">
-        <div className="relative flex min-h-28 w-full flex-col items-center justify-between overflow-hidden rounded-[24px] border border-white/20 bg-[#11101d]/80 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,0.65)] backdrop-blur-2xl md:min-h-24 md:flex-row md:px-6 md:py-2">
+        <div className="relative flex min-h-28 w-full flex-col items-center justify-between overflow-visible rounded-[24px] border border-white/20 bg-[#11101d]/80 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,0.65)] backdrop-blur-2xl md:min-h-24 md:flex-row md:px-6 md:py-2">
           
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-fuchsia-500/10 via-transparent to-cyan-400/10 opacity-80 mix-blend-screen"></div>
 
@@ -373,7 +373,7 @@ export default function Player() {
             <div className={`h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-white/25 shadow-[0_0_24px_rgba(192,100,255,0.28)] transition-all duration-500 ${isPlaying ? 'scale-[1.03]' : ''}`}>
               <img src={currentTrack.image} alt={currentTrack.title} className="w-full h-full object-cover" />
             </div>
-            <div className="truncate min-w-0 flex-1 pr-1">
+            <div className="min-w-0 max-w-[min(48vw,260px)] flex-none truncate pr-1 sm:max-w-[220px]">
               <h4 className="text-sm font-bold text-white tracking-wide drop-shadow-md truncate">{currentTrack.title}</h4>
               <p className="text-xs text-white/50 mt-0.5 truncate">{artistName}</p>
             </div>
@@ -387,7 +387,7 @@ export default function Player() {
                 <Heart className={`w-5 h-5 transition-transform hover:scale-110 ${liked ? "fill-pink-500 text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" : ""}`} />
               </button>
 
-              <TrackActionMenu track={currentTrack} />
+              <TrackActionMenu track={currentTrack} placement="up" />
             </div>
           </div>
 
