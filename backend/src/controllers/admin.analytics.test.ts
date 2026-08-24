@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assessAnalyticsQuality, summarizeAnalyticsEvents } from './admin.controller'
+import { assessAnalyticsQuality, summarizeAnalyticsEvents } from '../services/analytics.service'
 
 describe('summarizeAnalyticsEvents', () => {
   it('counts playback events and ranks tracks by starts', () => {
