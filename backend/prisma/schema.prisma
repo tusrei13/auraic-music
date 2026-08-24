@@ -7,6 +7,12 @@ enum UserRole {
   ADMIN
 }
 
+enum AnalyticsEventType {
+  TRACK_STARTED
+  TRACK_COMPLETED
+  TRACK_SKIPPED
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
@@ -26,6 +32,7 @@ model User {
   histories ListeningHistory[]
   playlists Playlist[]
   jamendoHistory JamendoListening[]
+  analyticsEvents AnalyticsEvent[]
 }
 
 model Artist {
@@ -167,6 +174,22 @@ model JamendoListening {
 
   @@index([userId, listenedAt])
   @@index([trackId, listenedAt])
+}
+
+model AnalyticsEvent {
+  id         String             @id @default(uuid())
+  userId     String
+  eventType  AnalyticsEventType
+  trackId    String
+  source     String             @default("unknown")
+  title      String             @db.VarChar(300)
+  position   Int?
+  duration   Int?
+  occurredAt DateTime           @default(now())
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@index([trackId, eventType, occurredAt])
 }
 
 model Follow {

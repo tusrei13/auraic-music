@@ -26,7 +26,7 @@ import QueuePanel from "@/components/QueuePanel";
 import AudioVisualizer from "@/components/AudioVisualizer";
 import { normalizeLyrics, type LyricLine } from "@/lib/lyrics";
 import Hls from "hls.js";
-import { recordJamendoListening, resolveMediaUrl } from "@/lib/api";
+import { recordAnalyticsEvent, recordJamendoListening, resolveMediaUrl } from "@/lib/api";
 import { getLyrics } from "@/lib/api";
 
 export default function Player() {
@@ -61,6 +61,8 @@ export default function Player() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const activeLyricRef = useRef<HTMLHeadingElement>(null);
   const recordedTrackIdRef = useRef<string | number | null>(null);
+  const startedTrackIdRef = useRef<string | number | null>(null);
+  const completedTrackIdRef = useRef<string | number | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const hlsReadyRef = useRef(false);
   const isPlayingRef = useRef(isPlaying);
@@ -86,6 +88,21 @@ export default function Player() {
   const artistName = typeof currentTrack?.artist === "object" 
     ? (currentTrack?.artist as { name: string })?.name 
     : (currentTrack?.artist || "Ca sĩ chưa xác định");
+
+  const recordPlaybackEvent = (eventType: "TRACK_STARTED" | "TRACK_COMPLETED" | "TRACK_SKIPPED") => {
+    const userId = useAuthStore.getState().user?.id;
+    if (!currentTrack || !userId) return;
+    const position = audioRef.current && Number.isFinite(audioRef.current.currentTime) ? Math.floor(audioRef.current.currentTime) : undefined;
+    const duration = typeof currentTrack.duration === "number" && Number.isFinite(currentTrack.duration) ? Math.floor(currentTrack.duration) : undefined;
+    void recordAnalyticsEvent({
+      eventType,
+      trackId: currentTrack.id,
+      source: isJamendoTrackId(currentTrack.id) ? "jamendo" : "local",
+      title: currentTrack.title,
+      position,
+      duration,
+    }).catch(() => undefined);
+  };
 
   useEffect(() => {
     let active = true;
@@ -190,6 +207,8 @@ export default function Player() {
   // 2. Đồng bộ Phát/Tạm dừng & Media Session API
   useEffect(() => {
     recordedTrackIdRef.current = null;
+    startedTrackIdRef.current = null;
+    completedTrackIdRef.current = null;
   }, [currentTrack?.id]);
 
   useEffect(() => {
@@ -215,8 +234,8 @@ export default function Player() {
 
         navigator.mediaSession.setActionHandler("play", togglePlay);
         navigator.mediaSession.setActionHandler("pause", togglePlay);
-        navigator.mediaSession.setActionHandler("previoustrack", prevTrack);
-        navigator.mediaSession.setActionHandler("nexttrack", nextTrack);
+        navigator.mediaSession.setActionHandler("previoustrack", () => handleSkip("previous"));
+        navigator.mediaSession.setActionHandler("nexttrack", () => handleSkip("next"));
       }
     }
   }, [currentTrack, isPlaying, isHlsSource, artistName, togglePlay, prevTrack, nextTrack, setPlaybackStatus]);
@@ -315,7 +334,13 @@ export default function Player() {
       audioRef.current.play().catch(() => setPlaybackStatus("error", "Không thể phát HLS stream"));
     }
   };
-  const handlePlaying = () => setPlaybackStatus("playing");
+  const handlePlaying = () => {
+    setPlaybackStatus("playing");
+    if (currentTrack && startedTrackIdRef.current !== currentTrack.id) {
+      startedTrackIdRef.current = currentTrack.id;
+      recordPlaybackEvent("TRACK_STARTED");
+    }
+  };
   const handleWaiting = () => setPlaybackStatus("buffering");
   const handlePause = () => {
     if (audioRef.current && !audioRef.current.ended) setPlaybackStatus("paused");
@@ -323,12 +348,22 @@ export default function Player() {
   const handleAudioError = () => setPlaybackStatus("error", "Không thể tải file âm thanh");
 
   const handleEnded = () => {
+    if (currentTrack && completedTrackIdRef.current !== currentTrack.id) {
+      completedTrackIdRef.current = currentTrack.id;
+      recordPlaybackEvent("TRACK_COMPLETED");
+    }
     if (repeatMode === "one" && audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => {});
     } else {
       nextTrack();
     }
+  };
+
+  const handleSkip = (direction: "next" | "previous") => {
+    if (currentTrack) recordPlaybackEvent("TRACK_SKIPPED");
+    if (direction === "next") nextTrack();
+    else prevTrack();
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -518,7 +553,7 @@ export default function Player() {
                 <Shuffle className="w-4 h-4" />
               </button>
               
-              <button onClick={prevTrack} className="text-white/60 hover:text-white transition-all cursor-pointer">
+              <button onClick={() => handleSkip("previous")} className="text-white/60 hover:text-white transition-all cursor-pointer">
                 <SkipBack className="w-5 h-5 fill-current" />
               </button>
               
@@ -526,7 +561,7 @@ export default function Player() {
                 {isPlaying ? <Pause className="w-5 h-5 fill-black text-black" /> : <Play className="w-5 h-5 fill-black text-black ml-0.5" />}
               </button>
               
-              <button onClick={nextTrack} className="text-white/60 hover:text-white transition-all cursor-pointer">
+              <button onClick={() => handleSkip("next")} className="text-white/60 hover:text-white transition-all cursor-pointer">
                 <SkipForward className="w-5 h-5 fill-current" />
               </button>
 

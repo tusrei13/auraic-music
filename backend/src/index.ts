@@ -12,6 +12,7 @@ import likeRoutes from './routes/like.route'
 import catalogRoutes from './routes/catalog.route'
 import lyricsRoutes from './routes/lyrics.route'
 import adminRoutes from './routes/admin.route'
+import analyticsRoutes from './routes/analytics.route'
 import { sendError } from './lib/api-error'
 import path from 'node:path'
 
@@ -37,6 +38,7 @@ app.use('/api/search', searchRoutes)
 app.use('/api/catalog', catalogRoutes)
 app.use('/api/lyrics', lyricsRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/analytics', analyticsRoutes)
 app.use('/api', genreRoutes)
 app.use('/media', express.static(path.resolve(process.env.MEDIA_ROOT || path.join(process.cwd(), 'media'))))
 

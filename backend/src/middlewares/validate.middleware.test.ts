@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPlaylistSchema, loginSchema, playlistSongParamsSchema, playlistSongSchema, songIdBodySchema } from './validate.middleware'
+import { analyticsEventSchema, createPlaylistSchema, loginSchema, playlistSongParamsSchema, playlistSongSchema, songIdBodySchema } from './validate.middleware'
 
 describe('API request schemas', () => {
   it('accepts valid login data and rejects malformed email', () => {
@@ -22,5 +22,14 @@ describe('API request schemas', () => {
     expect(playlistSongParamsSchema.safeParse({
       params: { id: '00000000-0000-0000-0000-000000000000', songId: 'jamendo:12345' },
     }).success).toBe(true)
+  })
+
+  it('validates analytics playback events', () => {
+    expect(analyticsEventSchema.safeParse({
+      body: { eventType: 'TRACK_STARTED', trackId: 'jamendo:123', title: 'Track' },
+    }).success).toBe(true)
+    expect(analyticsEventSchema.safeParse({
+      body: { eventType: 'TRACK_UNKNOWN', trackId: 'jamendo:123', title: 'Track' },
+    }).success).toBe(false)
   })
 })

@@ -92,6 +92,19 @@ export const jamendoListeningSchema = z.object({
   query: z.record(z.string(), z.unknown()).optional(),
 })
 
+export const analyticsEventSchema = z.object({
+  body: z.object({
+    eventType: z.enum(['TRACK_STARTED', 'TRACK_COMPLETED', 'TRACK_SKIPPED']),
+    trackId: z.string().trim().min(1).max(200),
+    source: z.string().trim().min(1).max(50).optional(),
+    title: z.string().trim().min(1).max(300),
+    position: z.coerce.number().int().nonnegative().optional(),
+    duration: z.coerce.number().int().nonnegative().optional(),
+  }),
+  params: z.record(z.string(), z.unknown()).optional(),
+  query: z.record(z.string(), z.unknown()).optional(),
+})
+
 export const adminUserRoleSchema = z.object({
   body: z.object({ role: z.enum(['USER', 'ADMIN']) }),
   params: z.object({ id: z.string().uuid() }),

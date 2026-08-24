@@ -182,4 +182,6 @@ export const getListeningHistory = () =>
   fetcher<Array<{ id: string; listenedAt: string; song: Song }>>("/songs/history");
 export const recordJamendoListening = (data: { trackId: string; title: string; artistName: string; image: string; audioUrl: string; duration?: number | null }) =>
   fetcher("/songs/jamendo-listen", { method: "POST", body: JSON.stringify(data) });
+export const recordAnalyticsEvent = (data: { eventType: "TRACK_STARTED" | "TRACK_COMPLETED" | "TRACK_SKIPPED"; trackId: string | number; source?: string; title: string; position?: number; duration?: number }) =>
+  fetcher<{ id: string; eventType: string; occurredAt: string }>("/analytics/events", { method: "POST", body: JSON.stringify({ ...data, trackId: String(data.trackId) }) });
 
