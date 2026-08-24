@@ -5,10 +5,36 @@ import { sendError, sendInternalError } from '../lib/api-error'
 import { getJamendoTracks } from '../services/jamendo.service'
 
 type AnalyticsEventForSummary = {
+  userId?: string
   eventType: 'TRACK_STARTED' | 'TRACK_COMPLETED' | 'TRACK_SKIPPED'
   trackId: string
   title: string
+  source?: string
+  position?: number | null
+  duration?: number | null
   occurredAt: Date
+}
+
+export const assessAnalyticsQuality = (events: AnalyticsEventForSummary[]) => {
+  let invalidTitle = 0
+  let invalidTiming = 0
+  let unknownSource = 0
+  let duplicateStarted = 0
+  const recentStarts = new Map<string, number>()
+
+  for (const event of events) {
+    if (!event.title.trim()) invalidTitle += 1
+    if ((event.position !== null && event.position !== undefined && event.position < 0) || (event.duration !== null && event.duration !== undefined && event.duration < 0) || (event.position !== null && event.position !== undefined && event.duration !== null && event.duration !== undefined && event.position > event.duration)) invalidTiming += 1
+    if (event.source !== 'jamendo' && event.source !== 'local') unknownSource += 1
+    if (event.eventType === 'TRACK_STARTED') {
+      const key = `${event.userId || 'unknown'}:${event.trackId}`
+      const previous = recentStarts.get(key)
+      if (previous !== undefined && event.occurredAt.getTime() - previous <= 30_000) duplicateStarted += 1
+      recentStarts.set(key, event.occurredAt.getTime())
+    }
+  }
+
+  return { invalidTitle, invalidTiming, unknownSource, duplicateStarted, totalIssues: invalidTitle + invalidTiming + unknownSource + duplicateStarted }
 }
 
 export const summarizeAnalyticsEvents = (events: AnalyticsEventForSummary[], days = 7) => {
@@ -48,6 +74,7 @@ export const summarizeAnalyticsEvents = (events: AnalyticsEventForSummary[], day
     totals: { started, completed, skipped },
     daily: [...daily.values()],
     topTracks: [...topTracks.values()].sort((first, second) => second.plays - first.plays).slice(0, 10),
+    quality: assessAnalyticsQuality(events),
   }
 }
 
@@ -61,7 +88,7 @@ export const getAdminAnalytics = async (req: AuthRequest, res: Response) => {
     const events = await prisma.analyticsEvent.findMany({
       where: { occurredAt: { gte: since } },
       orderBy: { occurredAt: 'asc' },
-      select: { eventType: true, trackId: true, title: true, occurredAt: true },
+      select: { userId: true, eventType: true, trackId: true, title: true, source: true, position: true, duration: true, occurredAt: true },
     })
     return res.json(summarizeAnalyticsEvents(events))
   } catch {

@@ -49,7 +49,7 @@ export interface AdminPlaylist { id: string; name: string; createdAt: string; up
 export interface AdminPlaylistsResponse { playlists: AdminPlaylist[] }
 export interface AdminTopSong { trackId: string; title: string; artistName: string; image: string; plays: number }
 export interface AdminTopSongsResponse { songs: AdminTopSong[] }
-export interface AdminAnalytics { periodDays: number; totals: { started: number; completed: number; skipped: number }; daily: Array<{ date: string; started: number; completed: number; skipped: number }>; topTracks: Array<{ trackId: string; title: string; plays: number }> }
+export interface AdminAnalytics { periodDays: number; totals: { started: number; completed: number; skipped: number }; daily: Array<{ date: string; started: number; completed: number; skipped: number }>; topTracks: Array<{ trackId: string; title: string; plays: number }>; quality: { invalidTitle: number; invalidTiming: number; unknownSource: number; duplicateStarted: number; totalIssues: number } }
 export interface AdminArtist { id: string; name: string; avatar: string; trackCount: number; albumCount: number }
 export interface AdminArtistsResponse { artists: AdminArtist[] }
 
