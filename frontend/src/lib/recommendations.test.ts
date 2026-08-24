@@ -20,4 +20,14 @@ describe('rankRecommendations', () => {
 
     expect(rankRecommendations(tracks, [], 2).map((item) => item.id)).toEqual([1, 2]);
   });
+
+  it('uses listening history as a lower-priority preference signal', () => {
+    const tracks = [
+      track(1, 'History Artist', ['ambient']),
+      track(2, 'Other Artist', ['ambient']),
+      track(3, 'Unrelated Artist', ['pop']),
+    ];
+
+    expect(rankRecommendations(tracks, [], [1], 2).map((item) => item.id)).toEqual([2, 3]);
+  });
 });

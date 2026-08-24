@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Play, Sparkles, Heart, Loader2, ArrowUpRight, Waves, Disc3, Dumbbell, PartyPopper, CloudRain, Sun } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { getJamendoTracks } from "@/lib/api";
+import { getJamendoTracks, getListeningHistory } from "@/lib/api";
 import { rankRecommendations } from "@/lib/recommendations";
 import TrackActionMenu from "@/components/TrackActionMenu";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function HomePage() {
   const { playMix, playTrack, toggleLike, likedIds, currentTrack, isPlaying } = usePlayerStore();
@@ -16,6 +17,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
   const [vibeLoading, setVibeLoading] = useState<string | null>(null);
+  const [listenedIds, setListenedIds] = useState<Array<string | number>>([]);
+  const authStatus = useAuthStore((state) => state.status);
 
   useEffect(() => {
     getJamendoTracks({ limit: 12 })
@@ -24,9 +27,40 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (authStatus !== "authenticated") {
+      setListenedIds([]);
+      return;
+    }
+
+    const userId = useAuthStore.getState().user?.id;
+    if (!userId) return;
+    let active = true;
+    const localHistory = (() => {
+      try {
+        const stored = JSON.parse(localStorage.getItem(`auraic-history-${userId}`) || "[]");
+        return Array.isArray(stored) ? stored : [];
+      } catch {
+        return [];
+      }
+    })();
+    const localIds = localHistory.map((item: { song?: { id?: string | number } }) => item.song?.id).filter((id): id is string | number => id !== undefined);
+    setListenedIds(localIds);
+
+    getListeningHistory()
+      .then((history) => {
+        if (active) setListenedIds(history.map((item) => item.song.id));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, [authStatus]);
+
   const featured = songs[0];
   const featuredArtist = typeof featured?.artist === "object" ? featured.artist?.name : featured?.artist;
-  const recommendedSongs = rankRecommendations(songs, likedIds, 5);
+  const recommendedSongs = rankRecommendations(songs, likedIds, listenedIds, 5);
   const vibes = [
     { label: "Focus", note: "Deep work", tags: "ambient classical piano", className: "from-cyan-500/30 to-blue-600/10", icon: Waves },
     { label: "Chill", note: "Slow motion", tags: "chillout lofi lounge", className: "from-violet-500/35 to-fuchsia-500/10", icon: Sparkles },
