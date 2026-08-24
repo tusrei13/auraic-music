@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Disc3, Loader2, Play, Radio, Search, Sparkles, Trophy, Users, SlidersHorizontal, Globe2, Clock3, ShieldCheck, Headphones } from "lucide-react";
-import { getJamendoTracks, type JamendoSong } from "@/lib/api";
+import { getJamendoTracks, getJamendoTracksPage, type JamendoSong } from "@/lib/api";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
@@ -43,14 +43,28 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
   const [selectedTag, setSelectedTag] = useState(kind === "genres" ? "electronic" : "");
   const [query, setQuery] = useState("");
   const [activeStation, setActiveStation] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    getJamendoTracks({ limit: 16, tags: kind === "genres" ? selectedTag : undefined, search: kind === "search" ? query : undefined, order: kind === "charts" ? "popularity_total" : undefined })
-      .then(setTracks)
-      .catch(() => setTracks([]))
+    let active = true;
+    getJamendoTracksPage({ limit: 16, tags: kind === "genres" ? selectedTag : undefined, search: kind === "search" ? query : undefined, order: kind === "charts" ? "popularity_total" : undefined })
+      .then((page) => { if (active) { setTracks(page.tracks); setNextCursor(page.nextCursor); } })
+      .catch(() => { if (active) { setTracks([]); setNextCursor(null); } })
       .finally(() => setLoading(false));
+    return () => { active = false; };
   }, [kind, selectedTag, query]);
+
+  const loadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await getJamendoTracksPage({ limit: 16, cursor: nextCursor, tags: kind === "genres" ? selectedTag : undefined, search: kind === "search" ? query : undefined, order: kind === "charts" ? "popularity_total" : undefined });
+      setTracks((current) => [...current, ...page.tracks.filter((track) => !current.some((item) => item.id === track.id))]);
+      setNextCursor(page.nextCursor);
+    } finally { setLoadingMore(false); }
+  };
 
   const playStation = async (tags: string, title: string) => {
     setActiveStation(title);
@@ -86,7 +100,7 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
 
       <section className="mt-10">
         <div className="mb-5 flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300">{kind === "charts" ? "Ranked this week" : "From Auraic"}</p><h2 className="mt-2 text-2xl font-bold">{kind === "charts" ? "Top discoveries" : "A good place to start"}</h2></div><span className="text-xs text-white/35">{tracks.length} tracks</span></div>
-        {loading ? <div className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45"><Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning the catalog...</div> : tracks.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 py-14 text-center text-sm text-white/40">No Auraic tracks matched this view.</div> : <div className="divide-y divide-white/10 border-y border-white/10">{tracks.map((track, index) => <div key={track.id} className="group flex items-center gap-3 py-4"><span className="w-7 text-center text-xs font-bold text-white/25">{kind === "charts" ? String(index + 1).padStart(2, "0") : ""}</span><img src={track.image || fallbackImage} alt={track.title} className="h-12 w-12 rounded-xl object-cover" /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} className="min-w-0 flex-1 text-left"><span className="block truncate text-sm font-semibold group-hover:text-fuchsia-200">{track.title}</span><span className="mt-1 block truncate text-xs text-white/40">{track.artist.name} · {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, "0")}</span></button><TrackActionMenu track={track as any} /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} aria-label={`Phát ${track.title}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-fuchsia-300 hover:text-white"><Play className="h-4 w-4 fill-current" /></button></div>)}</div>}
+        {loading ? <div className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45"><Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning the catalog...</div> : tracks.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 py-14 text-center text-sm text-white/40">No Auraic tracks matched this view.</div> : <><div className="divide-y divide-white/10 border-y border-white/10">{tracks.map((track, index) => <div key={track.id} className="group flex items-center gap-3 py-4"><span className="w-7 text-center text-xs font-bold text-white/25">{kind === "charts" ? String(index + 1).padStart(2, "0") : ""}</span><img src={track.image || fallbackImage} alt={track.title} className="h-12 w-12 rounded-xl object-cover" /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} className="min-w-0 flex-1 text-left"><span className="block truncate text-sm font-semibold group-hover:text-fuchsia-200">{track.title}</span><span className="mt-1 block truncate text-xs text-white/40">{track.artist.name} · {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, "0")}</span></button><TrackActionMenu track={track as any} /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} aria-label={`Phát ${track.title}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-fuchsia-300 hover:text-white"><Play className="h-4 w-4 fill-current" /></button></div>)}</div>{nextCursor ? <div className="mt-6 text-center"><button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="min-h-11 rounded-xl border border-white/15 px-5 text-sm font-semibold text-white/70 transition hover:bg-white/10 disabled:opacity-50">{loadingMore ? "Đang tải thêm..." : "Tải thêm"}</button></div> : null}</>}
       </section>
     </div>
   );

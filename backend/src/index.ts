@@ -26,7 +26,7 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3001')
   .map((origin) => origin.trim())
   .filter(Boolean)
 
-app.use(cors({ origin: allowedOrigins }))
+app.use(cors({ origin: allowedOrigins, exposedHeaders: ['x-next-cursor', 'x-page-limit', 'x-request-id', 'x-ratelimit-limit', 'x-ratelimit-remaining'] }))
 app.use(express.json())
 app.use(requestContext)
 

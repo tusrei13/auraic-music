@@ -8,6 +8,15 @@ import { searchAll, type Album, type Artist, type JamendoSong } from "@/lib/api"
 
 const fallbackArtwork = "/favicon.ico";
 
+function ArtistAvatar({ artist }: { artist: Artist }) {
+  const [failed, setFailed] = useState(false);
+  const initials = artist.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "♪";
+  if (!artist.avatar || failed) {
+    return <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500/80 to-indigo-500/80 text-[11px] font-black text-white">{initials}</span>;
+  }
+  return <img src={artist.avatar} alt="" onError={() => setFailed(true)} className="h-9 w-9 shrink-0 rounded-full object-cover" />;
+}
+
 export default function GlobalSearchBar() {
   const router = useRouter();
   const playTrack = usePlayerStore((state) => state.playTrack);
@@ -132,7 +141,7 @@ export default function GlobalSearchBar() {
                 {artists.slice(0, 4).length > 0 && <div>
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Nghệ sĩ</p>
                   {artists.slice(0, 4).map((artist) => <button key={artist.id} role="option" type="button" onClick={() => chooseArtist(artist)} className="flex min-h-11 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
-                    <img src={artist.avatar || fallbackArtwork} alt="" className="h-9 w-9 rounded-full object-cover" />
+                    <ArtistAvatar artist={artist} />
                     <span className="truncate text-sm font-semibold text-white">{artist.name}</span>
                   </button>)}
                 </div>}

@@ -2,10 +2,20 @@ import { Request, Response } from 'express'
 import { sendError } from '../lib/api-error'
 import { getJamendoTracks } from '../services/jamendo.service'
 
+export const decodeCatalogCursor = (value: unknown) => {
+  if (typeof value !== 'string' || !value) return 0
+  try {
+    const offset = Number(Buffer.from(value, 'base64url').toString('utf8'))
+    return Number.isSafeInteger(offset) && offset >= 0 ? offset : 0
+  } catch { return 0 }
+}
+
+export const encodeCatalogCursor = (offset: number) => Buffer.from(String(offset)).toString('base64url')
+
 export const getJamendoCatalog = async (req: Request, res: Response) => {
   try {
     const limit = Math.min(Math.max(Number(req.query.limit) || 48, 1), 100)
-    const offset = Math.max(Number(req.query.offset) || 0, 0)
+    const offset = req.query.cursor ? decodeCatalogCursor(req.query.cursor) : Math.max(Number(req.query.offset) || 0, 0)
     const tracks = await getJamendoTracks({
       limit,
       offset,
@@ -14,7 +24,10 @@ export const getJamendoCatalog = async (req: Request, res: Response) => {
       artistId: typeof req.query.artistId === 'string' ? req.query.artistId : undefined,
       artistName: typeof req.query.artistName === 'string' ? req.query.artistName : undefined,
       albumId: typeof req.query.albumId === 'string' ? req.query.albumId : undefined,
+      order: typeof req.query.order === 'string' ? req.query.order : undefined,
     })
+    if (tracks.length === limit) res.setHeader('x-next-cursor', encodeCatalogCursor(offset + limit))
+    res.setHeader('x-page-limit', String(limit))
     res.json(tracks)
   } catch (error) {
     const message = error instanceof Error && error.message === 'Jamendo is not configured'

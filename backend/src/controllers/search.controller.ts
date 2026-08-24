@@ -20,11 +20,15 @@ export const searchAll = async (req: Request, res: Response) => {
       return res.json(buildSearchResult([]))
     }
 
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 50)
+    const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined
+    const offset = cursor ? Number(Buffer.from(cursor, 'base64url').toString('utf8')) : 0
+    const safeOffset = Number.isSafeInteger(offset) && offset >= 0 ? offset : 0
     const [songs, artists] = await Promise.all([
-      getJamendoTracks({ limit: 50, search: q }),
+      getJamendoTracks({ limit, offset: safeOffset, search: q }),
       getJamendoArtists(q),
     ])
-    res.json(buildSearchResult(songs, artists))
+    res.json({ ...buildSearchResult(songs, artists), pagination: songs.length === limit ? { nextCursor: Buffer.from(String(safeOffset + limit)).toString('base64url') } : { nextCursor: null } })
   } catch (error) {
     sendInternalError(res, 'SEARCH_ERROR', 'Lỗi khi tìm kiếm')
   }

@@ -22,7 +22,7 @@ export interface Mood { id: string; title: string; color: string; icon: string }
 export interface Album { id: string; title: string; coverImage: string; releaseYear?: number | null; artistId: string }
 export interface Song { id: string | number; title: string; audioUrl: string; image: string; duration?: number | null; hlsUrl?: string | null; lyrics?: string | Array<{ time: number; text: string }>; playCount?: number; artist: Artist | string; genre?: Genre | string | null; genres?: string[]; album?: Album | null; mood?: Mood | null; source?: string; licenseUrl?: string }
 export interface Playlist { id: string; name: string; coverImage?: string | null; color?: string | null; userId?: string; songs?: Array<{ song: Song }> }
-export interface SearchResult { songs: Song[]; artists: Artist[]; albums: Album[] }
+export interface SearchResult { songs: Song[]; artists: Artist[]; albums: Album[]; pagination?: { nextCursor: string | null } }
 export interface JamendoSong {
   id: string;
   title: string;
@@ -149,18 +149,23 @@ export const getArtistById = (id: string) => fetcher<Artist>(`/artists/${encodeU
 
 // 4. TÌM KIẾM (SEARCH)
 export const searchAll = (query: string) => fetcher<SearchResult>(`/search?q=${encodeURIComponent(query)}`);
-export const getJamendoTracks = (options: { limit?: number; offset?: number; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}) => {
+export interface CatalogPage { tracks: JamendoSong[]; nextCursor: string | null }
+export const getJamendoTracksPage = async (options: { limit?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}): Promise<CatalogPage> => {
   const params = new URLSearchParams();
   if (options.limit) params.set("limit", String(options.limit));
-  if (options.offset) params.set("offset", String(options.offset));
+  if (options.cursor) params.set("cursor", options.cursor);
   if (options.tags) params.set("tags", options.tags);
   if (options.search) params.set("search", options.search);
   if (options.artistId) params.set("artistId", options.artistId);
   if (options.artistName) params.set("artistName", options.artistName);
   if (options.albumId) params.set("albumId", options.albumId);
   if (options.order) params.set("order", options.order);
-  return fetcher<JamendoSong[]>(`/catalog/jamendo${params.size ? `?${params}` : ""}`);
+  const response = await fetch(`${API_BASE_URL}/catalog/jamendo${params.size ? `?${params}` : ""}`, { cache: "no-store", headers: { ...(typeof window !== "undefined" && localStorage.getItem("token") ? { Authorization: `Bearer ${localStorage.getItem("token")}` } : {}) } });
+  const tracks = await response.json().catch(() => []);
+  if (!response.ok) throw new ApiError(response.status, tracks?.error || { code: "API_ERROR", message: response.statusText });
+  return { tracks: tracks as JamendoSong[], nextCursor: response.headers.get("x-next-cursor") };
 };
+export const getJamendoTracks = (options: { limit?: number; offset?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}) => getJamendoTracksPage({ ...options, cursor: options.cursor || (options.offset ? btoa(String(options.offset)) : undefined) }).then((page) => page.tracks);
 
 export const getLyrics = (trackName: string, artistName: string) =>
   fetcher<LyricsResponse>(`/lyrics?trackName=${encodeURIComponent(trackName)}&artistName=${encodeURIComponent(artistName)}`);
