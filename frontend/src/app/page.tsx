@@ -56,7 +56,7 @@ export default function HomePage() {
         playMix(nextTracks, `${vibe.label} Aura`);
       }
     } catch (error) {
-      console.error("Lỗi tải vibe Jamendo:", error);
+      console.error("Lỗi tải vibe Auraic:", error);
       if (songs.length > 0) playMix(songs, `${vibe.label} Aura`);
     } finally {
       setVibeLoading(null);
@@ -93,7 +93,7 @@ export default function HomePage() {
           <div className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45"><Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning your atmosphere...</div>
         ) : songs.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">{songs.slice(0, 5).map((song, index) => { const artist = typeof song.artist === "object" ? song.artist?.name : song.artist; const isCurrent = String(currentTrack?.id) === String(song.id); const liked = likedIds.some((id: any) => String(id) === String(song.id)); return <article key={song.id} className="group min-w-0"><button onClick={() => playTrack(song, songs, "Trending now")} className="relative block aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left"><img src={song.image} alt={song.title} loading={index > 1 ? "lazy" : "eager"} className="h-full w-full object-cover transition duration-500 group-hover:scale-105 group-hover:opacity-70" /><span className="absolute bottom-3 right-3 flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-white text-black opacity-0 shadow-xl transition duration-300 group-hover:translate-y-0 group-hover:opacity-100"><Play className="h-4 w-4 fill-current" /></span>{isCurrent && isPlaying && <span className="absolute left-3 top-3 rounded-full bg-fuchsia-500 px-2 py-1 text-[9px] font-bold uppercase tracking-wider">Playing</span>}</button><div className="flex items-start justify-between gap-2 pt-3"><div className="min-w-0"><h3 className="truncate text-sm font-semibold group-hover:text-fuchsia-200">{song.title}</h3><p className="mt-1 truncate text-xs text-white/45">{artist}</p></div><div className="flex shrink-0 items-center gap-1"><button aria-label={liked ? "Bỏ thích" : "Yêu thích"} onClick={() => toggleLike(song)} className={`mt-0.5 ${liked ? "text-pink-400" : "text-white/25 hover:text-pink-300"}`}><Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} /></button><TrackActionMenu track={song} /></div></div></article>; })}</div>
-        ) : <div className="border-b border-white/10 py-10 text-center text-sm text-white/40">Chưa có bài hát nào trong catalog Jamendo.</div>}
+        ) : <div className="border-b border-white/10 py-10 text-center text-sm text-white/40">Chưa có bài hát nào trong catalog Auraic.</div>}
       </section>
 
       <section className="mt-12 space-y-4">
@@ -135,7 +135,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl bg-white/[0.02]">
-            <p className="text-white/40 text-sm">Chưa có bài hát nào trong catalog Jamendo.</p>
+            <p className="text-white/40 text-sm">Chưa có bài hát nào trong catalog Auraic.</p>
           </div>
         )}
       </section>

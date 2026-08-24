@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Library, User as UserIcon, LogIn, LogOut, ShieldCheck, Disc3, Trophy, Radio, Users, Settings2 } from "lucide-react";
+import { Home, Compass, Library, User as UserIcon, LogIn, LogOut, ShieldCheck, Disc3, Trophy, Radio, Users, Settings2, Download, BadgeCheck } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
@@ -15,6 +15,12 @@ const navItems = [
   { name: "Thư viện", href: "/library", icon: Library },
   { name: "Trang cá nhân", href: "/profile", icon: UserIcon },
   { name: "Cài đặt", href: "/settings", icon: Settings2 },
+];
+
+const trackItems = [
+  { name: "Quyền sử dụng", href: "/track-info", icon: BadgeCheck },
+  { name: "Tải & sử dụng", href: "/download", icon: Download },
+  { name: "Credits nghệ sĩ", href: "/credits", icon: BadgeCheck },
 ];
 
 export default function Sidebar() {
@@ -56,6 +62,20 @@ export default function Sidebar() {
             );
           })}
         </nav>
+        <div className="border-t border-white/10 pt-5">
+          <p className="mb-3 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-white/25 opacity-0 transition-opacity group-hover/sidebar:opacity-100">Track & License</p>
+          <nav className="space-y-2">
+            {trackItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link key={item.href} href={item.href} className={`flex min-h-11 items-center gap-4 rounded-2xl px-3 text-xs font-semibold transition-all duration-300 ${isActive ? "bg-fuchsia-500/20 text-white" : "text-white/40 hover:bg-white/5 hover:text-white"}`}>
+                  <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-fuchsia-200" : "text-white/40"}`} />
+                  <span className="whitespace-nowrap opacity-0 transition-opacity group-hover/sidebar:opacity-100">{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
         {status === "authenticated" && user?.role === "ADMIN" ? (
           <nav>
             <Link href="/admin" className={`flex min-h-12 items-center gap-4 rounded-2xl px-3 text-xs font-semibold transition-all ${pathname.startsWith("/admin") ? "bg-fuchsia-500/20 text-white" : "text-white/50 hover:bg-white/5 hover:text-white"}`} title="Admin">

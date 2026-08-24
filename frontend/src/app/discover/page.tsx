@@ -112,7 +112,7 @@ export default function DiscoverPage() {
               const liked = isLiked(song.id);
               const isPlayingThis = String(currentTrack?.id) === String(song.id);
               const artistName = typeof song.artist === "object" ? song.artist?.name : song.artist || "Nghệ sĩ";
-              const genreName = song.genres?.slice(0, 2).join(" · ") || "Jamendo";
+              const genreName = song.genres?.slice(0, 2).join(" · ") || "Auraic";
               const songCover = song.image || song.coverUrl || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
               return (
@@ -197,7 +197,7 @@ export default function DiscoverPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-white">Nhạc quốc tế</h2>
-              <p className="mt-1 text-xs text-white/40">Tuyển chọn từ Jamendo</p>
+              <p className="mt-1 text-xs text-white/40">Tuyển chọn từ Auraic</p>
             </div>
             <span className="text-xs text-white/50">{jamendoTracks.length} bài hát</span>
           </div>

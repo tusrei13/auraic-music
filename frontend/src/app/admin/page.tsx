@@ -212,7 +212,7 @@ export default function AdminPage() {
 
       <nav className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" aria-label="Khu vực quản trị">
         {[
-          ["Catalog Jamendo", "/admin/catalog"],
+          ["Auraic Catalog", "/admin/catalog"],
           ["Ingestion Feed", "/admin/ingestion"],
           ["Users", "/admin/users"],
           ["Analytics", "/admin/analytics"],
@@ -276,7 +276,7 @@ export default function AdminPage() {
           <article className="rounded-2xl border border-white/10 bg-black/20 p-6">
             <div className="flex items-center gap-3">
               <BarChart3 className="h-5 w-5 text-amber-300" />
-              <h2 className="text-lg font-bold">Top bài hát Jamendo</h2>
+              <h2 className="text-lg font-bold">Top bài hát Auraic</h2>
             </div>
             <div className="mt-5 space-y-4">
               {topJamendo.map((song, index) => (
@@ -392,7 +392,7 @@ export default function AdminPage() {
           <table className="w-full min-w-[520px] text-left text-sm">
             <thead className="border-b border-white/10 text-xs uppercase tracking-wider text-white/35">
               <tr>
-                <th className="px-3 py-3 font-semibold">Nghệ sĩ Jamendo</th>
+                <th className="px-3 py-3 font-semibold">Nghệ sĩ Auraic</th>
                 <th className="px-3 py-3 font-semibold">Bài trong catalog</th>
                 <th className="px-3 py-3 font-semibold">Album</th>
               </tr>
@@ -412,7 +412,7 @@ export default function AdminPage() {
               ))}
             </tbody>
           </table>
-          {artists.length === 0 && !isLoading ? <p className="py-8 text-center text-sm text-white/40">Jamendo chưa trả về nghệ sĩ nào.</p> : null}
+          {artists.length === 0 && !isLoading ? <p className="py-8 text-center text-sm text-white/40">Chưa có nghệ sĩ nào trong catalog.</p> : null}
         </div>
       </section>
 
@@ -469,7 +469,7 @@ export default function AdminPage() {
       <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-lg font-bold">Thư viện bài hát Jamendo</h2>
+            <h2 className="text-lg font-bold">Thư viện bài hát Auraic</h2>
             <p className="mt-1 text-sm text-white/45">Rà soát catalog và lượt nghe thực tế trên AURAIC.</p>
           </div>
           <span className="text-xs font-semibold text-white/40">
@@ -505,7 +505,7 @@ export default function AdminPage() {
           <table className="w-full min-w-[680px] text-left text-sm">
             <thead className="border-b border-white/10 text-xs uppercase tracking-wider text-white/35">
               <tr>
-                <th className="px-3 py-3 font-semibold">Bài hát Jamendo</th>
+                <th className="px-3 py-3 font-semibold">Bài hát Auraic</th>
                 <th className="px-3 py-3 font-semibold">Thể loại</th>
                 <th className="px-3 py-3 font-semibold">Lượt nghe AURAIC</th>
                 <th className="px-3 py-3 font-semibold">Lyrics</th>
@@ -530,7 +530,7 @@ export default function AdminPage() {
                     <span className="rounded-full bg-white/8 px-2.5 py-1 text-[11px] font-bold text-white/40">API lyrics</span>
                   </td>
                   <td className="px-3 py-4">
-                    <span className="rounded-full bg-emerald-300/15 px-2.5 py-1 text-[11px] font-bold text-emerald-200">Jamendo</span>
+                    <span className="rounded-full bg-emerald-300/15 px-2.5 py-1 text-[11px] font-bold text-emerald-200">Auraic</span>
                   </td>
                 </tr>
               ))}

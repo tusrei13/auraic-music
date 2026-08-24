@@ -12,7 +12,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const { id } = use(params);
   const albumId = decodeURIComponent(id);
   const searchParams = useSearchParams();
-  const albumNameHint = searchParams.get("name") || "Album Jamendo";
+  const albumNameHint = searchParams.get("name") || "Album Auraic";
   const [tracks, setTracks] = useState<JamendoSong[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -25,7 +25,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     const loadAlbum = async () => {
       try {
         let songs = await getJamendoTracks({ limit: 200, albumId });
-        if (songs.length === 0 && albumNameHint !== "Album Jamendo") {
+        if (songs.length === 0 && albumNameHint !== "Album Auraic") {
           const fallbackSongs = await getJamendoTracks({ limit: 200, search: albumNameHint });
           songs = fallbackSongs.filter((song) => song.album?.title.toLowerCase() === albumNameHint.toLowerCase());
         }
@@ -83,7 +83,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 <TrackActionMenu track={track as any} />
               </div>
             </div>;
-          }) : <div className="p-10 text-center text-sm text-white/50">{failed ? "Không thể tải album này từ Jamendo." : "Album này chưa có bài hát khả dụng."}</div>}
+          }) : <div className="p-10 text-center text-sm text-white/50">{failed ? "Không thể tải album này từ Auraic." : "Album này chưa có bài hát khả dụng."}</div>}
         </div>
       </section>
     </div>

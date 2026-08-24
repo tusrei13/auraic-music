@@ -210,7 +210,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
               );
             })
           ) : (
-            <div className="p-8 text-center text-white/40 text-sm">Không thể tải bài hát của nghệ sĩ này từ Jamendo. Hãy thử tải lại trang.</div>
+            <div className="p-8 text-center text-white/40 text-sm">Không thể tải bài hát của nghệ sĩ này từ Auraic. Hãy thử tải lại trang.</div>
           )}
         </div>
         {artistSongs.length > 8 && (

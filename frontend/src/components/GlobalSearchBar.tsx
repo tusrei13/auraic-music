@@ -53,7 +53,7 @@ export default function GlobalSearchBar() {
   }, []);
 
   const chooseTrack = (track: JamendoSong) => {
-    playTrack(track as any, results as any, "Tìm kiếm Jamendo");
+    playTrack(track as any, results as any, "Tìm kiếm Auraic");
     setQuery("");
     setResults([]);
     setOpen(false);
@@ -93,8 +93,8 @@ export default function GlobalSearchBar() {
             setQuery(event.target.value);
             setOpen(true);
           }}
-          placeholder="Tìm bài hát, nghệ sĩ hoặc album trên Jamendo..."
-          aria-label="Tìm kiếm nhạc Jamendo"
+          placeholder="Tìm bài hát, nghệ sĩ hoặc album..."
+          aria-label="Tìm kiếm nhạc"
           aria-expanded={open && Boolean(query.trim())}
           aria-controls="global-search-results"
           role="combobox"
@@ -109,7 +109,7 @@ export default function GlobalSearchBar() {
         ) : null}
 
         {open && query.trim() && !loading && (
-          <div id="global-search-results" role="listbox" aria-label="Kết quả tìm kiếm Jamendo" className="absolute left-0 right-0 top-[calc(100%+8px)] max-h-[min(32rem,calc(100vh-8rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#15151d]/95 p-3 shadow-2xl backdrop-blur-2xl">
+          <div id="global-search-results" role="listbox" aria-label="Kết quả tìm kiếm" className="absolute left-0 right-0 top-[calc(100%+8px)] max-h-[min(32rem,calc(100vh-8rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#15151d]/95 p-3 shadow-2xl backdrop-blur-2xl">
             {results.length > 0 ? (
               <div className="space-y-4">
                 {artists.length > 0 && <div>
@@ -135,7 +135,7 @@ export default function GlobalSearchBar() {
                 </div>}
               </div>
             ) : (
-              <p className="px-3 py-4 text-center text-xs text-white/45">Không tìm thấy bài hát phù hợp trên Jamendo.</p>
+              <p className="px-3 py-4 text-center text-xs text-white/45">Không tìm thấy bài hát phù hợp.</p>
             )}
           </div>
         )}
