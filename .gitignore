@@ -51,3 +51,6 @@ backend/media/
 # Local AI agent skills and prompts
 .agents/
 .github/prompts/
+
+# Local project guidance
+/AURAIC.md
