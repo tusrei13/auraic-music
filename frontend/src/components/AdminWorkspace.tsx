@@ -5,8 +5,9 @@ import { BarChart3, Check, Database, Loader2, RefreshCw, Save, Search, Settings2
 import { useAuthStore } from "@/store/useAuthStore";
 import { getAdminSongs, getAdminTopJamendo, getAdminUsers, type AdminSong, type AdminTopSong, type AdminUser } from "@/lib/api";
 import AdminAnalyticsPanel from "@/components/AdminAnalyticsPanel";
+import { AdminIngestion, AdminSettings } from "@/components/AdminOperations";
 
-type AdminView = "catalog" | "ingestion" | "users" | "analytics" | "settings";
+type AdminView = string;
 const sections: Array<{ key: AdminView; label: string; icon: typeof Database }> = [{ key: "catalog", label: "Auraic Catalog", icon: Database }, { key: "ingestion", label: "Ingestion Feed", icon: RefreshCw }, { key: "users", label: "Users", icon: Users }, { key: "analytics", label: "Analytics", icon: BarChart3 }, { key: "settings", label: "System Settings", icon: Settings2 }];
 
 export default function AdminWorkspace({ view }: { view: AdminView }) {
@@ -22,6 +23,8 @@ export default function AdminWorkspace({ view }: { view: AdminView }) {
   if (status === "idle" || status === "loading") return <State title="Đang xác thực quyền truy cập" />;
   if (status === "unauthenticated") return <State title="Đăng nhập để mở khu vực quản trị" />;
   if (user?.role !== "ADMIN") return <State title="Bạn không có quyền truy cập trang này" />;
+  if (view === "ingestion") return <AdminIngestion />;
+  if (view === "settings") return <AdminSettings />;
   const current = sections.find((section) => section.key === view) || sections[0];
   const filteredSongs = songs.filter((song) => `${song.title} ${song.artist.name}`.toLowerCase().includes(query.toLowerCase()));
   const filteredUsers = users.filter((item) => `${item.name || ""} ${item.email}`.toLowerCase().includes(query.toLowerCase()));

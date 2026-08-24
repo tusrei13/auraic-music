@@ -37,7 +37,7 @@ export interface JamendoSong {
 }
 export interface CurrentUser { id: string; email: string; name?: string | null; avatar?: string | null; createdAt?: string; role: "USER" | "ADMIN"; playlists: Playlist[] }
 export interface AuthResponse { message: string; token?: string; user?: { id: string; email?: string | null; user_metadata?: { full_name?: string } } }
-export interface ApiErrorPayload { code: string; message: string; details?: unknown }
+export interface ApiErrorPayload { code: string; message: string; requestId?: string; details?: unknown }
 export interface LyricsResponse { syncedLyrics: string | null; plainLyrics: string | null }
 export interface AdminOverview { role: "ADMIN"; metrics: { users: number; playlists: number; songs: number; likes: number } }
 export interface AdminUser { id: string; email: string; name?: string | null; role: "USER" | "ADMIN"; createdAt: string; _count: { playlists: number; likes: number; histories: number } }
@@ -52,6 +52,11 @@ export interface AdminTopSongsResponse { songs: AdminTopSong[] }
 export interface AdminAnalytics { periodDays: number; totals: { started: number; completed: number; skipped: number }; daily: Array<{ date: string; started: number; completed: number; skipped: number }>; topTracks: Array<{ trackId: string; title: string; plays: number }>; quality: { invalidTitle: number; invalidTiming: number; unknownSource: number; duplicateStarted: number; totalIssues: number } }
 export interface AdminArtist { id: string; name: string; avatar: string; trackCount: number; albumCount: number }
 export interface AdminArtistsResponse { artists: AdminArtist[] }
+export interface IngestionJob { id: string; status: "RUNNING" | "SUCCEEDED" | "FAILED"; startedAt: string; finishedAt?: string | null; imported: number; updated: number; failed: number; errorMessage?: string | null }
+export const getIngestionStatus = () => fetcher<{ configured: boolean; running: number; latest: IngestionJob | null }>("/admin/ingestion/status");
+export const runIngestion = () => fetcher<{ job: IngestionJob }>("/admin/ingestion/run", { method: "POST" });
+export const getSystemSettings = () => fetcher<{ settings: Record<string, string> }>("/admin/settings");
+export const updateSystemSettings = (settings: Record<string, string>) => fetcher<{ settings: Record<string, string> }>("/admin/settings", { method: "PUT", body: JSON.stringify(settings) });
 
 export class ApiError extends Error {
   code: string;

@@ -50,20 +50,27 @@ export const getListeningHistory = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id
     if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
 
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100)
+    const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined
     const [history, jamendoHistory] = await Promise.all([
       prisma.listeningHistory.findMany({
       where: { userId },
       orderBy: { listenedAt: 'desc' },
-      take: 50,
+      take: limit + 1,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
       include: { song: { include: { artist: true, genre: true, album: true, mood: true } } },
       }),
-      prisma.jamendoListening.findMany({ where: { userId }, orderBy: { listenedAt: 'desc' }, take: 50 }),
+      prisma.jamendoListening.findMany({ where: { userId }, orderBy: { listenedAt: 'desc' }, take: limit + 1 }),
     ])
 
-    res.json([
+    const items = [
       ...history,
       ...jamendoHistory.map((item) => ({ id: item.id, listenedAt: item.listenedAt, song: { id: item.trackId, title: item.title, artist: item.artistName, image: item.image, audioUrl: item.audioUrl, duration: item.duration } })),
-    ].sort((first, second) => second.listenedAt.getTime() - first.listenedAt.getTime()).slice(0, 50))
+    ].sort((first, second) => second.listenedAt.getTime() - first.listenedAt.getTime()).slice(0, limit + 1)
+    const hasMore = items.length > limit
+    const page = items.slice(0, limit)
+    if (hasMore) res.setHeader('x-next-cursor', page[page.length - 1]?.id || '')
+    res.json(page)
   } catch (error) {
     sendInternalError(res, 'LISTENING_HISTORY_ERROR', 'Không thể lấy lịch sử nghe')
   }

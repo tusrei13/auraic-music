@@ -4,11 +4,11 @@ import { getJamendoTracks } from '../services/jamendo.service'
 
 export const getJamendoCatalog = async (req: Request, res: Response) => {
   try {
-    const limit = Number(req.query.limit)
-    const offset = Number(req.query.offset)
+    const limit = Math.min(Math.max(Number(req.query.limit) || 48, 1), 100)
+    const offset = Math.max(Number(req.query.offset) || 0, 0)
     const tracks = await getJamendoTracks({
-      limit: Number.isFinite(limit) ? limit : undefined,
-      offset: Number.isFinite(offset) ? offset : undefined,
+      limit,
+      offset,
       tags: typeof req.query.tags === 'string' ? req.query.tags : undefined,
       search: typeof req.query.search === 'string' ? req.query.search : undefined,
       artistId: typeof req.query.artistId === 'string' ? req.query.artistId : undefined,

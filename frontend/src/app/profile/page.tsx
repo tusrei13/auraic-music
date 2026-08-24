@@ -113,10 +113,9 @@ export default function ProfilePage() {
     );
   }
 
-  const memberSince = new Date(user.createdAt || Date.now()).toLocaleDateString("vi-VN", {
-    month: "long",
-    year: "numeric",
-  });
+  const memberSince = user.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("vi-VN", { month: "long", year: "numeric" })
+    : "Chưa xác định";
 
   return (
     <div className="min-h-full bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_35%),radial-gradient(circle_at_70%_20%,rgba(168,85,247,0.1),transparent_35%)] px-5 py-8 text-white sm:px-8">

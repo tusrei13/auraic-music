@@ -244,3 +244,50 @@ export const getAdminArtists = async (req: AuthRequest, res: Response) => {
     return sendInternalError(res, 'ADMIN_ARTISTS_ERROR', 'Không thể tải danh sách nghệ sĩ')
   }
 }
+
+export const getIngestionStatus = async (req: AuthRequest, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
+  try {
+    const [latest, running] = await Promise.all([
+      prisma.ingestionJob.findFirst({ orderBy: { startedAt: 'desc' } }),
+      prisma.ingestionJob.count({ where: { status: 'RUNNING' } }),
+    ])
+    return res.json({ source: 'jamendo', configured: Boolean(process.env.JAMENDO_CLIENT_ID), running, latest })
+  } catch { return sendInternalError(res, 'INGESTION_STATUS_ERROR', 'Không thể tải trạng thái đồng bộ') }
+}
+
+export const runIngestion = async (req: AuthRequest, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
+  const job = await prisma.ingestionJob.create({ data: { status: 'RUNNING', createdById: req.user.id } })
+  try {
+    const tracks = await getJamendoTracks({ limit: 100 })
+    const completed = await prisma.ingestionJob.update({ where: { id: job.id }, data: { status: 'SUCCEEDED', finishedAt: new Date(), imported: tracks.length } })
+    return res.status(202).json({ job: completed })
+  } catch (error) {
+    const failed = await prisma.ingestionJob.update({ where: { id: job.id }, data: { status: 'FAILED', finishedAt: new Date(), errorMessage: error instanceof Error ? error.message.slice(0, 500) : 'Unknown error' } })
+    return res.status(503).json({ job: failed })
+  }
+}
+
+export const getSystemSettings = async (_req: AuthRequest, res: Response) => {
+  try {
+    const settings = await prisma.systemSetting.findMany({ orderBy: { key: 'asc' } })
+    return res.json({ settings: Object.fromEntries(settings.map((item) => [item.key, item.value])) })
+  } catch {
+    // Keep admin UI usable before the first migration is applied; writes still fail loudly.
+    return res.json({ settings: { siteName: 'Auraic', defaultLanguage: 'vi', maintenanceMode: 'off' }, degraded: true })
+  }
+}
+
+export const updateSystemSettings = async (req: AuthRequest, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
+  const input = req.body as Record<string, unknown>
+  const allowed = ['siteName', 'defaultLanguage', 'maintenanceMode']
+  const entries = Object.entries(input).filter(([key, value]) => allowed.includes(key) && typeof value === 'string')
+  try {
+    await prisma.$transaction(entries.map(([key, value]) => prisma.systemSetting.upsert({ where: { key }, create: { key, value: value as string, updatedById: req.user!.id }, update: { value: value as string, updatedById: req.user!.id } })))
+    return getSystemSettings(req, res)
+  } catch {
+    return sendInternalError(res, 'ADMIN_SETTINGS_WRITE_ERROR', 'Không thể lưu system settings')
+  }
+}

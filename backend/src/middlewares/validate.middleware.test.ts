@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyticsEventSchema, createPlaylistSchema, loginSchema, playlistSongParamsSchema, playlistSongSchema, songIdBodySchema } from './validate.middleware'
+import { adminSettingsSchema, analyticsEventSchema, createPlaylistSchema, loginSchema, playlistSongParamsSchema, playlistSongSchema, songIdBodySchema } from './validate.middleware'
 
 describe('API request schemas', () => {
   it('accepts valid login data and rejects malformed email', () => {
@@ -31,5 +31,11 @@ describe('API request schemas', () => {
     expect(analyticsEventSchema.safeParse({
       body: { eventType: 'TRACK_UNKNOWN', trackId: 'jamendo:123', title: 'Track' },
     }).success).toBe(false)
+  })
+
+  it('restricts admin settings to known, bounded values', () => {
+    expect(adminSettingsSchema.safeParse({ body: { siteName: 'Auraic', defaultLanguage: 'vi', maintenanceMode: 'off' } }).success).toBe(true)
+    expect(adminSettingsSchema.safeParse({ body: { maintenanceMode: 'enabled' } }).success).toBe(false)
+    expect(adminSettingsSchema.safeParse({ body: { secret: 'should-not-pass' } }).success).toBe(false)
   })
 })

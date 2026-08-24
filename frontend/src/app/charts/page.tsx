@@ -1,5 +1,5 @@
-import CatalogSurface from "@/components/CatalogSurface";
+import { notFound } from "next/navigation";
 
 export default function ChartsPage() {
-  return <CatalogSurface kind="charts" />;
+  notFound();
 }

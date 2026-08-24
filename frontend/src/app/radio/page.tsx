@@ -1,5 +1,5 @@
-import CatalogSurface from "@/components/CatalogSurface";
+import { notFound } from "next/navigation";
 
 export default function RadioPage() {
-  return <CatalogSurface kind="radio" />;
+  notFound();
 }

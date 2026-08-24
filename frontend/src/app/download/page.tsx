@@ -1,6 +1,5 @@
-import ExperienceSurface from "@/components/ExperienceSurface";
-import LicenseActions from "@/components/LicenseActions";
+import { notFound } from "next/navigation";
 
 export default function DownloadPage() {
-  return <><ExperienceSurface kind="download" /><LicenseActions mode="download" /></>;
+  notFound();
 }

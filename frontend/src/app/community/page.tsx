@@ -1,5 +1,5 @@
-import CatalogSurface from "@/components/CatalogSurface";
+import { notFound } from "next/navigation";
 
 export default function CommunityPage() {
-  return <CatalogSurface kind="community" />;
+  notFound();
 }

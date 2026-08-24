@@ -110,3 +110,13 @@ export const adminUserRoleSchema = z.object({
   params: z.object({ id: z.string().uuid() }),
   query: z.record(z.string(), z.unknown()).optional(),
 })
+
+export const adminSettingsSchema = z.object({
+  body: z.object({
+    siteName: z.string().trim().min(1).max(100).optional(),
+    defaultLanguage: z.enum(['vi', 'en']).optional(),
+    maintenanceMode: z.enum(['on', 'off']).optional(),
+  }).strict(),
+  params: z.record(z.string(), z.unknown()).optional(),
+  query: z.record(z.string(), z.unknown()).optional(),
+})

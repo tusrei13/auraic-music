@@ -15,6 +15,7 @@ import adminRoutes from './routes/admin.route'
 import analyticsRoutes from './routes/analytics.route'
 import { sendError } from './lib/api-error'
 import path from 'node:path'
+import { requestContext, rateLimit } from './middlewares/platform.middleware'
 
 dotenv.config()
 
@@ -27,18 +28,31 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3001')
 
 app.use(cors({ origin: allowedOrigins }))
 app.use(express.json())
+app.use(requestContext)
 
 // Routes
-app.use('/api/auth', authRoutes)
+app.use('/api/auth', rateLimit(60_000, 30), authRoutes)
 app.use('/api/songs', songRoutes)
 app.use('/api/artists', artistRoutes)
 app.use('/api/playlists', playlistRoutes)
 app.use('/api/likes', likeRoutes)
-app.use('/api/search', searchRoutes)
+app.use('/api/search', rateLimit(60_000, 60), searchRoutes)
 app.use('/api/catalog', catalogRoutes)
 app.use('/api/lyrics', lyricsRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/analytics', analyticsRoutes)
+
+// Versioned contract for new clients; legacy /api routes remain backwards compatible.
+app.use('/api/v1/auth', rateLimit(60_000, 30), authRoutes)
+app.use('/api/v1/songs', songRoutes)
+app.use('/api/v1/search', rateLimit(60_000, 60), searchRoutes)
+app.use('/api/v1/catalog', rateLimit(60_000, 60), catalogRoutes)
+app.use('/api/v1/playlists', playlistRoutes)
+app.use('/api/v1/likes', likeRoutes)
+app.use('/api/v1/lyrics', rateLimit(60_000, 60), lyricsRoutes)
+app.use('/api/v1/analytics', analyticsRoutes)
+app.use('/api/v1/admin', adminRoutes)
+app.use('/api/v1', genreRoutes)
 app.use('/api', genreRoutes)
 app.use('/media', express.static(path.resolve(process.env.MEDIA_ROOT || path.join(process.cwd(), 'media'))))
 
