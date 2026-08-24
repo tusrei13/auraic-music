@@ -59,3 +59,7 @@ jobs:
         run: npm run build
       - name: Test
         run: npm test -- --run
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: E2E smoke
+        run: npm run test:e2e
