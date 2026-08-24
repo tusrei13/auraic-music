@@ -5,6 +5,8 @@ import { parsePositiveInteger } from '../lib/validation'
 import { sendError, sendInternalError } from '../lib/api-error'
 import { getJamendoTracks } from '../services/jamendo.service'
 
+const LISTENING_DEDUP_WINDOW_MS = 30_000
+
 export const getSongs = async (_req: Request, res: Response) => {
   try {
     res.json(await getJamendoTracks({ limit: 48 }))
@@ -19,6 +21,12 @@ export const recordListening = async (req: AuthRequest, res: Response) => {
     const songId = parsePositiveInteger(req.params.id)
     if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
     if (songId === null) return sendError(res, 400, 'INVALID_SONG_ID', 'songId không hợp lệ')
+
+    const recentListening = await prisma.listeningHistory.findFirst({
+      where: { userId, songId, listenedAt: { gte: new Date(Date.now() - LISTENING_DEDUP_WINDOW_MS) } },
+      orderBy: { listenedAt: 'desc' },
+    })
+    if (recentListening) return res.status(200).json(recentListening)
 
     const song = await prisma.song.findUnique({ where: { id: songId } })
     if (!song) return sendError(res, 404, 'SONG_NOT_FOUND', 'Không tìm thấy bài hát')
@@ -67,6 +75,12 @@ export const recordJamendoListening = async (req: AuthRequest, res: Response) =>
     if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
 
     const { trackId, title, artistName, image, audioUrl, duration } = req.body
+    const recentListening = await prisma.jamendoListening.findFirst({
+      where: { userId, trackId, listenedAt: { gte: new Date(Date.now() - LISTENING_DEDUP_WINDOW_MS) } },
+      orderBy: { listenedAt: 'desc' },
+    })
+    if (recentListening) return res.status(200).json(recentListening)
+
     const history = await prisma.jamendoListening.create({ data: { userId, trackId, title, artistName, image, audioUrl, duration } })
     res.status(201).json(history)
   } catch {
