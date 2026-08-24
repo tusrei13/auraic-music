@@ -2,16 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Library, User as UserIcon, LogIn, LogOut, ShieldCheck, Disc3, Trophy, Radio, Users, Settings2, Download, BadgeCheck } from "lucide-react";
+import { Home, Compass, Library, User as UserIcon, LogIn, LogOut, ShieldCheck, Disc3, Settings2, BadgeCheck } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
   { name: "Trang chủ", href: "/", icon: Home },
   { name: "Khám phá", href: "/discover", icon: Compass },
   { name: "Thể loại", href: "/genres", icon: Disc3 },
-  { name: "Bảng xếp hạng", href: "/charts", icon: Trophy },
-  { name: "Radio", href: "/radio", icon: Radio },
-  { name: "Cộng đồng", href: "/community", icon: Users },
   { name: "Thư viện", href: "/library", icon: Library },
   { name: "Trang cá nhân", href: "/profile", icon: UserIcon },
   { name: "Cài đặt", href: "/settings", icon: Settings2 },
@@ -19,7 +16,6 @@ const navItems = [
 
 const trackItems = [
   { name: "Quyền sử dụng", href: "/track-info", icon: BadgeCheck },
-  { name: "Tải & sử dụng", href: "/download", icon: Download },
   { name: "Credits nghệ sĩ", href: "/credits", icon: BadgeCheck },
 ];
 

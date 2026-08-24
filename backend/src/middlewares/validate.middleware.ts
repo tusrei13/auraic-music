@@ -7,6 +7,8 @@ export const validate = (schema: z.ZodType) => (req: Request, res: Response, nex
   if (!result.success) {
     return sendError(res, 400, 'VALIDATION_ERROR', 'Dữ liệu yêu cầu không hợp lệ', result.error.flatten())
   }
+  const parsed = result.data as { body?: Record<string, unknown> }
+  if (parsed.body) req.body = parsed.body
   next()
 }
 
