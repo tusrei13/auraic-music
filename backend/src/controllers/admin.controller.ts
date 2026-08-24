@@ -4,6 +4,71 @@ import { prisma } from '../lib/prisma'
 import { sendError, sendInternalError } from '../lib/api-error'
 import { getJamendoTracks } from '../services/jamendo.service'
 
+type AnalyticsEventForSummary = {
+  eventType: 'TRACK_STARTED' | 'TRACK_COMPLETED' | 'TRACK_SKIPPED'
+  trackId: string
+  title: string
+  occurredAt: Date
+}
+
+export const summarizeAnalyticsEvents = (events: AnalyticsEventForSummary[], days = 7) => {
+  const now = new Date()
+  const start = new Date(now)
+  start.setHours(0, 0, 0, 0)
+  start.setDate(start.getDate() - (days - 1))
+  const daily = new Map<string, { date: string; started: number; completed: number; skipped: number }>()
+
+  for (let index = 0; index < days; index += 1) {
+    const date = new Date(start)
+    date.setDate(start.getDate() + index)
+    const key = date.toISOString().slice(0, 10)
+    daily.set(key, { date: key, started: 0, completed: 0, skipped: 0 })
+  }
+
+  const topTracks = new Map<string, { trackId: string; title: string; plays: number }>()
+  let started = 0
+  let completed = 0
+  let skipped = 0
+
+  for (const event of events) {
+    const dateKey = event.occurredAt.toISOString().slice(0, 10)
+    const bucket = daily.get(dateKey)
+    if (bucket) bucket[event.eventType === 'TRACK_STARTED' ? 'started' : event.eventType === 'TRACK_COMPLETED' ? 'completed' : 'skipped'] += 1
+    if (event.eventType === 'TRACK_STARTED') {
+      started += 1
+      const current = topTracks.get(event.trackId)
+      if (current) current.plays += 1
+      else topTracks.set(event.trackId, { trackId: event.trackId, title: event.title, plays: 1 })
+    } else if (event.eventType === 'TRACK_COMPLETED') completed += 1
+    else skipped += 1
+  }
+
+  return {
+    periodDays: days,
+    totals: { started, completed, skipped },
+    daily: [...daily.values()],
+    topTracks: [...topTracks.values()].sort((first, second) => second.plays - first.plays).slice(0, 10),
+  }
+}
+
+export const getAdminAnalytics = async (req: AuthRequest, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
+
+  try {
+    const since = new Date()
+    since.setDate(since.getDate() - 6)
+    since.setHours(0, 0, 0, 0)
+    const events = await prisma.analyticsEvent.findMany({
+      where: { occurredAt: { gte: since } },
+      orderBy: { occurredAt: 'asc' },
+      select: { eventType: true, trackId: true, title: true, occurredAt: true },
+    })
+    return res.json(summarizeAnalyticsEvents(events))
+  } catch {
+    return sendInternalError(res, 'ADMIN_ANALYTICS_ERROR', 'Không thể tải dữ liệu analytics')
+  }
+}
+
 export const getAdminOverview = async (req: AuthRequest, res: Response) => {
   if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
 

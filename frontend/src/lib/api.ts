@@ -49,6 +49,7 @@ export interface AdminPlaylist { id: string; name: string; createdAt: string; up
 export interface AdminPlaylistsResponse { playlists: AdminPlaylist[] }
 export interface AdminTopSong { trackId: string; title: string; artistName: string; image: string; plays: number }
 export interface AdminTopSongsResponse { songs: AdminTopSong[] }
+export interface AdminAnalytics { periodDays: number; totals: { started: number; completed: number; skipped: number }; daily: Array<{ date: string; started: number; completed: number; skipped: number }>; topTracks: Array<{ trackId: string; title: string; plays: number }> }
 export interface AdminArtist { id: string; name: string; avatar: string; trackCount: number; albumCount: number }
 export interface AdminArtistsResponse { artists: AdminArtist[] }
 
@@ -166,6 +167,7 @@ export const getAdminSongs = () => fetcher<AdminSongsResponse>("/admin/songs");
 export const getAdminPlaylists = () => fetcher<AdminPlaylistsResponse>("/admin/playlists");
 export const deleteAdminPlaylist = (playlistId: string) => fetcher<{ message: string; playlistId: string }>(`/admin/playlists/${encodeURIComponent(playlistId)}`, { method: "DELETE" });
 export const getAdminTopJamendo = () => fetcher<AdminTopSongsResponse>("/admin/top-jamendo");
+export const getAdminAnalytics = () => fetcher<AdminAnalytics>("/admin/analytics");
 export const getAdminArtists = () => fetcher<AdminArtistsResponse>("/admin/artists");
 export const updateUserProfile = (name?: string, avatar?: string) => fetcher<{ message: string; user: CurrentUser }>("/auth/profile", { method: "PATCH", body: JSON.stringify({ ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) }) });
 
