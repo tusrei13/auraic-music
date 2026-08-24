@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Play, Sparkles, Heart, Loader2, ArrowUpRight, Waves, Disc3, Dumbbell, PartyPopper, CloudRain, Sun } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { getJamendoTracks } from "@/lib/api";
+import { rankRecommendations } from "@/lib/recommendations";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
 export default function HomePage() {
@@ -25,6 +26,7 @@ export default function HomePage() {
 
   const featured = songs[0];
   const featuredArtist = typeof featured?.artist === "object" ? featured.artist?.name : featured?.artist;
+  const recommendedSongs = rankRecommendations(songs, likedIds, 5);
   const vibes = [
     { label: "Focus", note: "Deep work", tags: "ambient classical piano", className: "from-cyan-500/30 to-blue-600/10", icon: Waves },
     { label: "Chill", note: "Slow motion", tags: "chillout lofi lounge", className: "from-violet-500/35 to-fuchsia-500/10", icon: Sparkles },
@@ -97,25 +99,25 @@ export default function HomePage() {
       </section>
 
       <section className="mt-12 space-y-4">
-        <div className="flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.25em] text-violet-300">A little deeper</p><h2 className="mt-2 text-2xl font-bold tracking-tight">For your next chapter</h2></div></div>
+        <div className="flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.25em] text-violet-300">Based on your likes</p><h2 className="mt-2 text-2xl font-bold tracking-tight">For you</h2></div></div>
 
         {loading ? (
           <div className="flex items-center justify-center py-12 text-white/50 gap-2">
             <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
             <span>Đang tải bài hát từ API...</span>
           </div>
-        ) : songs.length > 0 ? (
-          <div className="divide-y divide-white/10 border-y border-white/10">{songs.slice(5, 10).map((song, index) => {
+        ) : recommendedSongs.length > 0 ? (
+          <div className="divide-y divide-white/10 border-y border-white/10">{recommendedSongs.map((song, index) => {
                 const liked = likedIds.some((id: any) => String(id) === String(song.id));
                 const isCurrent = String(currentTrack?.id) === String(song.id);
                 const artistName = typeof song.artist === "object" ? song.artist?.name : song.artist;
                 return (
                   <div
                     key={song.id}
-                    onClick={() => playTrack(song, songs)}
+                    onClick={() => playTrack(song, recommendedSongs, "For you")}
                     className={`group flex items-center gap-4 py-4 transition ${isCurrent ? "text-fuchsia-300" : "hover:text-fuchsia-200"}`}
                   >
-                    <span className="w-6 text-xs text-white/25">{String(index + 6).padStart(2, "0")}</span><img src={song.image} alt={song.title} className="h-12 w-12 shrink-0 rounded-xl object-cover" /><div onClick={() => playTrack(song, songs)} className="min-w-0 flex-1 cursor-pointer"><h4 className="truncate text-sm font-semibold">{song.title}</h4><p className="mt-1 truncate text-xs text-white/40">{artistName}</p></div><div className="flex items-center gap-2">
+                    <span className="w-6 text-xs text-white/25">{String(index + 1).padStart(2, "0")}</span><img src={song.image} alt={song.title} className="h-12 w-12 shrink-0 rounded-xl object-cover" /><div onClick={() => playTrack(song, recommendedSongs, "For you")} className="min-w-0 flex-1 cursor-pointer"><h4 className="truncate text-sm font-semibold">{song.title}</h4><p className="mt-1 truncate text-xs text-white/40">{artistName}</p></div><div className="flex items-center gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
