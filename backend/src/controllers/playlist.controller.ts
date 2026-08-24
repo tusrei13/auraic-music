@@ -4,9 +4,11 @@ import { prisma } from '../lib/prisma'
 import { isNonEmptyString, parsePositiveInteger } from '../lib/validation'
 import { sendError, sendInternalError } from '../lib/api-error'
 
-export const getPlaylists = async (_req: Request, res: Response) => {
+export const getPlaylists = async (req: AuthRequest, res: Response) => {
   try {
+    if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
     const playlists = await prisma.playlist.findMany({
+      where: { userId: req.user.id },
       include: {
         user: { select: { name: true, avatar: true } },
         songs: { include: { song: { include: { artist: true } } } },
@@ -19,8 +21,9 @@ export const getPlaylists = async (_req: Request, res: Response) => {
   }
 }
 
-export const getPlaylistById = async (req: Request, res: Response) => {
+export const getPlaylistById = async (req: AuthRequest, res: Response) => {
   try {
+    if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
     const { id } = req.params
     const playlist = await prisma.playlist.findUnique({
       where: { id },
@@ -35,6 +38,7 @@ export const getPlaylistById = async (req: Request, res: Response) => {
       },
     })
     if (!playlist) return sendError(res, 404, 'PLAYLIST_NOT_FOUND', 'Không tìm thấy playlist')
+    if (playlist.userId !== req.user.id) return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền xem playlist này')
     res.json(playlist)
   } catch (error) {
     sendInternalError(res, 'PLAYLIST_DETAIL_ERROR', 'Lỗi server')

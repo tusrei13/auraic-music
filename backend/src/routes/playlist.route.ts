@@ -13,8 +13,8 @@ import { createPlaylistSchema, playlistIdParamsSchema, playlistReorderSchema, pl
 
 const router = Router()
 
-router.get('/', getPlaylists)
-router.get('/:id', validate(playlistIdParamsSchema), getPlaylistById)
+router.get('/', authenticate, getPlaylists)
+router.get('/:id', authenticate, validate(playlistIdParamsSchema), getPlaylistById)
 router.post('/', authenticate, validate(createPlaylistSchema), createPlaylist)
 router.post('/:id/songs', authenticate, validate(playlistSongSchema), addSongToPlaylist)
 router.put('/:id/reorder', authenticate, validate(playlistReorderSchema), reorderPlaylistSongs)

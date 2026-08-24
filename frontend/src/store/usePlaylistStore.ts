@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { Track } from "./usePlayerStore";
 import { useToastStore } from "./useToastStore";
 import { useAuthStore } from "./useAuthStore";
@@ -55,9 +54,7 @@ const toLocalPlaylist = (playlist: any): Playlist => {
   };
 };
 
-export const usePlaylistStore = create<PlaylistState>()(
-  persist(
-    (set, get) => ({
+export const usePlaylistStore = create<PlaylistState>()((set, get) => ({
       playlists: [],
 
       switchUser: (userId) => {
@@ -230,7 +227,4 @@ export const usePlaylistStore = create<PlaylistState>()(
           useToastStore.getState().addToast("Không thể tải playlist từ máy chủ", "error");
         }
       },
-    }),
-    { name: "auraic-playlist-storage" }
-  )
-);
+}));
