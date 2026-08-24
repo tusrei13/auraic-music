@@ -34,6 +34,12 @@ export interface JamendoSong {
   genres: string[]
 }
 
+export interface JamendoArtist {
+  id: string
+  name: string
+  avatar: string
+}
+
 const JAMENDO_API_URL = 'https://api.jamendo.com/v3.0/tracks/'
 const JAMENDO_ARTISTS_API_URL = 'https://api.jamendo.com/v3.0/artists/'
 const CACHE_TTL_MS = 60_000
@@ -49,6 +55,30 @@ const resolveJamendoArtistId = async (clientId: string, artistName: string) => {
   const payload = await response.json() as { results?: Array<{ id: number; name: string }> }
   const exact = payload.results?.find((artist) => artist.name.toLowerCase() === artistName.toLowerCase())
   return exact ? String(exact.id) : payload.results?.[0] ? String(payload.results[0].id) : undefined
+}
+
+export const getJamendoArtists = async (name: string): Promise<JamendoArtist[]> => {
+  const clientId = process.env.JAMENDO_CLIENT_ID
+  if (!clientId || !name.trim()) return []
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    format: 'json',
+    limit: '10',
+    namesearch: name.trim(),
+    imagesize: '300',
+  })
+  const response = await fetch(`${JAMENDO_ARTISTS_API_URL}?${params}`, { signal: AbortSignal.timeout(8000) })
+  if (!response.ok) throw new Error(`Jamendo artist request failed with ${response.status}`)
+
+  const payload = await response.json() as { headers?: { status?: string; error_message?: string }; results?: Array<{ id: number; name: string; image?: string }> }
+  if (payload.headers?.status !== 'success') throw new Error(payload.headers?.error_message || 'Jamendo artist request failed')
+
+  return (payload.results || []).map((artist) => ({
+    id: `jamendo:${artist.id}`,
+    name: artist.name,
+    avatar: artist.image || '',
+  }))
 }
 
 export const getJamendoTracks = async (options: { limit?: number; offset?: number; tags?: string; search?: string; nameSearch?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}): Promise<JamendoSong[]> => {

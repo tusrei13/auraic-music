@@ -22,7 +22,7 @@ export interface Mood { id: string; title: string; color: string; icon: string }
 export interface Album { id: string; title: string; coverImage: string; releaseYear?: number | null; artistId: string }
 export interface Song { id: string | number; title: string; audioUrl: string; image: string; duration?: number | null; hlsUrl?: string | null; lyrics?: string | Array<{ time: number; text: string }>; playCount?: number; artist: Artist | string; genre?: Genre | string | null; genres?: string[]; album?: Album | null; mood?: Mood | null; source?: string; licenseUrl?: string }
 export interface Playlist { id: string; name: string; coverImage?: string | null; color?: string | null; userId?: string; songs?: Array<{ song: Song }> }
-export interface SearchResult { songs: Song[]; artists: Artist[]; playlists: Playlist[] }
+export interface SearchResult { songs: Song[]; artists: Artist[]; albums: Album[] }
 export interface JamendoSong {
   id: string;
   title: string;
