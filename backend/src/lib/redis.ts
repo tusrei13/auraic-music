@@ -5,14 +5,15 @@ import { cacheHitsTotal, cacheMissesTotal, cacheOperationsTotal } from './metric
 let redisClient: Redis | null = null
 let isRedisAvailable = false
 
-// In-Memory Fallback Cache Storage
+// In-Memory Fallback Storage
 interface InMemoryCacheItem {
   value: string
   expiresAt: number
 }
 const inMemoryCache = new Map<string, InMemoryCacheItem>()
+// In-Memory Sorted Sets map: key -> Map<member, score>
+const inMemoryZSets = new Map<string, Map<string, number>>()
 
-// Initialize Redis Client if environment URL is configured
 const redisUrl = process.env.REDIS_URL || (process.env.REDIS_HOST ? `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || 6379}` : null)
 
 if (redisUrl) {
@@ -55,6 +56,10 @@ setInterval(() => {
     }
   }
 }, 60_000).unref()
+
+// ==========================================
+// Basic Key-Value Operations
+// ==========================================
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
   const store = isRedisAvailable && redisClient ? 'redis' : 'memory'
@@ -125,6 +130,7 @@ export async function cacheDel(key: string): Promise<void> {
     logger.warn(`Redis del failed for key '${key}'`, undefined, { error: err })
   }
   inMemoryCache.delete(key)
+  inMemoryZSets.delete(key)
 }
 
 export async function cacheFlush(): Promise<void> {
@@ -136,11 +142,78 @@ export async function cacheFlush(): Promise<void> {
     }
   }
   inMemoryCache.clear()
+  inMemoryZSets.clear()
+}
+
+// ==========================================
+// Sorted Set (ZSET) Operations for Leaderboards / Real-time Charts
+// ==========================================
+
+export async function cacheZIncrBy(key: string, member: string, increment = 1): Promise<number> {
+  const store = isRedisAvailable && redisClient ? 'redis' : 'memory'
+  cacheOperationsTotal.inc({ operation: 'zincrby', store })
+
+  try {
+    if (isRedisAvailable && redisClient) {
+      const newScore = await redisClient.zincrby(key, increment, member)
+      return parseFloat(newScore)
+    }
+  } catch (err) {
+    logger.warn(`Redis zincrby failed for key '${key}', falling back to memory`, undefined, { error: err })
+  }
+
+  // In-Memory Fallback
+  let zset = inMemoryZSets.get(key)
+  if (!zset) {
+    zset = new Map<string, number>()
+    inMemoryZSets.set(key, zset)
+  }
+  const currentScore = zset.get(member) || 0
+  const updatedScore = currentScore + increment
+  zset.set(member, updatedScore)
+  return updatedScore
+}
+
+export async function cacheZRevRangeWithScores(
+  key: string,
+  start = 0,
+  stop = 9
+): Promise<Array<{ member: string; score: number }>> {
+  const store = isRedisAvailable && redisClient ? 'redis' : 'memory'
+  cacheOperationsTotal.inc({ operation: 'zrevrange', store })
+
+  try {
+    if (isRedisAvailable && redisClient) {
+      // Returns [member1, score1, member2, score2, ...]
+      const raw = await redisClient.zrevrange(key, start, stop, 'WITHSCORES')
+      const result: Array<{ member: string; score: number }> = []
+      for (let i = 0; i < raw.length; i += 2) {
+        result.push({
+          member: raw[i],
+          score: parseFloat(raw[i + 1])
+        })
+      }
+      return result
+    }
+  } catch (err) {
+    logger.warn(`Redis zrevrange failed for key '${key}', falling back to memory`, undefined, { error: err })
+  }
+
+  // In-Memory Fallback
+  const zset = inMemoryZSets.get(key)
+  if (!zset) return []
+
+  const sorted = Array.from(zset.entries())
+    .sort((a, b) => b[1] - a[1]) // Descending
+    .slice(start, stop + 1)
+    .map(([member, score]) => ({ member, score }))
+
+  return sorted
 }
 
 export function getCacheStatus(): { mode: 'redis' | 'memory'; inMemoryKeyCount: number } {
   return {
     mode: isRedisAvailable ? 'redis' : 'memory',
-    inMemoryKeyCount: inMemoryCache.size
+    inMemoryKeyCount: inMemoryCache.size + inMemoryZSets.size
   }
 }

@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma'
 import { AnalyticsEventType } from '@prisma/client'
 import { logger } from '../lib/logger'
+import { recordTrackPlayInChart } from './chart.service'
 
 export interface IngestionEventInput {
   eventType: 'TRACK_STARTED' | 'TRACK_COMPLETED' | 'TRACK_SKIPPED'
@@ -122,6 +123,18 @@ export async function processListeningEventsBatch(
       })
       result.accepted = validEventsToInsert.length
       logger.debug(`Ingested ${result.accepted} analytics events for user ${userId.slice(0, 8)}`)
+
+      // Update real-time Redis chart asynchronously for started tracks
+      for (const item of validEventsToInsert) {
+        if (item.eventType === AnalyticsEventType.TRACK_STARTED) {
+          recordTrackPlayInChart({
+            id: item.trackId,
+            title: item.title,
+            artistName: 'Jamendo Artist',
+            duration: item.duration
+          }).catch(err => logger.warn('Failed to update chart in Redis', undefined, { error: err }))
+        }
+      }
     } catch (err) {
       logger.error('Failed to batch insert analytics events', undefined, { error: err })
       result.rejected += validEventsToInsert.length

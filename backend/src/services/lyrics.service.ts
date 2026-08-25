@@ -1,3 +1,6 @@
+import { cacheGet, cacheSet } from '../lib/redis'
+import { logger } from '../lib/logger'
+
 interface LrclibResponse {
   syncedLyrics?: string | null
   plainLyrics?: string | null
@@ -8,39 +11,52 @@ export interface LyricsResult {
   plainLyrics: string | null
 }
 
-const cache = new Map<string, { expiresAt: number; result: LyricsResult }>()
-const CACHE_TTL_MS = 60 * 60 * 1000
+const LYRICS_CACHE_TTL_SECONDS = 86400 // 24 hours
 
 export const getLyrics = async (trackName: string, artistName: string): Promise<LyricsResult> => {
   const normalizedTrack = trackName.trim()
   const normalizedArtist = artistName.trim()
   if (!normalizedTrack || !normalizedArtist) return { syncedLyrics: null, plainLyrics: null }
 
-  const cacheKey = `${normalizedTrack.toLowerCase()}::${normalizedArtist.toLowerCase()}`
-  const cached = cache.get(cacheKey)
-  if (cached && cached.expiresAt > Date.now()) return cached.result
+  const cacheKey = `lyrics:${normalizedTrack.toLowerCase()}::${normalizedArtist.toLowerCase()}`
+  
+  // 1. Check Redis / In-memory Cache first
+  const cached = await cacheGet<LyricsResult>(cacheKey)
+  if (cached) {
+    logger.debug(`Lyrics cache hit for '${trackName} - ${artistName}'`)
+    return cached
+  }
 
   const params = new URLSearchParams({
     track_name: normalizedTrack,
     artist_name: normalizedArtist,
   })
-  const response = await fetch(`https://lrclib.net/api/get?${params}`, {
-    headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(5000),
-  })
 
-  if (response.status === 404) {
-    const empty = { syncedLyrics: null, plainLyrics: null }
-    cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, result: empty })
-    return empty
-  }
-  if (!response.ok) throw new Error(`LRCLIB request failed with ${response.status}`)
+  try {
+    const response = await fetch(`https://lrclib.net/api/get?${params}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(6000),
+    })
 
-  const payload = await response.json() as LrclibResponse
-  const result = {
-    syncedLyrics: payload.syncedLyrics || null,
-    plainLyrics: payload.plainLyrics || null,
+    if (response.status === 404) {
+      const empty: LyricsResult = { syncedLyrics: null, plainLyrics: null }
+      await cacheSet(cacheKey, empty, LYRICS_CACHE_TTL_SECONDS)
+      return empty
+    }
+
+    if (!response.ok) throw new Error(`LRCLIB request failed with ${response.status}`)
+
+    const payload = await response.json() as LrclibResponse
+    const result: LyricsResult = {
+      syncedLyrics: payload.syncedLyrics || null,
+      plainLyrics: payload.plainLyrics || null,
+    }
+
+    // Cache successful lyrics in Redis
+    await cacheSet(cacheKey, result, LYRICS_CACHE_TTL_SECONDS)
+    return result
+  } catch (error) {
+    logger.warn('Failed to fetch lyrics from LRCLIB', undefined, { error })
+    return { syncedLyrics: null, plainLyrics: null }
   }
-  cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, result })
-  return result
 }
