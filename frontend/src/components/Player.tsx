@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { 
   Play, 
@@ -89,7 +89,7 @@ export default function Player() {
     ? (currentTrack?.artist as { name: string })?.name 
     : (currentTrack?.artist || "Ca sĩ chưa xác định");
 
-  const recordPlaybackEvent = (eventType: "TRACK_STARTED" | "TRACK_COMPLETED" | "TRACK_SKIPPED") => {
+  const recordPlaybackEvent = useCallback((eventType: "TRACK_STARTED" | "TRACK_COMPLETED" | "TRACK_SKIPPED") => {
     const userId = useAuthStore.getState().user?.id;
     if (!currentTrack || !userId) return;
     const position = audioRef.current && Number.isFinite(audioRef.current.currentTime) ? Math.floor(audioRef.current.currentTime) : undefined;
@@ -102,7 +102,13 @@ export default function Player() {
       position,
       duration,
     }).catch(() => undefined);
-  };
+  }, [currentTrack]);
+
+  const handleSkip = useCallback((direction: "next" | "previous") => {
+    if (currentTrack) recordPlaybackEvent("TRACK_SKIPPED");
+    if (direction === "next") nextTrack();
+    else prevTrack();
+  }, [currentTrack, nextTrack, prevTrack, recordPlaybackEvent]);
 
   useEffect(() => {
     let active = true;
@@ -133,7 +139,7 @@ export default function Player() {
     return () => {
       active = false;
     };
-  }, [currentTrack?.id, currentTrack?.title, artistName]);
+  }, [currentTrack, artistName]);
 
   // 1. Cập nhật âm lượng
   useEffect(() => {
@@ -238,7 +244,7 @@ export default function Player() {
         navigator.mediaSession.setActionHandler("nexttrack", () => handleSkip("next"));
       }
     }
-  }, [currentTrack, isPlaying, isHlsSource, artistName, togglePlay, prevTrack, nextTrack, setPlaybackStatus]);
+  }, [currentTrack, isPlaying, isHlsSource, artistName, togglePlay, handleSkip, setPlaybackStatus]);
 
   // 3. Phím tắt Bàn phím
   useEffect(() => {
@@ -358,12 +364,6 @@ export default function Player() {
     } else {
       nextTrack();
     }
-  };
-
-  const handleSkip = (direction: "next" | "previous") => {
-    if (currentTrack) recordPlaybackEvent("TRACK_SKIPPED");
-    if (direction === "next") nextTrack();
-    else prevTrack();
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {

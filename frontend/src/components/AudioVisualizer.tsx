@@ -38,8 +38,6 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
       analyser.connect(context.destination);
       contextRef.current = context;
       analyserRef.current = analyser;
-      if (isPlaying && context.state === "suspended") void context.resume();
-
       const draw = () => {
         const currentCanvas = canvasRef.current;
         const currentAnalyser = analyserRef.current;

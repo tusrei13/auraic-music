@@ -45,6 +45,7 @@ export default function ProfilePage() {
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [historySongs, setHistorySongs] = useState<Array<{ id: string; listenedAt: string; song: Song }>>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [contentError, setContentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "idle") void initialize();
@@ -55,13 +56,18 @@ export default function ProfilePage() {
       setNameInput(user.name || "");
       void hydrate();
       setIsLoadingContent(true);
-      Promise.all([
-        getLikedSongs().catch(() => []),
-        getListeningHistory().catch(() => []),
-      ])
-        .then(([likesRes, historyRes]) => {
-          setLikedSongs(likesRes.map((item) => item.song).filter(Boolean));
-          setHistorySongs(historyRes as Array<{ id: string; listenedAt: string; song: Song }>);
+      setContentError(null);
+      Promise.allSettled([getLikedSongs(), getListeningHistory()])
+        .then(([likesResult, historyResult]) => {
+          if (likesResult.status === "fulfilled") {
+            setLikedSongs(likesResult.value.map((item) => item.song).filter(Boolean));
+          } else {
+            setLikedSongs([]);
+            setContentError("Không thể tải danh sách yêu thích. Vui lòng thử lại sau.");
+          }
+          if (historyResult.status === "fulfilled") {
+            setHistorySongs(historyResult.value as Array<{ id: string; listenedAt: string; song: Song }>);
+          }
         })
         .finally(() => setIsLoadingContent(false));
     }
@@ -251,6 +257,11 @@ export default function ProfilePage() {
         </div>
 
         <div className="mt-6">
+          {contentError && (
+            <div className="mb-4 rounded-xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
+              {contentError}
+            </div>
+          )}
           {isLoadingContent ? (
             <div className="py-12 text-center">
               <Loader2 className="mx-auto h-6 w-6 animate-spin text-cyan-400" />
