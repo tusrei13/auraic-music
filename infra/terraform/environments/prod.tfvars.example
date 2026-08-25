@@ -1,0 +1,10 @@
+environment          = "production"
+app_name             = "auraic"
+aws_region           = "ap-southeast-1"
+domain_name          = "auraic.app"
+db_name              = "auraic_production"
+db_username          = "auraic_admin"
+db_instance_class    = "db.t4g.small"
+db_allocated_storage = 50
+backend_docker_image = "ghcr.io/auraic/backend:latest"
+frontend_docker_image = "ghcr.io/auraic/frontend:latest"

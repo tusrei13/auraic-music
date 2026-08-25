@@ -1,0 +1,32 @@
+groups:
+  - name: auraic_slo_alerts
+    rules:
+      - alert: HighP95LatencySLOBreach
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 0.200
+        for: 2m
+        labels:
+          severity: critical
+          tier: api
+        annotations:
+          summary: "Auraic API p95 latency exceeded SLO budget (200ms)"
+          description: "p95 latency is currently {{ $value | humanizeDuration }} over the last 5 minutes. Check database queries and external Jamendo latency."
+
+      - alert: High5xxErrorRate
+        expr: (sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) * 100 > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          tier: availability
+        annotations:
+          summary: "Auraic 5xx error rate exceeded SLO error budget (0.1%)"
+          description: "5xx error rate is currently {{ $value | printf \"%.2f\" }}% over the last 5 minutes."
+
+      - alert: BackendServiceDown
+        expr: up{job="auraic-backend"} == 0
+        for: 1m
+        labels:
+          severity: page
+          tier: infrastructure
+        annotations:
+          summary: "Auraic Backend instance is down"
+          description: "Backend health check failed for more than 1 minute."
