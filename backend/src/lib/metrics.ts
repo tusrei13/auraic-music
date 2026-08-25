@@ -62,3 +62,25 @@ export const streamTimeToFirstAudioSeconds = new client.Histogram({
   buckets: [0.1, 0.25, 0.5, 1, 2, 3, 5],
   registers: [register]
 })
+
+// Cache Metrics (Redis / In-Memory Cache Hit Rate SLO)
+export const cacheHitsTotal = new client.Counter({
+  name: 'cache_hits_total',
+  help: 'Total number of cache hits',
+  labelNames: ['store'],
+  registers: [register]
+})
+
+export const cacheMissesTotal = new client.Counter({
+  name: 'cache_misses_total',
+  help: 'Total number of cache misses',
+  labelNames: ['store'],
+  registers: [register]
+})
+
+export const cacheOperationsTotal = new client.Counter({
+  name: 'cache_operations_total',
+  help: 'Total number of cache operations',
+  labelNames: ['operation', 'store'],
+  registers: [register]
+})
