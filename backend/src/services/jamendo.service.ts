@@ -42,48 +42,64 @@ export interface JamendoArtist {
 
 const JAMENDO_API_URL = 'https://api.jamendo.com/v3.0/tracks/'
 const JAMENDO_ARTISTS_API_URL = 'https://api.jamendo.com/v3.0/artists/'
-const CACHE_TTL_MS = 60_000
+const CACHE_TTL_MS = 300_000 // 5 minutes cache
 const MAX_ATTEMPTS = 3
+const REQUEST_TIMEOUT_MS = 15_000 // 15 seconds timeout
 const cache = new Map<string, { expiresAt: number; tracks: JamendoSong[] }>()
 
 const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
 const resolveJamendoArtistId = async (clientId: string, artistName: string) => {
-  const params = new URLSearchParams({ client_id: clientId, format: 'json', limit: '10', namesearch: artistName })
-  const response = await fetch(`${JAMENDO_ARTISTS_API_URL}?${params}`, { signal: AbortSignal.timeout(8000) })
-  if (!response.ok) return undefined
-  const payload = await response.json() as { results?: Array<{ id: number; name: string }> }
-  const exact = payload.results?.find((artist) => artist.name.toLowerCase() === artistName.toLowerCase())
-  return exact ? String(exact.id) : payload.results?.[0] ? String(payload.results[0].id) : undefined
+  const trimmed = artistName?.trim()
+  if (!trimmed || trimmed.length < 2) return undefined
+  const params = new URLSearchParams({ client_id: clientId, format: 'json', limit: '10', namesearch: trimmed })
+  try {
+    const response = await fetch(`${JAMENDO_ARTISTS_API_URL}?${params}`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
+    if (!response.ok) return undefined
+    const payload = await response.json() as { results?: Array<{ id: number; name: string }> }
+    const exact = payload.results?.find((artist) => artist.name.toLowerCase() === trimmed.toLowerCase())
+    return exact ? String(exact.id) : payload.results?.[0] ? String(payload.results[0].id) : undefined
+  } catch {
+    return undefined
+  }
 }
 
 export const getJamendoArtists = async (name: string): Promise<JamendoArtist[]> => {
   const clientId = process.env.JAMENDO_CLIENT_ID
-  if (!clientId || !name.trim()) return []
+  const trimmed = name?.trim()
+  if (!clientId || !trimmed || trimmed.length < 2) return []
 
   const params = new URLSearchParams({
     client_id: clientId,
     format: 'json',
     limit: '10',
-    namesearch: name.trim(),
+    namesearch: trimmed,
     imagesize: '300',
   })
-  const response = await fetch(`${JAMENDO_ARTISTS_API_URL}?${params}`, { signal: AbortSignal.timeout(8000) })
-  if (!response.ok) throw new Error(`Jamendo artist request failed with ${response.status}`)
+  try {
+    const response = await fetch(`${JAMENDO_ARTISTS_API_URL}?${params}`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
+    if (!response.ok) return []
 
-  const payload = await response.json() as { headers?: { status?: string; error_message?: string }; results?: Array<{ id: number; name: string; image?: string }> }
-  if (payload.headers?.status !== 'success') throw new Error(payload.headers?.error_message || 'Jamendo artist request failed')
+    const payload = await response.json() as { headers?: { status?: string; error_message?: string }; results?: Array<{ id: number; name: string; image?: string }> }
+    if (payload.headers?.status !== 'success') return []
 
-  return (payload.results || []).map((artist) => ({
-    id: `jamendo:${artist.id}`,
-    name: artist.name,
-    avatar: artist.image || '',
-  }))
+    return (payload.results || []).map((artist) => ({
+      id: `jamendo:${artist.id}`,
+      name: artist.name,
+      avatar: artist.image || '',
+    }))
+  } catch {
+    return []
+  }
 }
 
 export const getJamendoTracks = async (options: { limit?: number; offset?: number; tags?: string; search?: string; nameSearch?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}): Promise<JamendoSong[]> => {
   const clientId = process.env.JAMENDO_CLIENT_ID
   if (!clientId) throw new Error('Jamendo is not configured')
+
+  const hasSearchQuery = Boolean(options.search?.trim() || options.nameSearch?.trim())
+  const defaultOrder = hasSearchQuery ? 'relevance' : 'popularity_total'
+  const selectedOrder = options.order || defaultOrder
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -91,14 +107,14 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     limit: String(Math.min(Math.max(options.limit || 24, 1), 200)),
     offset: String(Math.max(options.offset || 0, 0)),
     type: 'single albumtrack',
-    order: options.order || 'relevance',
+    order: selectedOrder,
     audioformat: 'mp32',
     imagesize: '300',
     include: 'musicinfo licenses',
   })
   if (options.tags?.trim()) params.set('tags', options.tags.trim().toLowerCase())
   if (options.search?.trim()) params.set('search', options.search.trim())
-  if (options.nameSearch?.trim()) params.set('namesearch', options.nameSearch.trim())
+  if (options.nameSearch?.trim() && options.nameSearch.trim().length >= 2) params.set('namesearch', options.nameSearch.trim())
   const resolvedArtistId = options.artistId?.trim()
     ? options.artistId.replace(/^jamendo:/, '')
     : options.artistName?.trim()
@@ -116,16 +132,23 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
       response = await fetch(`${JAMENDO_API_URL}?${params}`, {
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
       if (response.ok || (response.status < 500 && response.status !== 429)) break
       lastError = new Error(`Jamendo request failed with ${response.status}`)
     } catch (error) {
       lastError = error
     }
-    if (attempt < MAX_ATTEMPTS) await wait(250 * 2 ** (attempt - 1))
+    if (attempt < MAX_ATTEMPTS) await wait(300 * 2 ** (attempt - 1))
   }
-  if (!response?.ok) throw lastError instanceof Error ? lastError : new Error('Jamendo request failed')
+
+  // If request failed but we have stale cached data, return stale cache gracefully
+  if (!response?.ok) {
+    if (cached && cached.tracks.length > 0) {
+      return cached.tracks
+    }
+    throw lastError instanceof Error ? lastError : new Error('Jamendo request failed')
+  }
 
   const payload = await response.json() as JamendoResponse
   if (payload.headers?.status !== 'success') {
@@ -154,19 +177,6 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     genres: track.musicinfo?.tags?.genres || [],
   }))
 
-  if (tracks.length === 0 && !options.tags?.trim() && !options.search?.trim() && params.get('order') !== 'name') {
-    params.set('order', 'name')
-    cache.delete(cacheKey)
-    return getJamendoTracks({ ...options, order: 'name', limit: Number(params.get('limit')), offset: Number(params.get('offset')) })
-  }
-  if (tracks.length === 0 && options.search?.trim() && !options.nameSearch?.trim()) {
-    cache.delete(cacheKey)
-    return getJamendoTracks({ ...options, search: undefined, nameSearch: options.search })
-  }
-  if (tracks.length === 0 && options.tags?.trim()) {
-    cache.delete(cacheKey)
-    return getJamendoTracks({ ...options, tags: undefined, search: options.tags })
-  }
   if (tracks.length > 0) cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, tracks })
   return tracks
 }

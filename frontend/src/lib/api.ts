@@ -21,6 +21,7 @@ export const formatDuration = (duration?: number | string | null) => {
 export interface Artist { id: string; name: string; avatar: string; listeners?: number; songs?: Song[] }
 export interface Genre { id: string; name: string; image: string; color?: string | null }
 export interface Mood { id: string; title: string; color: string; icon: string }
+export interface MoodMix { id: string; title: string; description: string; tags: string; color: string; gradient: string; icon: string }
 export interface Album { id: string; title: string; coverImage: string; releaseYear?: number | null; artistId: string }
 export interface Song { id: string | number; title: string; audioUrl: string; image: string; duration?: number | null; hlsUrl?: string | null; lyrics?: string | Array<{ time: number; text: string }>; playCount?: number; artist: Artist | string; genre?: Genre | string | null; genres?: string[]; album?: Album | null; mood?: Mood | null; source?: string; licenseUrl?: string }
 export interface Playlist { id: string; name: string; coverImage?: string | null; color?: string | null; userId?: string; songs?: Array<{ song: Song }> }
@@ -55,6 +56,44 @@ export interface AdminAnalytics { periodDays: number; totals: { started: number;
 export interface AdminArtist { id: string; name: string; avatar: string; trackCount: number; albumCount: number }
 export interface AdminArtistsResponse { artists: AdminArtist[] }
 export interface IngestionJob { id: string; status: "RUNNING" | "SUCCEEDED" | "FAILED"; startedAt: string; finishedAt?: string | null; imported: number; updated: number; failed: number; errorMessage?: string | null }
+
+// Phase 3 Intelligence Interfaces
+export interface SemanticSearchResultItem extends JamendoSong {
+  semanticScore: number;
+  matchedReason?: string;
+}
+export interface SemanticSearchResponse {
+  query: string;
+  intentTags: string[];
+  totalResults: number;
+  results: SemanticSearchResultItem[];
+  isFallback: boolean;
+}
+export interface RecommendationExplanation {
+  reason: string;
+  confidence: number;
+  basis: 'likes' | 'history' | 'time_of_day' | 'trending' | 'genre_affinity';
+}
+export interface RecommendedTrackItem extends JamendoSong {
+  explanation: RecommendationExplanation;
+  score: number;
+}
+export interface PersonalizedRecommendationsResponse {
+  recommendations: RecommendedTrackItem[];
+  context: string;
+  metrics: { diversityScore: number; count: number };
+}
+export interface UserListeningInsights {
+  periodDays: number;
+  metrics: {
+    started: number;
+    completed: number;
+    skipped: number;
+    completionRate: number;
+  };
+  topTracks: Array<{ trackId: string; title: string; plays: number }>;
+}
+
 export const getIngestionStatus = () => fetcher<{ configured: boolean; running: number; latest: IngestionJob | null }>("/admin/ingestion/status");
 export const runIngestion = () => fetcher<{ job: IngestionJob }>("/admin/ingestion/run", { method: "POST" });
 export const getSystemSettings = () => fetcher<{ settings: Record<string, string> }>("/admin/settings");
@@ -149,8 +188,11 @@ export const register = (email: string, password: string, name?: string) =>
 export const getArtists = () => fetcher<Artist[]>("/artists");
 export const getArtistById = (id: string) => fetcher<Artist>(`/artists/${encodeURIComponent(id)}`);
 
-// 4. TÌM KIẾM (SEARCH)
+// 4. TÌM KIẾM (SEARCH & SEMANTIC SEARCH)
 export const searchAll = (query: string) => fetcher<unknown>(`/search?q=${encodeURIComponent(query)}`).then((payload) => searchResponseContract.parse(payload) as SearchResult);
+export const searchSemantic = (query: string, options: { limit?: number; offset?: number } = {}) =>
+  fetcher<SemanticSearchResponse>(`/search/semantic?q=${encodeURIComponent(query)}&limit=${options.limit || 24}&offset=${options.offset || 0}`);
+
 export interface CatalogPage { tracks: JamendoSong[]; nextCursor: string | null }
 export const getJamendoTracksPage = async (options: { limit?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}): Promise<CatalogPage> => {
   const params = new URLSearchParams();
@@ -172,18 +214,16 @@ export const getJamendoTracks = (options: { limit?: number; offset?: number; cur
 export const getLyrics = (trackName: string, artistName: string) =>
   fetcher<LyricsResponse>(`/lyrics?trackName=${encodeURIComponent(trackName)}&artistName=${encodeURIComponent(artistName)}`);
 
-export const getAdminOverview = () => fetcher<AdminOverview>("/admin/overview");
-export const getAdminUsers = () => fetcher<AdminUsersResponse>("/admin/users");
-export const updateAdminUserRole = (userId: string, role: "USER" | "ADMIN") => fetcher<AdminUserRoleResponse>(`/admin/users/${encodeURIComponent(userId)}/role`, { method: "PATCH", body: JSON.stringify({ role }) });
-export const getAdminSongs = () => fetcher<AdminSongsResponse>("/admin/songs");
-export const getAdminPlaylists = () => fetcher<AdminPlaylistsResponse>("/admin/playlists");
-export const deleteAdminPlaylist = (playlistId: string) => fetcher<{ message: string; playlistId: string }>(`/admin/playlists/${encodeURIComponent(playlistId)}`, { method: "DELETE" });
-export const getAdminTopJamendo = () => fetcher<AdminTopSongsResponse>("/admin/top-jamendo");
-export const getAdminAnalytics = () => fetcher<AdminAnalytics>("/admin/analytics");
-export const getAdminArtists = () => fetcher<AdminArtistsResponse>("/admin/artists");
-export const updateUserProfile = (name?: string, avatar?: string) => fetcher<{ message: string; user: CurrentUser }>("/auth/profile", { method: "PATCH", body: JSON.stringify({ ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) }) });
+// 5. MOOD MIXES & SMART PLAYLISTS
+export const getMoods = () => fetcher<{ data: MoodMix[] }>('/moods');
+export const getMoodTracks = (moodId: string, options: { limit?: number; offset?: number } = {}) =>
+  fetcher<{ mood: MoodMix; tracks: JamendoSong[] }>(`/moods/${encodeURIComponent(moodId)}?limit=${options.limit || 24}&offset=${options.offset || 0}`);
 
-// 5. YÊU THÍCH (LIKES)
+// 6. PERSONALIZED RECOMMENDATIONS (EXPLAINABLE AI)
+export const getPersonalizedRecommendations = (options: { limit?: number } = {}) =>
+  fetcher<PersonalizedRecommendationsResponse>(`/recommendations/personalized?limit=${options.limit || 20}`);
+
+// 7. YÊU THÍCH (LIKES)
 export const getLikedSongs = () => fetcher<Array<{ song: Song }>>("/likes/my-likes");
 export type LikeTrackMetadata = Pick<Song, "title" | "image" | "audioUrl" | "licenseUrl"> & { artist: string | { id?: string; name: string; avatar?: string }; duration?: number | string | null };
 export const toggleLikeSong = (songId: string | number, track?: LikeTrackMetadata) =>
@@ -199,7 +239,7 @@ export const toggleLikeSong = (songId: string | number, track?: LikeTrackMetadat
     } : {}),
   }) });
 
-// 6. THỂ LOẠI (GENRES)
+// 8. THỂ LOẠI & LISTENING HISTORY
 export const getGenres = () => fetcher<Genre[]>("/genres");
 export const recordListening = (songId: string | number) =>
   fetcher<{ id: string; listenedAt: string }>(`/songs/${songId}/listen`, { method: "POST" });
@@ -207,6 +247,25 @@ export const getListeningHistory = () =>
   fetcher<Array<{ id: string; listenedAt: string; song: Song }>>("/songs/history");
 export const recordJamendoListening = (data: { trackId: string; title: string; artistName: string; image: string; audioUrl: string; duration?: number | null }) =>
   fetcher("/songs/jamendo-listen", { method: "POST", body: JSON.stringify(data) });
+
+// 9. ANALYTICS & EVENT PIPELINE
 export const recordAnalyticsEvent = (data: { eventType: "TRACK_STARTED" | "TRACK_COMPLETED" | "TRACK_SKIPPED"; trackId: string | number; source?: string; title: string; position?: number; duration?: number }) =>
   fetcher<{ id: string; eventType: string; occurredAt: string }>("/analytics/events", { method: "POST", body: JSON.stringify({ ...data, trackId: String(data.trackId) }) });
 
+export const sendAnalyticsEventsBatch = (events: Array<{ eventType: "TRACK_STARTED" | "TRACK_COMPLETED" | "TRACK_SKIPPED"; trackId: string | number; source?: string; title: string; position?: number; duration?: number }>) =>
+  fetcher<{ status: string; accepted: number; duplicate: number }>("/analytics/events", { method: "POST", body: JSON.stringify({ events }) });
+
+export const getMyListeningInsights = (days = 14) =>
+  fetcher<UserListeningInsights>(`/analytics/insights?days=${days}`);
+
+// 10. ADMIN & SYSTEM
+export const getAdminOverview = () => fetcher<AdminOverview>("/admin/overview");
+export const getAdminUsers = () => fetcher<AdminUsersResponse>("/admin/users");
+export const updateAdminUserRole = (userId: string, role: "USER" | "ADMIN") => fetcher<AdminUserRoleResponse>(`/admin/users/${encodeURIComponent(userId)}/role`, { method: "PATCH", body: JSON.stringify({ role }) });
+export const getAdminSongs = () => fetcher<AdminSongsResponse>("/admin/songs");
+export const getAdminPlaylists = () => fetcher<AdminPlaylistsResponse>("/admin/playlists");
+export const deleteAdminPlaylist = (playlistId: string) => fetcher<{ message: string; playlistId: string }>(`/admin/playlists/${encodeURIComponent(playlistId)}`, { method: "DELETE" });
+export const getAdminTopJamendo = () => fetcher<AdminTopSongsResponse>("/admin/top-jamendo");
+export const getAdminAnalytics = () => fetcher<AdminAnalytics>("/admin/analytics");
+export const getAdminArtists = () => fetcher<AdminArtistsResponse>("/admin/artists");
+export const updateUserProfile = (name?: string, avatar?: string) => fetcher<{ message: string; user: CurrentUser }>("/auth/profile", { method: "PATCH", body: JSON.stringify({ ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) }) });
