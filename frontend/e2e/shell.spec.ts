@@ -17,6 +17,14 @@ test('search input is keyboard accessible', async ({ page }) => {
   await expect(search).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('home remains usable on a narrow mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Feel the Aura/i })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Tìm kiếm nhạc' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
 test('disabled product surface keeps its route isolated', async ({ page }) => {
   await page.goto('/community');
   await expect(page).toHaveURL(/\/community$/);

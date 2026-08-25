@@ -85,23 +85,6 @@ const saveLikes = (userId: string | null, likedIds: (number | string)[]) => {
   }
 };
 
-const historyStorageKey = (userId: string) => `auraic-history-${userId}`;
-
-const loadLocalHistory = (userId: string | null): LocalListeningHistoryItem[] => {
-  if (typeof window === "undefined" || !userId) return [];
-  try {
-    const stored = JSON.parse(localStorage.getItem(historyStorageKey(userId)) || "[]");
-    return Array.isArray(stored) ? stored : [];
-  } catch {
-    return [];
-  }
-};
-
-const saveLocalHistory = (userId: string, history: LocalListeningHistoryItem[]) => {
-  localStorage.setItem(historyStorageKey(userId), JSON.stringify(history.slice(0, 50)));
-  window.dispatchEvent(new CustomEvent("auraic:history-updated"));
-};
-
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => ({

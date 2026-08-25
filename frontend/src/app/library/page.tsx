@@ -57,6 +57,7 @@ export default function LibraryPage() {
   }, []);
   const { likedIds, likedTracks, currentTrack, isPlaying, toggleLike, playTrack } = usePlayerStore();
   const playlistStore = usePlaylistStore() as any;
+  const hydratePlaylists = usePlaylistStore((state) => state.hydrate);
   const playlists = playlistStore.playlists || [];
 
   const [systemSongs, setSystemSongs] = useState<Track[]>([]);
@@ -85,8 +86,8 @@ export default function LibraryPage() {
   }, []);
 
   useEffect(() => {
-    void playlistStore.hydrate?.();
-  }, [playlistStore.hydrate]);
+    void hydratePlaylists();
+  }, [hydratePlaylists]);
 
   useEffect(() => {
     if (authStatus !== "authenticated") {

@@ -51,7 +51,6 @@ export default function DiscoverPage() {
 
   // Lọc bài hát theo Tìm kiếm và Thể loại chọn
   const filteredTracks = songs.filter((track) => {
-    const artistName = typeof track.artist === "object" ? track.artist?.name : track.artist || "";
     const trackGenres = track.genres || [];
 
     const matchGenre = selectedGenre === "Tất cả" || trackGenres.includes(selectedGenre);
