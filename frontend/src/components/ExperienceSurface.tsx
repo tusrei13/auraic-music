@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Clipboard, ExternalLink, Heart, Music2, Play, Settings2, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Check, Clipboard, Heart, Music2, Play, Settings2, SlidersHorizontal, Sparkles } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
 

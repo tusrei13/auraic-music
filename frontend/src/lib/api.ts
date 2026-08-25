@@ -183,8 +183,19 @@ export const updateUserProfile = (name?: string, avatar?: string) => fetcher<{ m
 
 // 5. YÊU THÍCH (LIKES)
 export const getLikedSongs = () => fetcher<Array<{ song: Song }>>("/likes/my-likes");
-export const toggleLikeSong = (songId: string | number) =>
-  fetcher<{ liked: boolean }>("/likes/toggle", { method: "POST", body: JSON.stringify({ songId }) });
+export type LikeTrackMetadata = Pick<Song, "title" | "image" | "audioUrl" | "licenseUrl"> & { artist: string | { id?: string; name: string; avatar?: string }; duration?: number | string | null };
+export const toggleLikeSong = (songId: string | number, track?: LikeTrackMetadata) =>
+  fetcher<{ liked: boolean }>("/likes/toggle", { method: "POST", body: JSON.stringify({
+    songId,
+    ...(isJamendoTrackId(songId) && track ? {
+      title: track.title,
+      artistName: typeof track.artist === "string" ? track.artist : track.artist?.name,
+      image: track.image,
+      audioUrl: track.audioUrl,
+      duration: track.duration,
+      licenseUrl: track.licenseUrl,
+    } : {}),
+  }) });
 
 // 6. THỂ LOẠI (GENRES)
 export const getGenres = () => fetcher<Genre[]>("/genres");

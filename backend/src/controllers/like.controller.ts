@@ -7,9 +7,20 @@ import { sendError, sendInternalError } from '../lib/api-error'
 export const toggleLike = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
-    const { songId } = req.body
+    const { songId, title, artistName, image, audioUrl, duration, licenseUrl } = req.body
 
     if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
+    if (String(songId).startsWith('jamendo:')) {
+      if (!title || !artistName || !image || !audioUrl) return sendError(res, 400, 'INVALID_JAMENDO_LIKE', 'Thiếu metadata bài hát Jamendo')
+      const trackId = String(songId)
+      const existing = await prisma.jamendoLike.findUnique({ where: { userId_trackId: { userId, trackId } } })
+      if (existing) {
+        await prisma.jamendoLike.delete({ where: { userId_trackId: { userId, trackId } } })
+        return res.json({ liked: false, trackId })
+      }
+      await prisma.jamendoLike.create({ data: { userId, trackId, title, artistName, image, audioUrl, duration, licenseUrl } })
+      return res.json({ liked: true, trackId })
+    }
     const numericSongId = parsePositiveInteger(songId)
     if (numericSongId === null) {
       return sendError(res, 400, 'INVALID_SONG_ID', 'songId không hợp lệ')
@@ -47,15 +58,22 @@ export const getMyLikes = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id
     if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
 
-    const likes = await prisma.like.findMany({
+    const [likes, jamendoLikes] = await Promise.all([prisma.like.findMany({
       where: { userId },
       include: {
         song: { include: { artist: true, genre: true } },
       },
       orderBy: { createdAt: 'desc' },
-    })
+    }), prisma.jamendoLike.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })])
 
-    res.json(likes)
+    res.json([
+      ...likes,
+      ...jamendoLikes.map((like) => ({
+        id: `${like.userId}:${like.trackId}`,
+        createdAt: like.createdAt,
+        song: { id: like.trackId, title: like.title, artist: like.artistName, image: like.image, audioUrl: like.audioUrl, duration: like.duration, licenseUrl: like.licenseUrl, source: 'jamendo' },
+      })),
+    ])
   } catch (error) {
     sendInternalError(res, 'LIKE_LIST_ERROR', 'Không thể lấy danh sách yêu thích')
   }

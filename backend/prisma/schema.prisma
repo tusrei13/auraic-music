@@ -35,6 +35,7 @@ model User {
   role      UserRole           @default(USER)
   follows   Follow[]
   likes     Like[]
+  jamendoLikes JamendoLike[]
   histories ListeningHistory[]
   playlists Playlist[]
   jamendoHistory JamendoListening[]
@@ -175,6 +176,22 @@ model Like {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, songId])
+}
+
+model JamendoLike {
+  userId     String
+  trackId    String
+  title      String
+  artistName String
+  image      String
+  audioUrl   String
+  duration   Int?
+  licenseUrl String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, trackId])
+  @@index([userId, createdAt])
 }
 
 model ListeningHistory {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Clipboard, Download, ExternalLink, ShieldCheck } from "lucide-react";
+import { Clipboard, Download, ExternalLink, ShieldCheck } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { isJamendoTrackId } from "@/lib/api";
 

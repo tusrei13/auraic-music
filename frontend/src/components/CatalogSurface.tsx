@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Disc3, Loader2, Play, Radio, Search, Sparkles, Trophy, Users, SlidersHorizontal, Globe2, Clock3, ShieldCheck, Headphones } from "lucide-react";
+import { Disc3, Loader2, Play, Radio, Search, Trophy, Users, SlidersHorizontal, Globe2, Clock3, ShieldCheck, Headphones } from "lucide-react";
 import { getJamendoTracks, getJamendoTracksPage, type JamendoSong } from "@/lib/api";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";

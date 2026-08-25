@@ -55,7 +55,7 @@ export default function LibraryPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-  const { likedIds, currentTrack, isPlaying, toggleLike, playTrack } = usePlayerStore();
+  const { likedIds, likedTracks, currentTrack, isPlaying, toggleLike, playTrack } = usePlayerStore();
   const playlistStore = usePlaylistStore() as any;
   const playlists = playlistStore.playlists || [];
 
@@ -118,7 +118,8 @@ export default function LibraryPage() {
     return (likedIds || []).some((likedId) => String(likedId) === String(id));
   };
 
-  const likedSongsList: Track[] = sourceTracks.filter((song: Track) => isLiked(song.id));
+  const likedSongsList: Track[] = [...likedTracks, ...sourceTracks.filter((song: Track) => isLiked(song.id))]
+    .filter((song, index, list) => list.findIndex((item) => String(item.id) === String(song.id)) === index);
 
   const handlePlaySong = (song: Track, list?: Track[], contextTitle?: string) => {
     playTrack(song as any, (list || sourceTracks) as any, contextTitle);

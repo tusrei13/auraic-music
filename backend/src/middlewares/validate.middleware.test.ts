@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adminSettingsSchema, analyticsEventSchema, createPlaylistSchema, loginSchema, playlistSongParamsSchema, playlistSongSchema, songIdBodySchema } from './validate.middleware'
+import { adminSettingsSchema, analyticsEventSchema, createPlaylistSchema, likeToggleSchema, loginSchema, playlistSongParamsSchema, playlistSongSchema, songIdBodySchema } from './validate.middleware'
 
 describe('API request schemas', () => {
   it('accepts valid login data and rejects malformed email', () => {
@@ -31,6 +31,11 @@ describe('API request schemas', () => {
     expect(analyticsEventSchema.safeParse({
       body: { eventType: 'TRACK_UNKNOWN', trackId: 'jamendo:123', title: 'Track' },
     }).success).toBe(false)
+  })
+
+  it('accepts complete Jamendo like metadata', () => {
+    expect(likeToggleSchema.safeParse({ body: { songId: 'jamendo:123', title: 'Track', artistName: 'Artist', image: 'https://example.com/cover.jpg', audioUrl: 'https://example.com/audio.mp3' } }).success).toBe(true)
+    expect(likeToggleSchema.safeParse({ body: { songId: 'invalid-source' } }).success).toBe(false)
   })
 
   it('restricts admin settings to known, bounded values', () => {

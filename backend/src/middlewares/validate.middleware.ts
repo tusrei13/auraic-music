@@ -111,6 +111,20 @@ export const adminUserRoleSchema = z.object({
   query: z.record(z.string(), z.unknown()).optional(),
 })
 
+export const likeToggleSchema = z.object({
+  body: z.object({
+    songId: z.union([z.coerce.number().int().positive(), z.string().trim().regex(/^jamendo:.+$/)]),
+    title: z.string().trim().min(1).max(300).optional(),
+    artistName: z.string().trim().min(1).max(200).optional(),
+    image: z.string().trim().min(1).max(2000).optional(),
+    audioUrl: z.string().trim().min(1).max(2000).optional(),
+    duration: z.coerce.number().int().nonnegative().nullable().optional(),
+    licenseUrl: z.string().url().optional(),
+  }),
+  params: z.record(z.string(), z.unknown()).optional(),
+  query: z.record(z.string(), z.unknown()).optional(),
+})
+
 export const adminSettingsSchema = z.object({
   body: z.object({
     siteName: z.string().trim().min(1).max(100).optional(),

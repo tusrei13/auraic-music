@@ -140,14 +140,14 @@ export default function GlobalSearchBar() {
               <div className="space-y-4">
                 {artists.slice(0, 4).length > 0 && <div>
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Nghệ sĩ</p>
-                  {artists.slice(0, 4).map((artist) => <button key={artist.id} role="option" type="button" onClick={() => chooseArtist(artist)} className="flex min-h-11 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
+                  {artists.slice(0, 4).map((artist) => <button key={artist.id} role="option" aria-selected={false} type="button" onClick={() => chooseArtist(artist)} className="flex min-h-11 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
                     <ArtistAvatar artist={artist} />
                     <span className="truncate text-sm font-semibold text-white">{artist.name}</span>
                   </button>)}
                 </div>}
                 <div>
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Bài hát</p>
-                  {results.slice(0, 8).map((track) => <button key={track.id} role="option" type="button" onClick={() => chooseTrack(track)} className="group flex min-h-12 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
+                  {results.slice(0, 8).map((track) => <button key={track.id} role="option" aria-selected={false} type="button" onClick={() => chooseTrack(track)} className="group flex min-h-12 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
                     <img src={track.image || fallbackArtwork} alt="" className="h-10 w-10 rounded-lg object-cover" />
                     <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-white">{track.title}</span><span className="block truncate text-xs text-white/45">{track.artist.name}</span></span>
                     <Play aria-hidden="true" className="h-4 w-4 shrink-0 fill-white text-white/60 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100" />
@@ -155,7 +155,7 @@ export default function GlobalSearchBar() {
                 </div>
                 {albums.slice(0, 4).length > 0 && <div>
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Album</p>
-                  {albums.slice(0, 4).map((album) => <button key={album.id} role="option" type="button" onClick={() => chooseAlbum(album)} className="flex min-h-11 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
+                  {albums.slice(0, 4).map((album) => <button key={album.id} role="option" aria-selected={false} type="button" onClick={() => chooseAlbum(album)} className="flex min-h-11 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
                     <img src={album.coverImage || fallbackArtwork} alt="" className="h-9 w-9 rounded-lg object-cover" /><span className="truncate text-sm font-semibold text-white">{album.title}</span>
                   </button>)}
                 </div>}

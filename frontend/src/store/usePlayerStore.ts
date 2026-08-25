@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useToastStore } from "./useToastStore";
-import { isJamendoTrackId, recordListening, toggleLikeSong } from "../lib/api";
+import { getLikedSongs, isJamendoTrackId, recordListening, toggleLikeSong, type LikeTrackMetadata } from "../lib/api";
 import { useAuthStore } from "./useAuthStore";
 
 export interface Track {
@@ -37,6 +37,7 @@ interface PlayerState {
   isShuffle: boolean;
   repeatMode: RepeatMode;
   likedIds: (number | string)[];
+  likedTracks: Track[];
 
   playTrack: (track: Track, contextQueue?: Track[], contextTitle?: string) => void;
   playMix: (tracks: Track[], contextTitle?: string) => void;
@@ -116,6 +117,7 @@ export const usePlayerStore = create<PlayerState>()(
       isShuffle: false,
       repeatMode: "off",
       likedIds: [],
+      likedTracks: [],
 
       switchUser: (userId) => {
         saveLikes(activeUserId, get().likedIds);
@@ -130,7 +132,16 @@ export const usePlayerStore = create<PlayerState>()(
             likedIds = [];
           }
         }
-        set({ currentTrack: null, userQueue: [], contextQueue: [], originalQueue: [], contextIndex: 0, isPlaying: false, playbackStatus: "idle", playbackError: null, likedIds });
+        set({ currentTrack: null, userQueue: [], contextQueue: [], originalQueue: [], contextIndex: 0, isPlaying: false, playbackStatus: "idle", playbackError: null, likedIds, likedTracks: [] });
+        if (userId && typeof window !== "undefined" && localStorage.getItem("token")) {
+          void getLikedSongs().then((likes) => {
+            if (activeUserId !== userId) return;
+            const likedTracks = likes.map((like) => like.song as Track);
+            const serverIds = likedTracks.map((track) => track.id);
+            set({ likedIds: serverIds, likedTracks });
+            saveLikes(userId, serverIds);
+          }).catch(() => undefined);
+        }
       },
 
       playTrack: (track, pageQueue, title) => {
@@ -398,21 +409,35 @@ export const usePlayerStore = create<PlayerState>()(
           `${wasLiked ? "Đã xóa" : "Đã thêm"} ${formattedTitle} ${wasLiked ? "khỏi" : "vào"} Yêu thích`,
           wasLiked ? "info" : "success"
         );
-        if (!isJamendoTrackId(id) && typeof window !== "undefined" && localStorage.getItem("token")) {
+        const track = typeof trackOrId === "object" && trackOrId !== null ? trackOrId : undefined;
+        if (typeof window !== "undefined" && localStorage.getItem("token") && (!isJamendoTrackId(id) || track)) {
           try {
-            const result = await toggleLikeSong(id);
+            const result = await toggleLikeSong(id, track ? {
+              title: track.title,
+              artist: track.artist,
+              image: track.image,
+              audioUrl: track.audioUrl,
+              duration: track.duration,
+              licenseUrl: (track as Track & { licenseUrl?: string }).licenseUrl,
+            } satisfies LikeTrackMetadata : undefined);
             set((current) => ({
               likedIds: result.liked
                 ? current.likedIds.some((item) => String(item) === String(id))
                   ? current.likedIds
                   : [...current.likedIds, id]
                 : current.likedIds.filter((item) => String(item) !== String(id)),
+              likedTracks: result.liked && track
+                ? [track, ...current.likedTracks.filter((item) => String(item.id) !== String(id))]
+                : current.likedTracks.filter((item) => String(item.id) !== String(id)),
             }));
           } catch {
             set((current) => ({
               likedIds: wasLiked
                 ? [...current.likedIds, id]
                 : current.likedIds.filter((item) => String(item) !== String(id)),
+              likedTracks: wasLiked || !track
+                ? current.likedTracks
+                : current.likedTracks.filter((item) => String(item.id) !== String(id)),
             }));
           }
         }
