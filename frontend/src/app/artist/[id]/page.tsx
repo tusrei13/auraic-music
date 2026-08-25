@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -94,7 +96,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
       {/* Banner Nghệ Sĩ */}
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-indigo-900/60 via-purple-900/40 to-black p-6 sm:p-8 border border-white/10 flex flex-col md:flex-row items-center gap-6 sm:gap-8 shadow-2xl">
         <div className="w-36 h-36 sm:w-48 sm:h-48 rounded-full overflow-hidden shadow-2xl border-4 border-indigo-500/30 flex-shrink-0 relative group">
-          <img
+          <Artwork
             src={artistImage}
             alt={artistName}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -179,7 +181,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
                   </div>
 
                   <div className="col-span-7 sm:col-span-6 flex items-center gap-3 min-w-0 pr-2">
-                    <img src={songCover} alt={song.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    <Artwork src={songCover} alt={song.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                     <div className="truncate">
                       <h4 className={`text-sm font-semibold truncate ${isCurrent ? "text-indigo-400 font-bold" : "text-white group-hover:text-indigo-300"}`}>
                         {song.title}
@@ -241,7 +243,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
                 className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3 hover:border-indigo-500/50 hover:bg-white/[0.08] transition-all group cursor-pointer"
               >
                 <div className="aspect-square rounded-xl overflow-hidden bg-white/10 shadow-lg">
-                  <img
+                  <Artwork
                     src={album.coverImage || artistImage}
                     alt={album.title || "Album"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -255,7 +257,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
             ))
           ) : (
             <div className="col-span-full bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center gap-4">
-              <img
+              <Artwork
                 src={artistImage}
                 alt={artistName}
                 className="w-16 h-16 rounded-xl object-cover"

@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -282,7 +284,7 @@ export default function AdminPage() {
               {topJamendo.map((song, index) => (
                 <div key={song.trackId} className="flex items-center gap-3">
                   <span className="w-5 text-xs font-bold text-white/35">{index + 1}</span>
-                  <img src={song.image} alt="" className="h-9 w-9 rounded-lg object-cover" />
+                  <Artwork src={song.image} alt="" className="h-9 w-9 rounded-lg object-cover" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-white">{song.title}</p>
                     <p className="truncate text-xs text-white/40">{song.artistName}</p>
@@ -402,7 +404,7 @@ export default function AdminPage() {
                 <tr key={artist.id} className="text-white/70">
                   <td className="px-3 py-4">
                     <div className="flex items-center gap-3">
-                      <img src={artist.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                      <Artwork src={artist.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
                       <span className="font-semibold text-white">{artist.name}</span>
                     </div>
                   </td>
@@ -517,7 +519,7 @@ export default function AdminPage() {
                 <tr key={song.id} className="text-white/70 hover:bg-white/[0.02]">
                   <td className="px-3 py-4">
                     <div className="flex items-center gap-3">
-                      <img src={song.image} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                      <Artwork src={song.image} alt="" className="h-10 w-10 rounded-lg object-cover" />
                       <div>
                         <p className="font-semibold text-white">{song.title}</p>
                         <p className="mt-1 text-xs text-white/40">{song.artist.name}</p>

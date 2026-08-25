@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -58,7 +60,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
       <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-purple-950/80 via-indigo-950/45 to-[#0b0b10] p-6 shadow-2xl sm:p-8">
         <div className="absolute inset-0 opacity-20 blur-3xl" style={{ backgroundImage: `url(${coverImage})`, backgroundPosition: "center", backgroundSize: "cover" }} />
         <div className="relative flex flex-col items-center gap-6 md:flex-row md:items-end">
-          <img src={coverImage} alt={`Bìa album ${albumTitle}`} className="aspect-square w-44 rounded-2xl object-cover shadow-2xl sm:w-56" />
+          <Artwork src={coverImage} alt={`Bìa album ${albumTitle}`} className="aspect-square w-44 rounded-2xl object-cover shadow-2xl sm:w-56" />
           <div className="min-w-0 flex-1 space-y-3 text-center md:text-left">
             <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-purple-300 md:justify-start"><Disc3 className="h-4 w-4" aria-hidden="true" /> Album</div>
             <h1 className="text-3xl font-black tracking-tight sm:text-5xl">{albumTitle}</h1>
@@ -76,7 +78,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             const current = String(currentTrack?.id) === track.id;
             return <div key={track.id} onClick={() => playTrack(track as any, tracks as any, albumTitle)} className={`group grid cursor-pointer grid-cols-12 items-center border-b border-white/5 px-4 py-3 last:border-0 ${current ? "bg-indigo-500/15" : "hover:bg-white/5"}`}>
               <div className="col-span-1 text-xs font-mono text-white/40">{current && isPlaying ? "▶" : String(index + 1).padStart(2, "0")}</div>
-              <div className="col-span-7 flex min-w-0 items-center gap-3 sm:col-span-8"><img src={track.image} alt="" className="h-11 w-11 rounded-lg object-cover" /><div className="min-w-0"><h3 className={`truncate text-sm font-semibold ${current ? "text-indigo-300" : "text-white"}`}>{track.title}</h3><p className="truncate text-xs text-white/45">{track.artist.name}</p></div></div>
+              <div className="col-span-7 flex min-w-0 items-center gap-3 sm:col-span-8"><Artwork src={track.image} alt="" className="h-11 w-11 rounded-lg object-cover" /><div className="min-w-0"><h3 className={`truncate text-sm font-semibold ${current ? "text-indigo-300" : "text-white"}`}>{track.title}</h3><p className="truncate text-xs text-white/45">{track.artist.name}</p></div></div>
               <div className="col-span-4 flex items-center justify-end gap-2 sm:col-span-3">
                 <button type="button" aria-label={isLiked(track.id) ? `Bỏ yêu thích ${track.title}` : `Yêu thích ${track.title}`} onClick={(event) => { event.stopPropagation(); toggleLike(track as any); }} className="flex h-10 w-10 items-center justify-center rounded-full text-white/45 transition hover:bg-white/[0.08] hover:text-pink-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"><Heart aria-hidden="true" className={`h-4 w-4 ${isLiked(track.id) ? "fill-pink-500 text-pink-500" : ""}`} /></button>
                 <span className="hidden text-xs font-mono text-white/45 sm:inline">{formatDuration(track.duration)}</span>

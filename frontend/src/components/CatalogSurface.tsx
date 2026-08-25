@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { useEffect, useState } from "react";
 import { Disc3, Loader2, Play, Radio, Search, Trophy, Users, SlidersHorizontal, Globe2, Clock3, ShieldCheck, Headphones } from "lucide-react";
 import { getJamendoTracks, getJamendoTracksPage, type JamendoSong } from "@/lib/api";
@@ -40,21 +42,24 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
   const { playMix, playTrack } = usePlayerStore();
   const [tracks, setTracks] = useState<JamendoSong[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState(kind === "genres" ? "electronic" : "");
   const [query, setQuery] = useState("");
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     let active = true;
     getJamendoTracksPage({ limit: 16, tags: kind === "genres" ? selectedTag : undefined, search: kind === "search" ? query : undefined, order: kind === "charts" ? "popularity_total" : undefined })
       .then((page) => { if (active) { setTracks(page.tracks); setNextCursor(page.nextCursor); } })
-      .catch(() => { if (active) { setTracks([]); setNextCursor(null); } })
+      .catch(() => { if (active) { setTracks([]); setNextCursor(null); setError("Không thể tải catalog lúc này. Hãy thử lại."); } })
       .finally(() => setLoading(false));
     return () => { active = false; };
-  }, [kind, selectedTag, query]);
+  }, [kind, selectedTag, query, retryToken]);
 
   const loadMore = async () => {
     if (!nextCursor || loadingMore) return;
@@ -74,7 +79,7 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
   };
 
   return (
-    <div className="min-h-full overflow-y-auto px-5 pb-36 pt-8 text-white sm:px-8 lg:px-12">
+    <main className="min-h-full overflow-y-auto px-5 pb-36 pt-8 text-white sm:px-8 lg:px-12">
       <header className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#11101c] p-6 sm:p-10">
         <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-[100px]" />
         <div className="relative max-w-2xl">
@@ -86,7 +91,7 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
       </header>
 
       {kind === "genres" ? <>
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{genreTiles.map((genre, index) => <button key={genre.name} type="button" onClick={() => setSelectedTag(genreTags[index % genreTags.length])} className={`group min-h-36 rounded-2xl border border-white/10 bg-gradient-to-br ${genre.color} p-5 text-left transition hover:-translate-y-1 hover:border-fuchsia-200/50 hover:shadow-[0_18px_45px_rgba(139,92,246,0.18)]`}><span className="text-3xl text-white/80">{genre.icon}</span><div className="mt-5 flex items-end justify-between gap-3"><span><span className="block text-base font-bold text-white">{genre.name}</span><span className="mt-1 block text-xs text-white/45">{genre.note}</span></span><span className="text-xs font-bold tabular-nums text-white/45">{(index + 2) * 12} tracks</span></div></button>)}</div>
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{genreTiles.map((genre, index) => { const tag = genreTags[index % genreTags.length]; return <button key={genre.name} type="button" aria-pressed={selectedTag === tag} onClick={() => setSelectedTag(tag)} className={`group min-h-36 rounded-2xl border bg-gradient-to-br ${genre.color} p-5 text-left transition hover:-translate-y-1 hover:border-fuchsia-200/50 hover:shadow-[0_18px_45px_rgba(139,92,246,0.18)] ${selectedTag === tag ? "border-fuchsia-200/70 ring-2 ring-fuchsia-300/20" : "border-white/10"}`}><span className="text-3xl text-white/80">{genre.icon}</span><div className="mt-5"><span className="block text-base font-bold text-white">{genre.name}</span><span className="mt-1 block text-xs text-white/45">{genre.note}</span></div></button>; })}</div>
         <div className="mt-6 flex flex-wrap items-center gap-2"><span className="mr-2 text-xs font-bold uppercase tracking-[0.18em] text-white/35">Explore more</span>{genreTags.map((tag) => <button key={tag} type="button" onClick={() => setSelectedTag(tag)} className={`min-h-10 rounded-full border px-4 text-sm font-semibold capitalize transition ${selectedTag === tag ? "border-fuchsia-300 bg-fuchsia-300 text-slate-950" : "border-white/10 bg-white/[0.04] text-white/60 hover:border-white/30 hover:text-white"}`}>{tag}</button>)}</div>
         <div className="mt-5 flex items-center gap-2 text-xs text-white/40"><ShieldCheck className="h-4 w-4 text-emerald-300" /> Auraic catalog · license information available per track</div>
       </> : null}
@@ -100,8 +105,8 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
 
       <section className="mt-10">
         <div className="mb-5 flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300">{kind === "charts" ? "Ranked this week" : "From Auraic"}</p><h2 className="mt-2 text-2xl font-bold">{kind === "charts" ? "Top discoveries" : "A good place to start"}</h2></div><span className="text-xs text-white/35">{tracks.length} tracks</span></div>
-        {loading ? <div className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45"><Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning the catalog...</div> : tracks.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 py-14 text-center text-sm text-white/40">No Auraic tracks matched this view.</div> : <><div className="divide-y divide-white/10 border-y border-white/10">{tracks.map((track, index) => <div key={track.id} className="group flex items-center gap-3 py-4"><span className="w-7 text-center text-xs font-bold text-white/25">{kind === "charts" ? String(index + 1).padStart(2, "0") : ""}</span><img src={track.image || fallbackImage} alt={track.title} className="h-12 w-12 rounded-xl object-cover" /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} className="min-w-0 flex-1 text-left"><span className="block truncate text-sm font-semibold group-hover:text-fuchsia-200">{track.title}</span><span className="mt-1 block truncate text-xs text-white/40">{track.artist.name} · {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, "0")}</span></button><TrackActionMenu track={track as any} /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} aria-label={`Phát ${track.title}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-fuchsia-300 hover:text-white"><Play className="h-4 w-4 fill-current" /></button></div>)}</div>{nextCursor ? <div className="mt-6 text-center"><button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="min-h-11 rounded-xl border border-white/15 px-5 text-sm font-semibold text-white/70 transition hover:bg-white/10 disabled:opacity-50">{loadingMore ? "Đang tải thêm..." : "Tải thêm"}</button></div> : null}</>}
+        {loading ? <div role="status" className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45"><Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning the catalog...</div> : error ? <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/[0.06] px-5 py-10 text-center text-sm text-rose-100"><p>{error}</p><button type="button" onClick={() => setRetryToken((value) => value + 1)} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10">Thử lại</button></div> : tracks.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 py-14 text-center text-sm text-white/40">No Auraic tracks matched this view.</div> : <><div className="divide-y divide-white/10 border-y border-white/10">{tracks.map((track, index) => <div key={track.id} className="group flex items-center gap-3 py-4"><span className="w-7 text-center text-xs font-bold text-white/25">{kind === "charts" ? String(index + 1).padStart(2, "0") : ""}</span><Artwork src={track.image || fallbackImage} alt={track.title} className="h-12 w-12 rounded-xl object-cover" /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} className="min-h-11 min-w-0 flex-1 text-left"><span className="block truncate text-sm font-semibold group-hover:text-fuchsia-200">{track.title}</span><span className="mt-1 block truncate text-xs text-white/40">{track.artist.name} · {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, "0")}</span></button><TrackActionMenu track={track as any} /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} aria-label={`Phát ${track.title}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-fuchsia-300 hover:text-white"><Play className="h-4 w-4 fill-current" /></button></div>)}</div>{nextCursor ? <div className="mt-6 text-center"><button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="min-h-11 rounded-xl border border-white/15 px-5 text-sm font-semibold text-white/70 transition hover:bg-white/10 disabled:opacity-50">{loadingMore ? "Đang tải thêm..." : "Tải thêm"}</button></div> : null}</>}
       </section>
-    </div>
+    </main>
   );
 }

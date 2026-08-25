@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Compass, Library, User as UserIcon, LogIn, LogOut, ShieldCheck, Disc3, Settings2, BadgeCheck } from "lucide-react";
@@ -28,7 +30,7 @@ export default function Sidebar() {
       <div className="space-y-10">
         {/* LOGO */}
         <div className="flex items-center gap-3 px-1">
-          <img src="/favicon.ico" alt="Auraic" className="h-10 w-10 shrink-0 object-cover mix-blend-screen drop-shadow-[0_0_16px_rgba(192,100,255,0.5)]" />
+          <Artwork src="/favicon.ico" alt="Auraic" className="h-10 w-10 shrink-0 object-cover mix-blend-screen drop-shadow-[0_0_16px_rgba(192,100,255,0.5)]" />
           <span className="whitespace-nowrap bg-gradient-to-r from-fuchsia-300 via-violet-300 to-cyan-300 bg-clip-text text-lg font-black tracking-[0.2em] text-transparent opacity-0 drop-shadow-[0_0_10px_rgba(192,100,255,0.35)] transition-opacity group-hover/sidebar:opacity-100">AURAIC</span>
         </div>
 

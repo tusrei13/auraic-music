@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { useState, useEffect } from "react";
 import { Compass, Play, Hash, Heart, Radio, Sparkles, Loader2 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
@@ -9,6 +11,7 @@ import TrackActionMenu from "@/components/TrackActionMenu";
 export default function DiscoverPage() {
   const [songs, setSongs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [jamendoTracks, setJamendoTracks] = useState<JamendoSong[]>([]);
   const [selectedGenre, setSelectedGenre] = useState("Tất cả");
 
@@ -18,11 +21,15 @@ export default function DiscoverPage() {
   const toggleLike = store.toggleLike || (() => {});
 
   useEffect(() => {
+    setCatalogError(null);
     getSongs()
       .then((songsData) => {
         setSongs(Array.isArray(songsData) ? songsData : []);
       })
-      .catch((err) => console.error("Lỗi tải dữ liệu Khám phá:", err))
+      .catch(() => {
+        setSongs([]);
+        setCatalogError("Không thể tải catalog Jamendo lúc này.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -105,7 +112,14 @@ export default function DiscoverPage() {
           <span className="text-xs text-white/50">{filteredTracks.length} bài hát</span>
         </div>
 
-        {filteredTracks.length > 0 ? (
+        {catalogError ? (
+          <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/[0.06] px-5 py-10 text-center text-sm text-rose-100">
+            <p>{catalogError}</p>
+            <button type="button" onClick={() => window.location.reload()} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10">
+              Thử lại
+            </button>
+          </div>
+        ) : filteredTracks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             {filteredTracks.map((song) => {
               const liked = isLiked(song.id);
@@ -126,7 +140,7 @@ export default function DiscoverPage() {
                 >
                   <div className="flex items-center gap-4 min-w-0">
                     <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
-                      <img
+                      <Artwork
                         src={songCover}
                         alt={song.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -208,7 +222,7 @@ export default function DiscoverPage() {
                 onClick={() => handlePlayTrack(track, jamendoTracks)}
                 className="group flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.04] p-3 text-left transition hover:border-indigo-400/40 hover:bg-white/[0.08]"
               >
-                <img src={track.image} alt={track.title} className="h-14 w-14 rounded-xl object-cover" />
+                <Artwork src={track.image} alt={track.title} className="h-14 w-14 rounded-xl object-cover" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold text-white group-hover:text-indigo-300">{track.title}</span>
                   <span className="mt-1 block truncate text-xs text-white/50">{track.artist.name}</span>

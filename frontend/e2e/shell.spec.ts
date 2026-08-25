@@ -17,12 +17,30 @@ test('search input is keyboard accessible', async ({ page }) => {
   await expect(search).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('search keeps a visible keyboard focus indicator', async ({ page }) => {
+  await page.goto('/');
+  const search = page.getByRole('combobox', { name: 'Tìm kiếm nhạc' });
+  await search.focus();
+  await expect(search).toBeFocused();
+  await expect.poll(() => search.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+});
+
 test('home remains usable on a narrow mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Feel the Aura/i })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Tìm kiếm nhạc' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test('interactive controls expose accessible names and touch-safe bounds', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const search = page.getByRole('combobox', { name: 'Tìm kiếm nhạc' });
+  const box = await search.boundingBox();
+  expect(box?.height).toBeGreaterThanOrEqual(44);
+  await search.fill('ambient');
+  await expect(page.getByRole('button', { name: 'Xóa nội dung tìm kiếm' })).toHaveAccessibleName('Xóa nội dung tìm kiếm');
 });
 
 test('disabled product surface keeps its route isolated', async ({ page }) => {

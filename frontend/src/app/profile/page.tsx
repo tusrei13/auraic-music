@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -142,7 +144,7 @@ export default function ProfilePage() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-tr from-cyan-500 to-purple-600 shadow-lg shadow-purple-500/20 sm:h-28 sm:w-28">
             {user.avatar ? (
-              <img src={user.avatar} alt={user.name || user.email} className="h-full w-full object-cover" />
+              <Artwork src={user.avatar} alt={user.name || user.email} className="h-full w-full object-cover" />
             ) : (
               <UserIcon className="h-12 w-12 text-white/90 sm:h-14 sm:w-14" />
             )}
@@ -287,7 +289,7 @@ export default function ProfilePage() {
                     >
                       <div className="flex h-36 w-full items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600/40 to-purple-600/40 shadow-inner">
                         {pl.coverImage ? (
-                          <img src={pl.coverImage} alt={pl.title} className="h-full w-full rounded-xl object-cover" />
+                          <Artwork src={pl.coverImage} alt={pl.title} className="h-full w-full rounded-xl object-cover" />
                         ) : (
                           <Library className="h-10 w-10 text-white/70 group-hover:scale-110 transition duration-300" />
                         )}
@@ -314,7 +316,7 @@ export default function ProfilePage() {
                       className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 transition hover:bg-white/[0.07]"
                     >
                       <span className="w-6 text-center text-xs font-bold text-white/40">{index + 1}</span>
-                      <img src={song.image} alt="" className="h-11 w-11 rounded-lg object-cover" />
+                      <Artwork src={song.image} alt="" className="h-11 w-11 rounded-lg object-cover" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold text-white">{song.title}</p>
                         <p className="truncate text-xs text-white/45">{getArtistName(song.artist)}</p>
@@ -347,7 +349,7 @@ export default function ProfilePage() {
                       className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 transition hover:bg-white/[0.07]"
                     >
                       <span className="w-6 text-center text-xs font-bold text-white/40">{index + 1}</span>
-                      <img src={item.song?.image} alt="" className="h-11 w-11 rounded-lg object-cover" />
+                      <Artwork src={item.song?.image} alt="" className="h-11 w-11 rounded-lg object-cover" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold text-white">{item.song?.title}</p>
                         <p className="truncate text-xs text-white/45">{getArtistName(item.song?.artist)}</p>

@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Play, Sparkles, Heart, Loader2, ArrowUpRight, Waves, Disc3, Dumbbell, PartyPopper, CloudRain, Sun } from "lucide-react";
@@ -15,6 +17,7 @@ export default function HomePage() {
   const vibeSectionRef = useRef<HTMLElement>(null);
   const [songs, setSongs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
   const [vibeLoading, setVibeLoading] = useState<string | null>(null);
   const [listenedIds, setListenedIds] = useState<Array<string | number>>([]);
@@ -23,7 +26,10 @@ export default function HomePage() {
   useEffect(() => {
     getJamendoTracks({ limit: 12 })
       .then((data) => setSongs(data))
-      .catch((err) => console.error("Lỗi tải bài hát từ API:", err))
+      .catch(() => {
+        setSongs([]);
+        setCatalogError("Không thể tải catalog Jamendo lúc này.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -113,7 +119,7 @@ export default function HomePage() {
         <div className="relative mx-auto mt-8 aspect-square w-full max-w-[370px] lg:mt-0 lg:max-w-[460px]">
           <div className="absolute inset-[-12%] rounded-full bg-gradient-to-br from-fuchsia-500/35 via-violet-500/25 to-cyan-400/30 blur-3xl" />
           <div className="absolute inset-[3%] rounded-full border border-white/15 shadow-[0_0_70px_rgba(191,112,255,0.55)]" />
-          <img src={featured?.image || "https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=1200&auto=format&fit=crop"} alt={featured?.title || "Auraic atmospheric artwork"} className="relative h-full w-full rounded-[24%] object-cover shadow-2xl transition duration-700 hover:scale-[1.025]" />
+          <Artwork src={featured?.image || "https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=1200&auto=format&fit=crop"} alt={featured?.title || "Auraic atmospheric artwork"} className="relative h-full w-full rounded-[24%] object-cover shadow-2xl transition duration-700 hover:scale-[1.025]" />
           <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur-xl"><div className="min-w-0"><p className="text-[10px] uppercase tracking-[0.2em] text-white/50">Featured now</p><p className="mt-1 truncate text-sm font-bold">{featured?.title || "A new frequency"}</p><p className="truncate text-xs text-white/50">{featuredArtist || "Auraic radio"}</p></div><button aria-label="Phát bài hát nổi bật" onClick={() => featured && playTrack(featured, songs)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-105"><Play className="h-4 w-4 fill-current" /></button></div>
         </div>
       </section>
@@ -128,8 +134,8 @@ export default function HomePage() {
         {loading ? (
           <div className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45"><Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning your atmosphere...</div>
         ) : songs.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">{songs.slice(0, 5).map((song, index) => { const artist = typeof song.artist === "object" ? song.artist?.name : song.artist; const isCurrent = String(currentTrack?.id) === String(song.id); const liked = likedIds.some((id: any) => String(id) === String(song.id)); return <article key={song.id} className="group min-w-0"><button onClick={() => playTrack(song, songs, "Trending now")} className="relative block aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left"><img src={song.image} alt={song.title} loading={index > 1 ? "lazy" : "eager"} className="h-full w-full object-cover transition duration-500 group-hover:scale-105 group-hover:opacity-70" /><span className="absolute bottom-3 right-3 flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-white text-black opacity-0 shadow-xl transition duration-300 group-hover:translate-y-0 group-hover:opacity-100"><Play className="h-4 w-4 fill-current" /></span>{isCurrent && isPlaying && <span className="absolute left-3 top-3 rounded-full bg-fuchsia-500 px-2 py-1 text-[9px] font-bold uppercase tracking-wider">Playing</span>}</button><div className="flex items-start justify-between gap-2 pt-3"><div className="min-w-0"><h3 className="truncate text-sm font-semibold group-hover:text-fuchsia-200">{song.title}</h3><p className="mt-1 truncate text-xs text-white/45">{artist}</p></div><div className="flex shrink-0 items-center gap-1"><button aria-label={liked ? "Bỏ thích" : "Yêu thích"} onClick={() => toggleLike(song)} className={`mt-0.5 ${liked ? "text-pink-400" : "text-white/25 hover:text-pink-300"}`}><Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} /></button><TrackActionMenu track={song} /></div></div></article>; })}</div>
-        ) : <div className="border-b border-white/10 py-10 text-center text-sm text-white/40">Chưa có bài hát nào trong catalog Auraic.</div>}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">{songs.slice(0, 5).map((song, index) => { const artist = typeof song.artist === "object" ? song.artist?.name : song.artist; const isCurrent = String(currentTrack?.id) === String(song.id); const liked = likedIds.some((id: any) => String(id) === String(song.id)); return <article key={song.id} className="group min-w-0"><button onClick={() => playTrack(song, songs, "Trending now")} className="relative block aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left"><Artwork src={song.image} alt={song.title} loading={index > 1 ? "lazy" : "eager"} className="h-full w-full object-cover transition duration-500 group-hover:scale-105 group-hover:opacity-70" /><span className="absolute bottom-3 right-3 flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-white text-black opacity-0 shadow-xl transition duration-300 group-hover:translate-y-0 group-hover:opacity-100"><Play className="h-4 w-4 fill-current" /></span>{isCurrent && isPlaying && <span className="absolute left-3 top-3 rounded-full bg-fuchsia-500 px-2 py-1 text-[9px] font-bold uppercase tracking-wider">Playing</span>}</button><div className="flex items-start justify-between gap-2 pt-3"><div className="min-w-0"><h3 className="truncate text-sm font-semibold group-hover:text-fuchsia-200">{song.title}</h3><p className="mt-1 truncate text-xs text-white/45">{artist}</p></div><div className="flex shrink-0 items-center gap-1"><button aria-label={liked ? "Bỏ thích" : "Yêu thích"} onClick={() => toggleLike(song)} className={`mt-0.5 ${liked ? "text-pink-400" : "text-white/25 hover:text-pink-300"}`}><Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} /></button><TrackActionMenu track={song} /></div></div></article>; })}</div>
+        ) : catalogError ? <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/[0.06] px-5 py-10 text-center text-sm text-rose-100"><p>{catalogError}</p><button type="button" onClick={() => window.location.reload()} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10">Thử lại</button></div> : <div className="border-b border-white/10 py-10 text-center text-sm text-white/40">Chưa có bài hát nào trong catalog Auraic.</div>}
       </section>
 
       <section className="mt-12 space-y-4">
@@ -151,7 +157,7 @@ export default function HomePage() {
                     onClick={() => playTrack(song, recommendedSongs, "For you")}
                     className={`group flex items-center gap-4 py-4 transition ${isCurrent ? "text-fuchsia-300" : "hover:text-fuchsia-200"}`}
                   >
-                    <span className="w-6 text-xs text-white/25">{String(index + 1).padStart(2, "0")}</span><img src={song.image} alt={song.title} className="h-12 w-12 shrink-0 rounded-xl object-cover" /><div onClick={() => playTrack(song, recommendedSongs, "For you")} className="min-w-0 flex-1 cursor-pointer"><h4 className="truncate text-sm font-semibold">{song.title}</h4><p className="mt-1 truncate text-xs text-white/40">{artistName}</p></div><div className="flex items-center gap-2">
+                    <span className="w-6 text-xs text-white/25">{String(index + 1).padStart(2, "0")}</span><Artwork src={song.image} alt={song.title} className="h-12 w-12 shrink-0 rounded-xl object-cover" /><div onClick={() => playTrack(song, recommendedSongs, "For you")} className="min-w-0 flex-1 cursor-pointer"><h4 className="truncate text-sm font-semibold">{song.title}</h4><p className="mt-1 truncate text-xs text-white/40">{artistName}</p></div><div className="flex items-center gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -169,6 +175,8 @@ export default function HomePage() {
                 );
               })}
           </div>
+        ) : catalogError ? (
+          <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/[0.06] px-5 py-10 text-center text-sm text-rose-100"><p>{catalogError}</p><button type="button" onClick={() => window.location.reload()} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10">Thử lại</button></div>
         ) : (
           <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl bg-white/[0.02]">
             <p className="text-white/40 text-sm">Chưa có bài hát nào trong catalog Auraic.</p>

@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { 
@@ -261,7 +263,7 @@ export default function LibraryPage() {
           <div className="flex flex-col md:flex-row items-start md:items-end gap-8 pt-4">
             <div className="relative group flex-shrink-0">
               <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-indigo-500 to-purple-600 opacity-50 blur-xl group-hover:opacity-75 transition-all"></div>
-              <img
+              <Artwork
                 src={playlistImage}
                 alt={playlistTitle}
                 className="relative w-52 h-52 sm:w-60 sm:h-60 object-cover rounded-2xl shadow-2xl border border-white/20"
@@ -402,7 +404,7 @@ export default function LibraryPage() {
                       </div>
 
                       <div className="col-span-5 sm:col-span-4 flex items-center gap-3.5 min-w-0 pr-2">
-                        <img 
+                        <Artwork
                           src={songImage} 
                           alt={getStringValue(song.title)} 
                           className="w-11 h-11 rounded-xl object-cover flex-shrink-0 shadow-lg border border-white/10" 
@@ -531,7 +533,7 @@ export default function LibraryPage() {
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <img src={songImage} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <Artwork src={songImage} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         <div className="truncate">
                           <h5 className="text-sm font-bold text-white truncate">{getStringValue(song.title)}</h5>
                           <p className="text-xs text-white/50 truncate">{getArtistName(song.artist)}</p>
@@ -683,7 +685,7 @@ export default function LibraryPage() {
                   onClick={() => setSelectedPlaylistId(pl.id)}
                   className="group relative h-44 rounded-2xl overflow-hidden border border-white/10 p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:border-indigo-500/50 hover:shadow-[0_10px_30px_rgba(99,102,241,0.25)]"
                 >
-                  <img src={pImage} alt={pName} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-30 group-hover:opacity-40" />
+                  <Artwork src={pImage} alt={pName} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-30 group-hover:opacity-40" />
                   <div className={`absolute inset-0 bg-gradient-to-br ${pColor} mix-blend-multiply`}></div>
                   <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
 
@@ -745,7 +747,7 @@ export default function LibraryPage() {
                 const song = item.song;
                 const isCurrent = String(currentTrack?.id) === String(song.id);
                 const songImage = getStringValue(song.image) || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
-                return <div key={item.id} onClick={() => handlePlaySong(song, listeningHistory.map((historyItem) => historyItem.song), "Đã nghe gần đây")} className={`flex cursor-pointer items-center gap-3 px-5 py-3.5 transition hover:bg-white/[0.06] ${isCurrent ? "bg-indigo-500/15" : ""}`}><span className="w-5 text-xs font-mono text-white/35">{index + 1}</span><img src={songImage} alt={getStringValue(song.title)} className="h-10 w-10 rounded-lg object-cover" /><div className="min-w-0 flex-1"><h4 className={`truncate text-sm font-semibold ${isCurrent ? "text-indigo-300" : "text-white"}`}>{getStringValue(song.title, "Bài hát")}</h4><p className="truncate text-xs text-white/50">{getArtistName(song.artist)} · {new Date(item.listenedAt).toLocaleDateString("vi-VN")}</p></div><span className="text-xs font-mono text-white/40">{formatDuration(song.duration)}</span></div>;
+                return <div key={item.id} onClick={() => handlePlaySong(song, listeningHistory.map((historyItem) => historyItem.song), "Đã nghe gần đây")} className={`flex cursor-pointer items-center gap-3 px-5 py-3.5 transition hover:bg-white/[0.06] ${isCurrent ? "bg-indigo-500/15" : ""}`}><span className="w-5 text-xs font-mono text-white/35">{index + 1}</span><Artwork src={songImage} alt={getStringValue(song.title)} className="h-10 w-10 rounded-lg object-cover" /><div className="min-w-0 flex-1"><h4 className={`truncate text-sm font-semibold ${isCurrent ? "text-indigo-300" : "text-white"}`}>{getStringValue(song.title, "Bài hát")}</h4><p className="truncate text-xs text-white/50">{getArtistName(song.artist)} · {new Date(item.listenedAt).toLocaleDateString("vi-VN")}</p></div><span className="text-xs font-mono text-white/40">{formatDuration(song.duration)}</span></div>;
               })}
             </div>
           ) : (
@@ -799,7 +801,7 @@ export default function LibraryPage() {
                       </div>
 
                       <div className="col-span-8 flex items-center gap-3.5 min-w-0">
-                        <img src={songImage} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <Artwork src={songImage} alt={getStringValue(song.title)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         <div className="truncate">
                           <h4 className={`text-sm font-semibold truncate ${isCurrent ? "text-indigo-400" : "text-white"}`}>{getStringValue(song.title)}</h4>
                           <p className="text-xs text-white/50 truncate">{getArtistName(song.artist)}</p>

@@ -1,3 +1,5 @@
+import { catalogResponseContract, searchResponseContract } from './contracts';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export const resolveMediaUrl = (url: string) => {
@@ -148,7 +150,7 @@ export const getArtists = () => fetcher<Artist[]>("/artists");
 export const getArtistById = (id: string) => fetcher<Artist>(`/artists/${encodeURIComponent(id)}`);
 
 // 4. TÌM KIẾM (SEARCH)
-export const searchAll = (query: string) => fetcher<SearchResult>(`/search?q=${encodeURIComponent(query)}`);
+export const searchAll = (query: string) => fetcher<unknown>(`/search?q=${encodeURIComponent(query)}`).then((payload) => searchResponseContract.parse(payload) as SearchResult);
 export interface CatalogPage { tracks: JamendoSong[]; nextCursor: string | null }
 export const getJamendoTracksPage = async (options: { limit?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}): Promise<CatalogPage> => {
   const params = new URLSearchParams();
@@ -161,9 +163,9 @@ export const getJamendoTracksPage = async (options: { limit?: number; cursor?: s
   if (options.albumId) params.set("albumId", options.albumId);
   if (options.order) params.set("order", options.order);
   const response = await fetch(`${API_BASE_URL}/catalog/jamendo${params.size ? `?${params}` : ""}`, { cache: "no-store", headers: { ...(typeof window !== "undefined" && localStorage.getItem("token") ? { Authorization: `Bearer ${localStorage.getItem("token")}` } : {}) } });
-  const tracks = await response.json().catch(() => []);
-  if (!response.ok) throw new ApiError(response.status, tracks?.error || { code: "API_ERROR", message: response.statusText });
-  return { tracks: tracks as JamendoSong[], nextCursor: response.headers.get("x-next-cursor") };
+  const payload = await response.json().catch(() => []);
+  if (!response.ok) throw new ApiError(response.status, payload?.error || { code: "API_ERROR", message: response.statusText });
+  return { tracks: catalogResponseContract.parse(payload) as JamendoSong[], nextCursor: response.headers.get("x-next-cursor") };
 };
 export const getJamendoTracks = (options: { limit?: number; offset?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}) => getJamendoTracksPage({ ...options, cursor: options.cursor || (options.offset ? btoa(String(options.offset)) : undefined) }).then((page) => page.tracks);
 

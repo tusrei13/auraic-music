@@ -163,6 +163,10 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     cache.delete(cacheKey)
     return getJamendoTracks({ ...options, search: undefined, nameSearch: options.search })
   }
+  if (tracks.length === 0 && options.tags?.trim()) {
+    cache.delete(cacheKey)
+    return getJamendoTracks({ ...options, tags: undefined, search: options.tags })
+  }
   if (tracks.length > 0) cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, tracks })
   return tracks
 }

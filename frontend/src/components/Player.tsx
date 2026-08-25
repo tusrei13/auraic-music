@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { 
@@ -416,7 +418,7 @@ export default function Player() {
           {lyrics.length > 0 ? (
             <div className="grid w-full max-w-6xl grid-cols-1 items-start gap-10 px-4 text-left lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-20">
               <div className="hidden self-start lg:block">
-                <img src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-3xl object-cover shadow-[0_0_90px_rgba(217,140,255,0.35)]" />
+                <Artwork src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-3xl object-cover shadow-[0_0_90px_rgba(217,140,255,0.35)]" />
                 <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
                 <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
               </div>
@@ -446,7 +448,7 @@ export default function Player() {
           ) : plainLyrics ? (
             <div className="grid w-full max-w-6xl grid-cols-1 items-start gap-10 px-4 text-left lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-20">
               <div className="hidden self-start lg:block">
-                <img src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-3xl object-cover shadow-[0_0_90px_rgba(217,140,255,0.35)]" />
+                <Artwork src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-3xl object-cover shadow-[0_0_90px_rgba(217,140,255,0.35)]" />
                 <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
                 <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
               </div>
@@ -458,11 +460,11 @@ export default function Player() {
             </div>
           ) : (
             <div className="relative flex h-[min(78vh,720px)] w-full max-w-[1400px] items-center justify-center overflow-hidden rounded-[32px] border border-white/15 bg-[#080810] p-7 shadow-[0_0_120px_rgba(168,85,247,0.3)] sm:p-12">
-              <img src={currentTrack.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-3xl" />
+              <Artwork src={currentTrack.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-3xl" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.22),transparent_42%),linear-gradient(180deg,rgba(5,5,12,0.35),rgba(5,5,12,0.96))]" />
               <div className="relative grid w-full max-w-[1240px] grid-cols-1 items-center gap-10 lg:grid-cols-[280px_minmax(320px,1fr)_300px] lg:gap-16">
                 <div className="hidden self-start lg:block">
-                  <img src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-2xl object-cover shadow-[0_0_55px_rgba(217,140,255,0.28)]" />
+                  <Artwork src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-2xl object-cover shadow-[0_0_55px_rgba(217,140,255,0.28)]" />
                   <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
                   <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
                   <div className="mt-5 flex gap-2 text-white/50">
@@ -475,7 +477,7 @@ export default function Player() {
                   <div className="relative aspect-square w-[min(58vw,300px)]">
                   <div className="absolute inset-[-12%] rounded-full bg-fuchsia-500/25 blur-3xl" />
                   <div className="absolute inset-0 rounded-full border border-white/20 bg-[radial-gradient(circle_at_35%_25%,#34304f_0,#11111d_42%,#030308_72%)] shadow-[0_0_60px_rgba(217,140,255,0.45)]" />
-                  <img src={currentTrack.image} alt={currentTrack.title} className={`absolute inset-[8%] h-[84%] w-[84%] rounded-full object-cover ${isPlaying ? "animate-[spin_12s_linear_infinite]" : ""}`} />
+                  <Artwork src={currentTrack.image} alt={currentTrack.title} className={`absolute inset-[8%] h-[84%] w-[84%] rounded-full object-cover ${isPlaying ? "animate-[spin_12s_linear_infinite]" : ""}`} />
                   <div className="absolute inset-[43%] rounded-full border-4 border-[#11111d] bg-gradient-to-br from-fuchsia-300 to-cyan-300 shadow-[0_0_18px_rgba(217,140,255,0.8)]" />
                   </div>
                   <div className="mt-9 flex h-20 items-center gap-1.5" aria-label="Audio visualizer">
@@ -522,7 +524,7 @@ export default function Player() {
           {/* BÊN TRÁI: THÔNG TIN BÀI HÁT */}
           <div className="relative z-10 mb-2 flex min-w-0 w-full items-center gap-3 md:mb-0 md:w-1/3">
             <div className={`h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-white/25 shadow-[0_0_24px_rgba(192,100,255,0.28)] transition-all duration-500 ${isPlaying ? 'scale-[1.03]' : ''}`}>
-              <img src={currentTrack.image} alt={currentTrack.title} className="w-full h-full object-cover" />
+              <Artwork src={currentTrack.image} alt={currentTrack.title} className="w-full h-full object-cover" />
             </div>
             <div className="min-w-0 max-w-[min(48vw,260px)] flex-none truncate pr-1 sm:max-w-[220px]">
               <h4 className="text-sm font-bold text-white tracking-wide drop-shadow-md truncate">{currentTrack.title}</h4>

@@ -1,5 +1,7 @@
 "use client";
 
+import Artwork from "@/components/Artwork";
+
 import { useState } from "react";
 import { 
   X, 
@@ -117,7 +119,7 @@ export default function QueuePanel({ isOpen, onClose }: QueuePanelProps) {
             <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">Đang phát</h3>
             <div className="p-3 bg-indigo-600/20 border border-indigo-500/30 rounded-2xl flex items-center gap-3">
               <div className="relative w-12 h-12 flex-shrink-0 rounded-xl overflow-hidden">
-                <img src={currentTrack.image} alt={currentTrack.title} className="w-full h-full object-cover" />
+                <Artwork src={currentTrack.image} alt={currentTrack.title} className="w-full h-full object-cover" />
                 {isPlaying && (
                   <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center gap-0.5">
                     <span className="w-1 h-3 bg-indigo-400 rounded-full animate-bounce" />
@@ -164,7 +166,7 @@ export default function QueuePanel({ isOpen, onClose }: QueuePanelProps) {
                     onClick={() => handlePlayTrack(track)}
                     className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden group/thumb cursor-pointer"
                   >
-                    <img src={track.image} alt={track.title} className="w-full h-full object-cover" />
+                    <Artwork src={track.image} alt={track.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
                       <Play className="w-4 h-4 text-white fill-white" />
                     </div>
@@ -213,7 +215,7 @@ export default function QueuePanel({ isOpen, onClose }: QueuePanelProps) {
                       onClick={() => handlePlayTrack(track)}
                       className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden group/thumb cursor-pointer"
                     >
-                      <img src={track.image} alt={track.title} className="w-full h-full object-cover" />
+                      <Artwork src={track.image} alt={track.title} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
                         <Play className="w-4 h-4 text-white fill-white" />
                       </div>

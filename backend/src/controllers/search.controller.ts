@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { sendInternalError } from '../lib/api-error'
 import { getJamendoArtists, getJamendoTracks, JamendoArtist, JamendoSong } from '../services/jamendo.service'
+import { searchResponseContract } from '../contracts/catalog.contract'
 
 export const buildSearchResult = (songs: JamendoSong[], matchedArtists: JamendoArtist[] = []) => {
   const artists = [...new Map(matchedArtists.map((artist) => [artist.id, artist])).values()]
@@ -28,7 +29,8 @@ export const searchAll = async (req: Request, res: Response) => {
       getJamendoTracks({ limit, offset: safeOffset, search: q }),
       getJamendoArtists(q),
     ])
-    res.json({ ...buildSearchResult(songs, artists), pagination: songs.length === limit ? { nextCursor: Buffer.from(String(safeOffset + limit)).toString('base64url') } : { nextCursor: null } })
+    const payload = searchResponseContract.parse({ ...buildSearchResult(songs, artists), pagination: songs.length === limit ? { nextCursor: Buffer.from(String(safeOffset + limit)).toString('base64url') } : { nextCursor: null } })
+    res.json(payload)
   } catch (error) {
     sendInternalError(res, 'SEARCH_ERROR', 'Lỗi khi tìm kiếm')
   }
