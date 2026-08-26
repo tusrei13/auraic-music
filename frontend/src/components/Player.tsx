@@ -55,6 +55,9 @@ export default function Player() {
   const [volume, setVolume] = useState(0.7);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekValue, setSeekValue] = useState<number | null>(null);
+  const isSeekingRef = useRef(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
   const [fetchedLyrics, setFetchedLyrics] = useState<string | LyricLine[] | null>(null);
@@ -303,7 +306,9 @@ export default function Player() {
 
     const updateRealtime = () => {
       if (!audio.paused && !audio.ended) {
-        setCurrentTime(audio.currentTime);
+        if (!isSeekingRef.current) {
+          setCurrentTime(audio.currentTime);
+        }
         animationFrameId = requestAnimationFrame(updateRealtime);
       }
     };
@@ -453,12 +458,22 @@ export default function Player() {
     }
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSeekInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const val = Number((e.target as HTMLInputElement).value);
+    isSeekingRef.current = true;
+    setIsSeeking(true);
+    setSeekValue(val);
+  };
+
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTime = Number(e.target.value);
-    if (audioRef.current) {
+    if (audioRef.current && Number.isFinite(newTime)) {
       audioRef.current.currentTime = newTime;
     }
     setCurrentTime(newTime);
+    isSeekingRef.current = false;
+    setIsSeeking(false);
+    setSeekValue(null);
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -469,7 +484,8 @@ export default function Player() {
     }
   };
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const displayTime = isSeeking && seekValue !== null ? seekValue : currentTime;
+  const progressPercent = duration > 0 ? (displayTime / duration) * 100 : 0;
 
   const handleLyricClick = (time: number) => {
     if (audioRef.current && Number.isFinite(time)) {
@@ -688,24 +704,26 @@ export default function Player() {
             </div>
             
             <div className="flex items-center gap-3 w-full text-[10px] font-medium text-white/50">
-              <span>{formatTime(currentTime)}</span>
-              <div className="flex-1 relative flex items-center group py-1">
+              <span>{formatTime(displayTime)}</span>
+              <div className="flex-1 relative flex items-center group py-2">
                 <input 
                   type="range" 
                   min="0" 
                   max={duration || 100} 
-                  value={currentTime} 
-                  onChange={handleSeek}
-                  className="absolute w-full h-1 opacity-0 z-10 cursor-pointer"
+                  step="0.1"
+                  value={displayTime} 
+                  onInput={handleSeekInput}
+                  onChange={handleSeekChange}
+                  className="absolute w-full h-2 opacity-0 z-20 cursor-pointer"
                 />
                 <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
                   <div 
-                    className="relative h-full rounded-full bg-gradient-to-r from-cyan-300 via-violet-400 to-fuchsia-400 transition-all duration-75"
+                    className="relative h-full rounded-full bg-gradient-to-r from-cyan-300 via-violet-400 to-fuchsia-400"
                     style={{ width: `${progressPercent}%` }}
                   ></div>
                 </div>
                 <div 
-                  className="w-3.5 h-3.5 bg-white rounded-full absolute -ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md"
+                  className="w-3.5 h-3.5 bg-white rounded-full absolute top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-[0_0_10px_rgba(255,255,255,0.8)] ring-2 ring-white/30"
                   style={{ left: `${progressPercent}%` }}
                 ></div>
               </div>
