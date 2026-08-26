@@ -407,7 +407,38 @@ export default function Player() {
   const handlePause = () => {
     if (audioRef.current && !audioRef.current.ended) setPlaybackStatus("paused");
   };
-  const handleAudioError = () => setPlaybackStatus("error", "Không thể tải file âm thanh");
+  const fallbackTriedRef = useRef<string | number | null>(null);
+
+  const handleAudioError = () => {
+    const audio = audioRef.current;
+    if (!audio || !currentTrack) {
+      setPlaybackStatus("error", "Không thể tải file âm thanh");
+      return;
+    }
+
+    const trackIdStr = String(currentTrack.id);
+    const rawId = trackIdStr.replace(/^jamendo:/, "");
+
+    // 1. Thử URL dự phòng của Jamendo nếu chưa thử
+    if (isJamendoTrackId(currentTrack.id) && fallbackTriedRef.current !== currentTrack.id) {
+      fallbackTriedRef.current = currentTrack.id;
+      const fallbackUrl = `https://mp3d.jamendo.com/download/track/${rawId}/mp32/`;
+      audio.src = fallbackUrl;
+      audio.load();
+      audio.play().catch(() => {
+        // Nếu fallback vẫn lỗi, chuyển sang bài tiếp theo
+        setPlaybackStatus("error", "Bài hát không khả dụng, đang chuyển tiếp...");
+        setTimeout(() => nextTrack(), 1200);
+      });
+      return;
+    }
+
+    // 2. Nếu không phải Jamendo hoặc đã thử fallback mà vẫn lỗi: Tự động chuyển bài kế tiếp
+    setPlaybackStatus("error", "Bài hát không khả dụng, đang chuyển bài...");
+    setTimeout(() => {
+      nextTrack();
+    }, 1200);
+  };
 
   const handleEnded = () => {
     if (currentTrack && completedTrackIdRef.current !== currentTrack.id) {
@@ -498,11 +529,7 @@ export default function Player() {
                   />
                 </div>
                 <div className="mt-6">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-purple-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
-                    Synced Lyrics
-                  </span>
-                  <h2 className="mt-3 truncate text-2xl font-black tracking-tight text-white">{currentTrack.title}</h2>
+                  <h2 className="truncate text-2xl font-black tracking-tight text-white">{currentTrack.title}</h2>
                   <p className="mt-1 truncate text-base font-medium text-white/60">{artistName}</p>
                 </div>
               </div>

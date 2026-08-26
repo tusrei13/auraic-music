@@ -3,6 +3,7 @@
 import Artwork from "@/components/Artwork";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -59,12 +60,17 @@ export default function AdminPage() {
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   // Filters & Dialog States
+  const [mounted, setMounted] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState<"ALL" | "USER" | "ADMIN">("ALL");
   const [songSearch, setSongSearch] = useState("");
   const [songGenreFilter, setSongGenreFilter] = useState("ALL");
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [deletingPlaylistId, setDeletingPlaylistId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const loadOverview = async () => {
     setIsLoading(true);
@@ -542,16 +548,31 @@ export default function AdminPage() {
         </div>
       </section>
 
-      {/* USER DETAIL MODAL */}
-      {selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#121522] p-6 shadow-2xl">
+      {/* USER DETAIL MODAL (Rendered directly via Portal into document.body to center on viewport) */}
+      {mounted && selectedUser && createPortal(
+        <div 
+          onClick={() => setSelectedUser(null)}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-3xl border border-white/15 bg-[#121522] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.85)] animate-in zoom-in-95 duration-200"
+          >
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
-                <UserIcon className="h-6 w-6 text-cyan-400" />
-                <h3 className="text-lg font-bold text-white">Chi tiết tài khoản</h3>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400/10 border border-cyan-400/20">
+                  <UserIcon className="h-5 w-5 text-cyan-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Chi tiết tài khoản</h3>
+                  <p className="text-xs text-white/40">Thông tin người dùng hệ thống</p>
+                </div>
               </div>
-              <button type="button" onClick={() => setSelectedUser(null)} className="rounded-lg p-1 text-white/50 hover:bg-white/10 hover:text-white">
+              <button 
+                type="button" 
+                onClick={() => setSelectedUser(null)} 
+                className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -566,22 +587,22 @@ export default function AdminPage() {
               </div>
               <div>
                 <p className="text-xs text-white/40">Vai trò</p>
-                <span className={`inline-block mt-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${selectedUser.role === "ADMIN" ? "bg-cyan-400/20 text-cyan-300" : "bg-white/10 text-white/70"}`}>
+                <span className={`inline-block mt-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${selectedUser.role === "ADMIN" ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/30" : "bg-white/10 text-white/70"}`}>
                   {selectedUser.role}
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/5 bg-white/[0.03] p-3 text-center">
+              <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-center">
                 <div>
                   <p className="text-xs text-white/40">Playlist</p>
-                  <p className="text-lg font-bold text-white">{selectedUser._count.playlists}</p>
+                  <p className="text-lg font-bold text-cyan-200">{selectedUser._count.playlists}</p>
                 </div>
                 <div>
                   <p className="text-xs text-white/40">Yêu thích</p>
-                  <p className="text-lg font-bold text-white">{selectedUser._count.likes}</p>
+                  <p className="text-lg font-bold text-pink-400">{selectedUser._count.likes}</p>
                 </div>
                 <div>
                   <p className="text-xs text-white/40">Lịch sử</p>
-                  <p className="text-lg font-bold text-white">{selectedUser._count.histories}</p>
+                  <p className="text-lg font-bold text-purple-300">{selectedUser._count.histories}</p>
                 </div>
               </div>
               <div>
@@ -593,13 +614,14 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setSelectedUser(null)}
-                className="w-full rounded-xl bg-white/10 py-2.5 text-xs font-bold text-white hover:bg-white/20"
+                className="w-full rounded-xl bg-white/10 py-2.5 text-xs font-bold text-white hover:bg-white/20 transition-all cursor-pointer"
               >
                 Đóng
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
