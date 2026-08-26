@@ -61,7 +61,7 @@ export default function Player() {
   const [fetchedPlainLyrics, setFetchedPlainLyrics] = useState<string | null>(null);
   
   const audioRef = useRef<HTMLAudioElement>(null);
-  const activeLyricRef = useRef<HTMLHeadingElement>(null);
+  const activeLyricRef = useRef<HTMLDivElement>(null);
   const recordedTrackIdRef = useRef<string | number | null>(null);
   const startedTrackIdRef = useRef<string | number | null>(null);
   const completedTrackIdRef = useRef<string | number | null>(null);
@@ -270,7 +270,21 @@ export default function Player() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [togglePlay]);
 
-  // 4. Auto-scroll cho Karaoke Lyrics
+  // Bù độ trễ thời gian (OFFSET) giữa bản phát Jamendo và timestamps
+  const LYRIC_OFFSET = 0.5;
+  const lyricsSource = fetchedLyrics || fetchedPlainLyrics;
+  const lyrics = normalizeLyrics(lyricsSource, duration || 200);
+
+  const adjustedTime = currentTime + LYRIC_OFFSET;
+  let activeIndex = -1;
+  for (let i = lyrics.length - 1; i >= 0; i--) {
+    if (lyrics[i].time <= adjustedTime) {
+      activeIndex = i;
+      break;
+    }
+  }
+
+  // 4. Auto-scroll cho Karaoke Lyrics (chỉ cuộn êm ái khi hát xong câu và chuyển câu mới)
   useEffect(() => {
     if (showLyrics && activeLyricRef.current) {
       activeLyricRef.current.scrollIntoView({
@@ -278,7 +292,47 @@ export default function Player() {
         block: "center",
       });
     }
-  }, [currentTime, showLyrics]);
+  }, [activeIndex, showLyrics]);
+
+  // Cập nhật currentTime liên tục 60 FPS bằng requestAnimationFrame khi phát nhạc
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    let animationFrameId: number;
+
+    const updateRealtime = () => {
+      if (!audio.paused && !audio.ended) {
+        setCurrentTime(audio.currentTime);
+        animationFrameId = requestAnimationFrame(updateRealtime);
+      }
+    };
+
+    const handlePlayStart = () => {
+      animationFrameId = requestAnimationFrame(updateRealtime);
+    };
+
+    const handlePlayStop = () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+
+    audio.addEventListener("play", handlePlayStart);
+    audio.addEventListener("playing", handlePlayStart);
+    audio.addEventListener("pause", handlePlayStop);
+    audio.addEventListener("ended", handlePlayStop);
+
+    if (!audio.paused) {
+      animationFrameId = requestAnimationFrame(updateRealtime);
+    }
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      audio.removeEventListener("play", handlePlayStart);
+      audio.removeEventListener("playing", handlePlayStart);
+      audio.removeEventListener("pause", handlePlayStop);
+      audio.removeEventListener("ended", handlePlayStop);
+    };
+  }, [currentTrack]);
 
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
@@ -385,8 +439,14 @@ export default function Player() {
   };
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const lyrics = normalizeLyrics(fetchedLyrics);
-  const plainLyrics = fetchedPlainLyrics?.trim() || null;
+
+  const handleLyricClick = (time: number) => {
+    if (audioRef.current && Number.isFinite(time)) {
+      audioRef.current.currentTime = Math.max(0, time);
+      setCurrentTime(time);
+      if (!isPlaying) togglePlay();
+    }
+  };
 
   if (!currentTrack) {
     return (
@@ -407,55 +467,79 @@ export default function Player() {
 
       {/* KARAOKE OVERLAY */}
       {showLyrics && (
-        <div className="fixed inset-0 bottom-28 z-40 flex flex-col items-center justify-center rounded-t-3xl border-t border-white/10 bg-black p-8 shadow-2xl transition-all duration-300">
+        <div className="fixed inset-0 bottom-28 z-40 flex flex-col items-center justify-center overflow-hidden rounded-t-[32px] border-t border-white/10 bg-black/95 p-6 shadow-2xl backdrop-blur-3xl transition-all duration-500 sm:p-10">
+          {/* Dynamic Ambient Background Glow */}
+          <Artwork
+            src={currentTrack.image}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover opacity-20 blur-3xl transition-all duration-1000"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black" />
+
+          {/* Top Close Button */}
           <button 
             onClick={() => setShowLyrics(false)}
-            className="absolute top-6 right-6 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer"
+            className="absolute top-6 right-6 z-50 flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-bold text-white/70 shadow-lg backdrop-blur-md transition-all hover:border-white/20 hover:bg-white/20 hover:text-white cursor-pointer"
           >
             <X className="w-4 h-4" /> Đóng Karaoke
           </button>
           
           {lyrics.length > 0 ? (
-            <div className="grid w-full max-w-6xl grid-cols-1 items-start gap-10 px-4 text-left lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-20">
-              <div className="hidden self-start lg:block">
-                <Artwork src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-3xl object-cover shadow-[0_0_90px_rgba(217,140,255,0.35)]" />
-                <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
-                <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
+            <div className="relative z-10 grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 text-left lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-16">
+              {/* Left Column: Album Art & Info */}
+              <div className="hidden self-center lg:block">
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-purple-600 to-indigo-600 opacity-30 blur-2xl transition duration-1000 group-hover:opacity-50" />
+                  <Artwork
+                    src={currentTrack.image}
+                    alt={currentTrack.title}
+                    className="relative aspect-square w-full rounded-3xl object-cover shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/15"
+                  />
+                </div>
+                <div className="mt-6">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-purple-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
+                    Synced Lyrics
+                  </span>
+                  <h2 className="mt-3 truncate text-2xl font-black tracking-tight text-white">{currentTrack.title}</h2>
+                  <p className="mt-1 truncate text-base font-medium text-white/60">{artistName}</p>
+                </div>
               </div>
-              <div className="max-h-[68vh] space-y-6 overflow-y-auto px-2 pb-8 text-center scrollbar-none sm:space-y-8 lg:text-left">
-                {lyrics.map((line, index) => {
-                  const isPassed = currentTime >= line.time;
-                  const isCurrent = isPassed && (index === lyrics.length - 1 || currentTime < lyrics[index + 1].time);
 
-                  return (
-                    <h2
-                      key={index}
-                      ref={isCurrent ? activeLyricRef : null}
-                      className={`text-2xl font-extrabold transition-all duration-300 sm:text-4xl ${
-                        isCurrent
-                          ? "scale-[1.03] text-white drop-shadow-[0_0_25px_rgba(99,102,241,0.8)]"
-                          : isPassed
-                          ? "text-white/40"
-                          : "text-white/15"
-                      }`}
-                    >
-                      {line.text}
-                    </h2>
-                  );
-                })}
-              </div>
-            </div>
-          ) : plainLyrics ? (
-            <div className="grid w-full max-w-6xl grid-cols-1 items-start gap-10 px-4 text-left lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-20">
-              <div className="hidden self-start lg:block">
-                <Artwork src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-3xl object-cover shadow-[0_0_90px_rgba(217,140,255,0.35)]" />
-                <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
-                <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
-              </div>
-              <div className="max-h-[68vh] overflow-y-auto px-2 pb-8 text-center scrollbar-none lg:text-left">
-                <p className="mb-8 text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-200/70">Lyrics</p>
-                <div className="whitespace-pre-line text-2xl font-bold leading-[1.8] text-white/85 sm:text-4xl sm:leading-[1.7]">{plainLyrics}</div>
-                <p className="mt-10 text-xs text-white/35">Lyrics are not synced to playback</p>
+              {/* Right Column: Scrollable Synced Lyric Lines with Smooth Fade Mask */}
+              <div className="relative max-h-[68vh] overflow-y-auto px-4 py-16 text-left scrollbar-none [mask-image:linear-gradient(to_bottom,transparent_0%,black_15%,black_85%,transparent_100%)]">
+                <div className="space-y-6 sm:space-y-7">
+                  {lyrics.map((line, index) => {
+                    const isCurrent = index === activeIndex;
+                    const isPassed = index < activeIndex;
+
+                    return (
+                      <div
+                        key={index}
+                        ref={isCurrent ? activeLyricRef : null}
+                        onClick={() => handleLyricClick(line.time)}
+                        className={`cursor-pointer select-none transition-all duration-300 py-1 ${
+                          isCurrent
+                            ? "opacity-100 text-white"
+                            : isPassed
+                            ? "opacity-35 text-white hover:opacity-75 hover:translate-x-1"
+                            : "opacity-20 text-white hover:opacity-65 hover:translate-x-1"
+                        }`}
+                      >
+                        <h2
+                          className={`text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-[34px] transition-colors duration-300 ${
+                            isCurrent
+                              ? "font-extrabold text-white drop-shadow-[0_2px_20px_rgba(255,255,255,0.45)]"
+                              : ""
+                          }`}
+                        >
+                          {line.text}
+                        </h2>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           ) : (
