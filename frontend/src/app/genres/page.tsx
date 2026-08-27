@@ -1,5 +1,5 @@
-import CatalogSurface from "@/components/CatalogSurface";
+import GenresClientPage from "./GenresClientPage";
 
 export default function GenresPage() {
-  return <CatalogSurface kind="genres" />;
+  return <GenresClientPage />;
 }

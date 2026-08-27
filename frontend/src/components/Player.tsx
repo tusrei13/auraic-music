@@ -721,7 +721,7 @@ export default function Player() {
           {/* LEFT: Track Info */}
           <div className="relative z-10 mb-2 flex min-w-0 w-full items-center gap-3 md:mb-0 md:w-1/3">
             <motion.div
-              className={`h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-auraic-border-strong shadow-[0_0_24px_rgba(192,100,255,0.28)] transition-all duration-500 ${isPlaying ? 'scale-[1.03]' : ''}`}
+              className={`h-14 w-14 shrink-0 overflow-hidden rounded-full border border-auraic-border-strong shadow-[0_0_24px_rgba(192,100,255,0.28)] transition-all duration-500 ${isPlaying ? 'scale-[1.03]' : ''}`}
               animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
               transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
             >
