@@ -4,21 +4,22 @@ import Artwork from "@/components/Artwork";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { 
-  Play, 
-  Pause, 
-  SkipBack, 
-  SkipForward, 
-  Volume2, 
-  VolumeX, 
-  Shuffle, 
-  Repeat, 
-  Repeat1, 
-  Mic2, 
-  Music, 
-  X, 
-  Heart, 
-  ListMusic 
+import { motion } from "framer-motion";
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  Shuffle,
+  Repeat,
+  Repeat1,
+  Mic2,
+  Music,
+  X,
+  Heart,
+  ListMusic,
 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -31,16 +32,39 @@ import Hls from "hls.js";
 import { recordAnalyticsEvent, recordJamendoListening, resolveMediaUrl } from "@/lib/api";
 import { getLyrics } from "@/lib/api";
 
+const containerVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring" as const, damping: 24, stiffness: 180, mass: 0.8 },
+  },
+  exit: { opacity: 0, y: 10, scale: 0.98, transition: { duration: 0.2 } },
+};
+
+const pulseGlow = {
+  initial: { boxShadow: "0 0 20px rgba(168, 85, 247, 0.15)" },
+  animate: {
+    boxShadow: [
+      "0 0 20px rgba(168, 85, 247, 0.15)",
+      "0 0 40px rgba(168, 85, 247, 0.35)",
+      "0 0 20px rgba(168, 85, 247, 0.15)",
+    ],
+    transition: { duration: 3, repeat: Infinity, ease: "easeInOut" as const },
+  },
+};
+
 export default function Player() {
   const pathname = usePathname();
 
-  const { 
-    currentTrack, 
+  const {
+    currentTrack,
     isPlaying,
     togglePlay,
-    nextTrack, 
-    prevTrack, 
-    toggleLike, 
+    nextTrack,
+    prevTrack,
+    toggleLike,
     likedIds,
     isShuffle,
     repeatMode,
@@ -51,7 +75,7 @@ export default function Player() {
     setPlaybackStatus,
     recordListening,
   } = usePlayerStore();
-  
+
   const [volume, setVolume] = useState(0.7);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -62,7 +86,7 @@ export default function Player() {
   const [showQueue, setShowQueue] = useState(false);
   const [fetchedLyrics, setFetchedLyrics] = useState<string | LyricLine[] | null>(null);
   const [fetchedPlainLyrics, setFetchedPlainLyrics] = useState<string | null>(null);
-  
+
   const audioRef = useRef<HTMLAudioElement>(null);
   const activeLyricRef = useRef<HTMLDivElement>(null);
   const recordedTrackIdRef = useRef<string | number | null>(null);
@@ -78,20 +102,17 @@ export default function Player() {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
-  // Tự động đóng Queue và Karaoke khi chuyển trang
   useEffect(() => {
     setShowQueue(false);
     setShowLyrics(false);
   }, [pathname]);
 
-  // So sánh ID an toàn
-  const liked = currentTrack 
-    ? likedIds.some((id) => String(id) === String(currentTrack.id)) 
+  const liked = currentTrack
+    ? likedIds.some((id) => String(id) === String(currentTrack.id))
     : false;
 
-  // Lấy tên ca sĩ an toàn
-  const artistName = typeof currentTrack?.artist === "object" 
-    ? (currentTrack?.artist as { name: string })?.name 
+  const artistName = typeof currentTrack?.artist === "object"
+    ? (currentTrack?.artist as { name: string })?.name
     : (currentTrack?.artist || "Ca sĩ chưa xác định");
 
   const recordPlaybackEvent = useCallback((eventType: "TRACK_STARTED" | "TRACK_COMPLETED" | "TRACK_SKIPPED") => {
@@ -145,13 +166,6 @@ export default function Player() {
       active = false;
     };
   }, [currentTrack, artistName]);
-
-  // 1. Cập nhật âm lượng
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -215,13 +229,6 @@ export default function Player() {
     };
   }, [currentTrack, isHlsSource, mediaUrl, setPlaybackStatus]);
 
-  // 2. Đồng bộ Phát/Tạm dừng & Media Session API
-  useEffect(() => {
-    recordedTrackIdRef.current = null;
-    startedTrackIdRef.current = null;
-    completedTrackIdRef.current = null;
-  }, [currentTrack?.id]);
-
   useEffect(() => {
     if (currentTrack && audioRef.current) {
       setPlaybackStatus("loading");
@@ -251,7 +258,6 @@ export default function Player() {
     }
   }, [currentTrack, isPlaying, isHlsSource, artistName, togglePlay, handleSkip, setPlaybackStatus]);
 
-  // 3. Phím tắt Bàn phím
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
@@ -273,7 +279,6 @@ export default function Player() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [togglePlay]);
 
-  // Bù độ trễ thời gian (OFFSET) giữa bản phát Jamendo và timestamps
   const LYRIC_OFFSET = 0.5;
   const lyricsSource = fetchedLyrics || fetchedPlainLyrics;
   const lyrics = normalizeLyrics(lyricsSource, duration || 200);
@@ -287,7 +292,6 @@ export default function Player() {
     }
   }
 
-  // 4. Auto-scroll cho Karaoke Lyrics (chỉ cuộn êm ái khi hát xong câu và chuyển câu mới)
   useEffect(() => {
     if (showLyrics && activeLyricRef.current) {
       activeLyricRef.current.scrollIntoView({
@@ -297,7 +301,6 @@ export default function Player() {
     }
   }, [activeIndex, showLyrics]);
 
-  // Cập nhật currentTime liên tục 60 FPS bằng requestAnimationFrame khi phát nhạc
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -343,7 +346,7 @@ export default function Player() {
     if (isNaN(time)) return "0:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const handleTimeUpdate = () => {
@@ -424,21 +427,18 @@ export default function Player() {
     const trackIdStr = String(currentTrack.id);
     const rawId = trackIdStr.replace(/^jamendo:/, "");
 
-    // 1. Thử URL dự phòng của Jamendo nếu chưa thử
     if (isJamendoTrackId(currentTrack.id) && fallbackTriedRef.current !== currentTrack.id) {
       fallbackTriedRef.current = currentTrack.id;
       const fallbackUrl = `https://mp3d.jamendo.com/download/track/${rawId}/mp32/`;
       audio.src = fallbackUrl;
       audio.load();
       audio.play().catch(() => {
-        // Nếu fallback vẫn lỗi, chuyển sang bài tiếp theo
         setPlaybackStatus("error", "Bài hát không khả dụng, đang chuyển tiếp...");
         setTimeout(() => nextTrack(), 1200);
       });
       return;
     }
 
-    // 2. Nếu không phải Jamendo hoặc đã thử fallback mà vẫn lỗi: Tự động chuyển bài kế tiếp
     setPlaybackStatus("error", "Bài hát không khả dụng, đang chuyển bài...");
     setTimeout(() => {
       nextTrack();
@@ -497,25 +497,38 @@ export default function Player() {
 
   if (!currentTrack) {
     return (
-      <div className="px-4 pb-4 w-full">
-        <div className="h-20 bg-white/5 backdrop-blur-2xl border border-white/10 flex items-center justify-center px-6 w-full rounded-3xl border-dashed shadow-lg z-50 relative">
-          <p className="text-white/40 text-sm flex items-center gap-2">
-            <Music className="w-4 h-4 animate-pulse"/> Vui lòng chọn một bài hát để bắt đầu
+      <motion.div
+        className="px-4 pb-4 w-full"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="glass-panel-strong flex h-20 items-center justify-center px-6 w-full rounded-[28px] border-dashed z-50 relative overflow-hidden">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-fuchsia-500/10 via-cyan-500/5 to-fuchsia-500/10"
+            animate={{ x: ["-100%", "100%"] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          />
+          <p className="text-auraic-text-muted text-sm flex items-center gap-2 relative z-10">
+            <Music className="w-4 h-4 animate-pulse text-fuchsia-400" /> Vui lòng chọn một bài hát để bắt đầu
           </p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
     <>
-      {/* HÀNG CHỜ PHÁT NHẠC */}
       <QueuePanel isOpen={showQueue} onClose={() => setShowQueue(false)} />
 
-      {/* KARAOKE OVERLAY */}
       {showLyrics && (
-        <div className="fixed inset-0 bottom-28 z-40 flex flex-col items-center justify-center overflow-hidden rounded-t-[32px] border-t border-white/10 bg-black/95 p-6 shadow-2xl backdrop-blur-3xl transition-all duration-500 sm:p-10">
-          {/* Dynamic Ambient Background Glow */}
+        <motion.div
+          className="fixed inset-0 bottom-28 z-40 flex flex-col items-center justify-center overflow-hidden rounded-t-[32px] border-t border-auraic-border bg-[#080810]/95 p-6 shadow-2xl backdrop-blur-3xl transition-all duration-500 sm:p-10"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 40 }}
+          transition={{ type: "spring", damping: 24, stiffness: 180 }}
+        >
           <Artwork
             src={currentTrack.image}
             alt=""
@@ -524,24 +537,28 @@ export default function Player() {
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black" />
 
-          {/* Top Close Button */}
-          <button 
+          <motion.button
             onClick={() => setShowLyrics(false)}
-            className="absolute top-6 right-6 z-50 flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-bold text-white/70 shadow-lg backdrop-blur-md transition-all hover:border-white/20 hover:bg-white/20 hover:text-white cursor-pointer"
+            className="absolute top-6 right-6 z-50 flex items-center gap-2 rounded-full border border-auraic-border bg-white/10 px-4 py-2 text-xs font-bold text-white/70 shadow-lg backdrop-blur-md transition-all hover:border-auraic-border-strong hover:bg-white/20 hover:text-white cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <X className="w-4 h-4" /> Đóng Karaoke
-          </button>
-          
+          </motion.button>
+
           {lyrics.length > 0 ? (
             <div className="relative z-10 grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 text-left lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-16">
-              {/* Left Column: Album Art & Info */}
               <div className="hidden self-center lg:block">
                 <div className="relative group">
-                  <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-purple-600 to-indigo-600 opacity-30 blur-2xl transition duration-1000 group-hover:opacity-50" />
+                  <motion.div
+                    className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-purple-600 to-indigo-600 opacity-30 blur-2xl"
+                    animate={{ opacity: [0.3, 0.5, 0.3] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  />
                   <Artwork
                     src={currentTrack.image}
                     alt={currentTrack.title}
-                    className="relative aspect-square w-full rounded-3xl object-cover shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/15"
+                    className="relative aspect-square w-full rounded-3xl object-cover shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-auraic-border"
                   />
                 </div>
                 <div className="mt-6">
@@ -550,7 +567,6 @@ export default function Player() {
                 </div>
               </div>
 
-              {/* Right Column: Scrollable Synced Lyric Lines with Smooth Fade Mask */}
               <div className="relative max-h-[68vh] overflow-y-auto px-4 py-16 text-left scrollbar-none [mask-image:linear-gradient(to_bottom,transparent_0%,black_15%,black_85%,transparent_100%)]">
                 <div className="space-y-6 sm:space-y-7">
                   {lyrics.map((line, index) => {
@@ -558,7 +574,7 @@ export default function Player() {
                     const isPassed = index < activeIndex;
 
                     return (
-                      <div
+                      <motion.div
                         key={index}
                         ref={isCurrent ? activeLyricRef : null}
                         onClick={() => handleLyricClick(line.time)}
@@ -569,6 +585,7 @@ export default function Player() {
                             ? "opacity-35 text-white hover:opacity-75 hover:translate-x-1"
                             : "opacity-20 text-white hover:opacity-65 hover:translate-x-1"
                         }`}
+                        whileHover={{ x: 4 }}
                       >
                         <h2
                           className={`text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-[34px] transition-colors duration-300 ${
@@ -579,40 +596,84 @@ export default function Player() {
                         >
                           {line.text}
                         </h2>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="relative flex h-[min(78vh,720px)] w-full max-w-[1400px] items-center justify-center overflow-hidden rounded-[32px] border border-white/15 bg-[#080810] p-7 shadow-[0_0_120px_rgba(168,85,247,0.3)] sm:p-12">
+            <div className="relative flex h-[min(78vh,720px)] w-full max-w-[1400px] items-center justify-center overflow-hidden rounded-[32px] border border-auraic-border bg-[#080810] p-7 shadow-[0_0_120px_rgba(168,85,247,0.3)] sm:p-12">
               <Artwork src={currentTrack.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-3xl" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.22),transparent_42%),linear-gradient(180deg,rgba(5,5,12,0.35),rgba(5,5,12,0.96))]" />
               <div className="relative grid w-full max-w-[1240px] grid-cols-1 items-center gap-10 lg:grid-cols-[280px_minmax(320px,1fr)_300px] lg:gap-16">
                 <div className="hidden self-start lg:block">
-                  <Artwork src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-2xl object-cover shadow-[0_0_55px_rgba(217,140,255,0.28)]" />
+                  <motion.div
+                    className="relative group"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <motion.div
+                      className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-fuchsia-600 to-indigo-600 opacity-30 blur-2xl"
+                      animate={{ opacity: [0.3, 0.5, 0.3] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                    <Artwork src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-2xl object-cover shadow-[0_0_55px_rgba(217,140,255,0.28)]" />
+                  </motion.div>
                   <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
                   <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
                   <div className="mt-5 flex gap-2 text-white/50">
-                    <button type="button" onClick={() => toggleLike(currentTrack)} aria-label={liked ? "Bỏ thích" : "Yêu thích"} className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] transition hover:border-fuchsia-300/50 hover:text-fuchsia-200"><Heart className={`h-4 w-4 ${liked ? "fill-pink-400 text-pink-400" : ""}`} /></button>
+                    <motion.button type="button" onClick={() => toggleLike(currentTrack)} aria-label={liked ? "Bỏ thích" : "Yêu thích"} className="flex h-10 w-10 items-center justify-center rounded-xl border border-auraic-border bg-white/[0.04] transition hover:border-fuchsia-300/50 hover:text-fuchsia-200" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                      <Heart className={`h-4 w-4 ${liked ? "fill-pink-400 text-pink-400" : ""}`} />
+                    </motion.button>
                     <TrackActionMenu track={currentTrack} placement="up" />
                   </div>
                 </div>
                 <div className="relative flex flex-col items-center text-center">
                   <p className="mb-7 text-[10px] font-bold uppercase tracking-[0.28em] text-fuchsia-200/75">Instrumental atmosphere</p>
                   <div className="relative aspect-square w-[min(58vw,300px)]">
-                  <div className="absolute inset-[-12%] rounded-full bg-fuchsia-500/25 blur-3xl" />
-                  <div className="absolute inset-0 rounded-full border border-white/20 bg-[radial-gradient(circle_at_35%_25%,#34304f_0,#11111d_42%,#030308_72%)] shadow-[0_0_60px_rgba(217,140,255,0.45)]" />
-                  <Artwork src={currentTrack.image} alt={currentTrack.title} className={`absolute inset-[8%] h-[84%] w-[84%] rounded-full object-cover ${isPlaying ? "animate-[spin_12s_linear_infinite]" : ""}`} />
-                  <div className="absolute inset-[43%] rounded-full border-4 border-[#11111d] bg-gradient-to-br from-fuchsia-300 to-cyan-300 shadow-[0_0_18px_rgba(217,140,255,0.8)]" />
+                    <motion.div
+                      className="absolute inset-[-12%] rounded-full bg-fuchsia-500/25 blur-3xl"
+                      animate={{ scale: [1, 1.1, 1], opacity: [0.25, 0.4, 0.25] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                    <motion.div
+                      className="absolute inset-0 rounded-full border border-white/20 bg-[radial-gradient(circle_at_35%_25%,#34304f_0,#11111d_42%,#030308_72%)] shadow-[0_0_60px_rgba(217,140,255,0.45)]"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    />
+                    <motion.div
+                      className="absolute inset-[8%] h-[84%] w-[84%] rounded-full object-cover"
+                      animate={{ rotate: isPlaying ? 360 : 0 }}
+                      transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                    >
+                      <Artwork src={currentTrack.image} alt={currentTrack.title} className="h-full w-full rounded-full object-cover" />
+                    </motion.div>
+                    <motion.div
+                      className="absolute inset-[43%] rounded-full border-4 border-[#11111d] bg-gradient-to-br from-fuchsia-300 to-cyan-300 shadow-[0_0_18px_rgba(217,140,255,0.8)]"
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    />
                   </div>
                   <div className="mt-9 flex h-20 items-center gap-1.5" aria-label="Audio visualizer">
-                  {[24, 44, 68, 36, 58, 76, 46, 64, 32, 54, 72, 40, 60, 28].map((height, index) => <span key={index} className="w-1.5 rounded-full bg-gradient-to-t from-cyan-300 to-fuchsia-400 shadow-[0_0_12px_rgba(217,140,255,0.7)]" style={{ height: `${height}%`, animation: isPlaying ? `pulse ${0.7 + (index % 4) * 0.12}s ease-in-out infinite alternate` : undefined }} />)}
+                    {[24, 44, 68, 36, 58, 76, 46, 64, 32, 54, 72, 40, 60, 28].map((height, index) => (
+                      <motion.span
+                        key={index}
+                        className="w-1.5 rounded-full bg-gradient-to-t from-cyan-300 to-fuchsia-400 shadow-[0_0_12px_rgba(217,140,255,0.7)]"
+                        style={{ height: `${height}%` }}
+                        animate={isPlaying ? { scaleY: [0.4, 1, 0.6, 1, 0.8] } : { scaleY: 0.3 }}
+                        transition={
+                          isPlaying
+                            ? { duration: 0.7 + (index % 4) * 0.12, repeat: Infinity, ease: "easeInOut", delay: index * 0.05 }
+                            : { duration: 0.3 }
+                        }
+                      />
+                    ))}
                   </div>
                 </div>
                 <div className="text-center lg:text-left">
-                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 text-fuchsia-200 shadow-[0_0_30px_rgba(217,140,255,0.25)] lg:mx-0"><Music className="h-7 w-7" /></div>
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 text-fuchsia-200 shadow-[0_0_30px_rgba(217,140,255,0.25)] lg:mx-0">
+                    <Music className="h-7 w-7" />
+                  </div>
                   <h2 className="text-2xl font-bold leading-tight text-white sm:text-3xl">This track is instrumental</h2>
                   <p className="mt-4 text-base leading-7 text-white/55">No lyrics available for this song.<br />Feel the vibe and let the music speak for itself.</p>
                 </div>
@@ -624,17 +685,26 @@ export default function Player() {
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
-      {/* PLAYER CONTAINER CHÍNH */}
-      <div className="relative z-50 w-full px-3 pb-3 sm:px-4 sm:pb-4">
-        <div className="relative flex min-h-28 w-full flex-col items-center justify-between overflow-visible rounded-[24px] border border-white/20 bg-[#11101d]/80 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,0.65)] backdrop-blur-2xl md:min-h-24 md:flex-row md:px-6 md:py-2">
-          
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-fuchsia-500/10 via-transparent to-cyan-400/10 opacity-80 mix-blend-screen"></div>
+      <motion.div
+        className="relative z-50 w-full px-3 pb-3 sm:px-4 sm:pb-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+      >
+        <motion.div
+          className="relative flex min-h-28 w-full flex-col items-center justify-between overflow-visible rounded-[28px] border border-auraic-border bg-auraic-surface/80 px-4 py-3 backdrop-blur-2xl md:min-h-24 md:flex-row md:px-6 md:py-2"
+          {...pulseGlow}
+          animate={isPlaying ? "animate" : "initial"}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-fuchsia-500/10 via-transparent to-cyan-400/10 opacity-80 mix-blend-screen" />
 
-          <audio 
-            ref={audioRef} 
+          <audio
+            ref={audioRef}
             src={isHlsSource ? undefined : mediaUrl}
             preload="metadata"
             onTimeUpdate={handleTimeUpdate}
@@ -648,84 +718,100 @@ export default function Player() {
           />
           <AudioVisualizer audioRef={audioRef} isPlaying={isPlaying} />
 
-          {/* BÊN TRÁI: THÔNG TIN BÀI HÁT */}
+          {/* LEFT: Track Info */}
           <div className="relative z-10 mb-2 flex min-w-0 w-full items-center gap-3 md:mb-0 md:w-1/3">
-            <div className={`h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-white/25 shadow-[0_0_24px_rgba(192,100,255,0.28)] transition-all duration-500 ${isPlaying ? 'scale-[1.03]' : ''}`}>
+            <motion.div
+              className={`h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-auraic-border-strong shadow-[0_0_24px_rgba(192,100,255,0.28)] transition-all duration-500 ${isPlaying ? 'scale-[1.03]' : ''}`}
+              animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
+              transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+            >
               <Artwork src={currentTrack.image} alt={currentTrack.title} className="w-full h-full object-cover" />
-            </div>
+            </motion.div>
             <div className="min-w-0 max-w-[min(48vw,260px)] flex-none truncate pr-1 sm:max-w-[220px]">
               <h4 className="text-sm font-bold text-white tracking-wide drop-shadow-md truncate">{currentTrack.title}</h4>
               <p className="text-xs text-white/50 mt-0.5 truncate">{artistName}</p>
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
-              <button
+              <motion.button
                 onClick={() => toggleLike(currentTrack)}
                 className="text-white/40 hover:text-pink-500 transition-colors p-1.5 hover:bg-white/5 rounded-lg cursor-pointer"
                 title={liked ? "Bỏ thích" : "Yêu thích"}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
               >
-                <Heart className={`w-5 h-5 transition-transform hover:scale-110 ${liked ? "fill-pink-500 text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" : ""}`} />
-              </button>
+                <Heart className={`w-5 h-5 transition-transform ${liked ? "fill-pink-500 text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" : ""}`} />
+              </motion.button>
 
               <TrackActionMenu track={currentTrack} placement="up" />
             </div>
           </div>
 
-          {/* Ở GIỮA: NÚT ĐIỀU KHIỂN & THANH TIẾN TRÌNH */}
+          {/* CENTER: Controls & Waveform */}
           <div className="relative z-10 flex w-full max-w-[430px] flex-col items-center">
             <div className="mb-1 flex items-center gap-7">
-              <button 
-                onClick={toggleShuffle} 
+              <motion.button
+                onClick={toggleShuffle}
                 className={`transition-all p-1 cursor-pointer ${isShuffle ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'text-white/40 hover:text-white'}`}
                 title={isShuffle ? "Tắt trộn bài" : "Bật trộn bài"}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
               >
                 <Shuffle className="w-4 h-4" />
-              </button>
-              
-              <button onClick={() => handleSkip("previous")} className="text-white/60 hover:text-white transition-all cursor-pointer">
-                <SkipBack className="w-5 h-5 fill-current" />
-              </button>
-              
-              <button onClick={togglePlay} aria-label={isPlaying ? "Tạm dừng" : "Phát"} className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-white to-fuchsia-100 shadow-[0_0_26px_rgba(217,140,255,0.55)] transition-transform hover:scale-105">
-                {isPlaying ? <Pause className="w-5 h-5 fill-black text-black" /> : <Play className="w-5 h-5 fill-black text-black ml-0.5" />}
-              </button>
-              
-              <button onClick={() => handleSkip("next")} className="text-white/60 hover:text-white transition-all cursor-pointer">
-                <SkipForward className="w-5 h-5 fill-current" />
-              </button>
+              </motion.button>
 
-              <button 
-                onClick={toggleRepeat} 
+              <motion.button onClick={() => handleSkip("previous")} className="text-white/60 hover:text-white transition-all cursor-pointer" whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
+                <SkipBack className="w-5 h-5 fill-current" />
+              </motion.button>
+
+              <motion.button
+                onClick={togglePlay}
+                aria-label={isPlaying ? "Tạm dừng" : "Phát"}
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-white to-fuchsia-100 shadow-[0_0_26px_rgba(217,140,255,0.55)] transition-transform"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.85 }}
+              >
+                {isPlaying ? <Pause className="w-5 h-5 fill-black text-black" /> : <Play className="w-5 h-5 fill-black text-black ml-0.5" />}
+              </motion.button>
+
+              <motion.button onClick={() => handleSkip("next")} className="text-white/60 hover:text-white transition-all cursor-pointer" whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
+                <SkipForward className="w-5 h-5 fill-current" />
+              </motion.button>
+
+              <motion.button
+                onClick={toggleRepeat}
                 className={`transition-all p-1 cursor-pointer ${repeatMode !== 'off' ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'text-white/40 hover:text-white'}`}
                 title={repeatMode === "off" ? "Bật lặp lại tất cả" : repeatMode === "all" ? "Bật lặp lại 1 bài" : "Tắt lặp lại"}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
               >
                 {repeatMode === "one" ? <Repeat1 className="w-4 h-4" /> : <Repeat className="w-4 h-4" />}
-              </button>
+              </motion.button>
             </div>
-            
+
             <div className="flex items-center gap-3 w-full text-[10px] font-medium text-white/50">
               <span>{formatTime(displayTime)}</span>
               <div className="flex-1 relative flex items-center group py-2">
-                <input 
-                  type="range" 
-                  min="0" 
-                  max={duration || 100} 
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 100}
                   step="0.1"
-                  value={displayTime} 
+                  value={displayTime}
                   onInput={handleSeekInput}
                   onChange={handleSeekChange}
                   className="absolute w-full h-2 opacity-0 z-20 cursor-pointer"
                 />
                 <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
-                  <div 
+                  <motion.div
                     className="relative h-full rounded-full bg-gradient-to-r from-cyan-300 via-violet-400 to-fuchsia-400"
                     style={{ width: `${progressPercent}%` }}
-                  ></div>
+                  />
                 </div>
-                <div 
+                <motion.div
                   className="w-3.5 h-3.5 bg-white rounded-full absolute top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-[0_0_10px_rgba(255,255,255,0.8)] ring-2 ring-white/30"
                   style={{ left: `${progressPercent}%` }}
-                ></div>
+                />
               </div>
               <span>{formatTime(duration)}</span>
             </div>
@@ -734,50 +820,54 @@ export default function Player() {
             ) : null}
           </div>
 
-          {/* BÊN PHẢI: PHÍM TẮT & ÂM LƯỢNG */}
+          {/* RIGHT: Shortcuts & Volume */}
           <div className="relative z-10 hidden w-1/3 items-center justify-end gap-3 text-white/50 md:flex">
-            <button 
-              onClick={() => setShowLyrics(!showLyrics)} 
+            <motion.button
+              onClick={() => setShowLyrics(!showLyrics)}
               className={`transition-all p-2 rounded-full cursor-pointer ${showLyrics ? 'text-indigo-400 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'hover:text-white'}`}
               title="Bật/Tắt Lời bài hát"
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
             >
               <Mic2 className="w-4 h-4" />
-            </button>
+            </motion.button>
 
-            <button 
-              onClick={() => setShowQueue(!showQueue)} 
+            <motion.button
+              onClick={() => setShowQueue(!showQueue)}
               className={`transition-all p-2 rounded-full cursor-pointer ${showQueue ? 'text-indigo-400 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'hover:text-white'}`}
               title="Hàng chờ phát nhạc"
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
             >
               <ListMusic className="w-4 h-4" />
-            </button>
+            </motion.button>
 
             <div className="flex items-center gap-2 group">
-              <button onClick={() => setVolume(volume === 0 ? 0.7 : 0)} className="cursor-pointer">
+              <motion.button onClick={() => setVolume(volume === 0 ? 0.7 : 0)} className="cursor-pointer" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 {volume === 0 ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 hover:text-white transition-all" />}
-              </button>
+              </motion.button>
               <div className="w-20 relative flex items-center py-2">
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1" 
-                  step="0.01" 
-                  value={volume} 
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={volume}
                   onChange={handleVolumeChange}
                   className="absolute w-full h-1 opacity-0 z-10 cursor-pointer"
                 />
                 <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
-                  <div 
+                  <motion.div
                     className="h-full bg-white/80 rounded-full transition-all"
                     style={{ width: `${volume * 100}%` }}
-                  ></div>
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </>
   );
 }
