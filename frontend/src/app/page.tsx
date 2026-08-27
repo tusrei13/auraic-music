@@ -1,8 +1,7 @@
 "use client";
 
-import Artwork from "@/components/Artwork";
-
-import { useEffect, useRef, useState } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Play, Sparkles, Heart, Loader2, ArrowUpRight, Waves, Disc3, Dumbbell, PartyPopper, CloudRain, Sun } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
@@ -10,6 +9,30 @@ import { getJamendoTracks, getListeningHistory } from "@/lib/api";
 import { rankRecommendations } from "@/lib/recommendations";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import { useAuthStore } from "@/store/useAuthStore";
+import TrackRow from "@/components/TrackRow";
+import Artwork from "@/components/Artwork";
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.1 } as const,
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 24, scale: 0.97 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, damping: 22, stiffness: 160 } },
+};
+
+const bentoVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  show: (i: number) => ({
+    opacity: 1,
+    scale: 1,
+    transition: { delay: i * 0.08, type: "spring" as const, damping: 22, stiffness: 160 },
+  }),
+};
 
 export default function HomePage() {
   const { playMix, playTrack, toggleLike, likedIds, currentTrack, isPlaying } = usePlayerStore();
@@ -22,16 +45,30 @@ export default function HomePage() {
   const [vibeLoading, setVibeLoading] = useState<string | null>(null);
   const [listenedIds, setListenedIds] = useState<Array<string | number>>([]);
   const authStatus = useAuthStore((state) => state.status);
+  const { scrollY } = useScroll();
+  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0.3]);
+  const heroScale = useTransform(scrollY, [0, 300], [1, 0.97]);
+
+  const [retryCount, setRetryCount] = useState(0);
+
+  const loadCatalog = useCallback(async (attempt = 0) => {
+    setLoading(true);
+    setCatalogError(null);
+    try {
+      const data = await getJamendoTracks({ limit: 12 });
+      setSongs(data);
+    } catch (error) {
+      setSongs([]);
+      setCatalogError((error as Error)?.message || "Không thể tải catalog Jamendo lúc này.");
+    } finally {
+      setLoading(false);
+      setRetryCount(attempt);
+    }
+  }, []);
 
   useEffect(() => {
-    getJamendoTracks({ limit: 12 })
-      .then((data) => setSongs(data))
-      .catch(() => {
-        setSongs([]);
-        setCatalogError("Không thể tải catalog Jamendo lúc này.");
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    loadCatalog(0);
+  }, [loadCatalog]);
 
   useEffect(() => {
     if (authStatus !== "authenticated") {
@@ -68,14 +105,14 @@ export default function HomePage() {
   const featuredArtist = typeof featured?.artist === "object" ? featured.artist?.name : featured?.artist;
   const recommendedSongs = rankRecommendations(songs, likedIds, listenedIds, 5);
   const vibes = [
-    { label: "Focus", note: "Deep work", tags: "ambient classical piano", className: "from-cyan-500/30 to-blue-600/10", icon: Waves },
-    { label: "Chill", note: "Slow motion", tags: "chillout lofi lounge", className: "from-violet-500/35 to-fuchsia-500/10", icon: Sparkles },
-    { label: "Night drive", note: "After dark", tags: "electronic synthwave dance", className: "from-pink-500/30 to-rose-500/10", icon: Disc3 },
-    { label: "Dreamy", note: "Soft focus", tags: "ambient dreamy cinematic", className: "from-indigo-500/35 to-cyan-500/10", icon: Sparkles },
-    { label: "Workout", note: "Move with it", tags: "energetic rock hiphop", className: "from-orange-500/30 to-rose-500/10", icon: Dumbbell },
-    { label: "Party", note: "Raise the room", tags: "dance pop house", className: "from-yellow-500/25 to-pink-500/15", icon: PartyPopper },
-    { label: "Melancholy", note: "A softer place", tags: "acoustic piano sad", className: "from-sky-500/25 to-indigo-500/15", icon: CloudRain },
-    { label: "Morning", note: "Start gently", tags: "acoustic folk jazz", className: "from-amber-400/30 to-cyan-500/10", icon: Sun },
+    { label: "Focus", note: "Deep work", tags: "ambient classical piano", className: "from-cyan-500/30 to-blue-600/10", icon: Waves, accent: "#06B6D4" },
+    { label: "Chill", note: "Slow motion", tags: "chillout lofi lounge", className: "from-violet-500/35 to-fuchsia-500/10", icon: Sparkles, accent: "#A855F7" },
+    { label: "Night drive", note: "After dark", tags: "electronic synthwave dance", className: "from-pink-500/30 to-rose-500/10", icon: Disc3, accent: "#EC4899" },
+    { label: "Dreamy", note: "Soft focus", tags: "ambient dreamy cinematic", className: "from-indigo-500/35 to-cyan-500/10", icon: Sparkles, accent: "#6366F1" },
+    { label: "Workout", note: "Move with it", tags: "energetic rock hiphop", className: "from-orange-500/30 to-rose-500/10", icon: Dumbbell, accent: "#F97316" },
+    { label: "Party", note: "Raise the room", tags: "dance pop house", className: "from-yellow-500/25 to-pink-500/15", icon: PartyPopper, accent: "#EAB308" },
+    { label: "Melancholy", note: "A softer place", tags: "acoustic piano sad", className: "from-sky-500/25 to-indigo-500/15", icon: CloudRain, accent: "#0EA5E9" },
+    { label: "Morning", note: "Start gently", tags: "acoustic folk jazz", className: "from-amber-400/30 to-cyan-500/10", icon: Sun, accent: "#F59E0B" },
   ];
 
   const handleExplore = () => {
@@ -106,83 +143,217 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-full overflow-y-auto scrollbar-none px-5 pb-36 pt-3 text-white sm:px-8 lg:px-12">
-      <section className="relative isolate grid min-h-[470px] grid-cols-1 items-end overflow-hidden rounded-[28px] border border-white/15 bg-[#080817] p-6 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:p-14">
+    <motion.div className="min-h-full overflow-y-auto scrollbar-none px-5 pb-36 pt-3 text-white sm:px-8 lg:px-12" variants={container} initial="hidden" animate="show">
+      {catalogError && (
+        <motion.div className="mb-4 flex items-center justify-between rounded-2xl border border-rose-300/25 bg-rose-300/[0.08] px-5 py-3" variants={item} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center gap-3">
+            <span className="h-2 w-2 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(251,113,133,0.8)]" />
+            <p className="text-sm text-rose-100">{catalogError}</p>
+          </div>
+          <motion.button type="button" onClick={() => loadCatalog(retryCount + 1)} className="shrink-0 rounded-xl border border-rose-200/30 px-3 py-1.5 text-xs font-semibold text-rose-100 hover:bg-rose-200/10" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            Retry
+          </motion.button>
+        </motion.div>
+      )}
+      {/* HERO SECTION */}
+      <motion.section style={{ opacity: heroOpacity, scale: heroScale }} className="relative isolate grid min-h-[470px] grid-cols-1 items-end overflow-hidden rounded-[32px] border border-auraic-border bg-auraic-surface p-6 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:p-14">
         <div className="absolute -left-20 top-10 -z-10 h-72 w-72 rounded-full bg-fuchsia-600/25 blur-[110px]" />
         <div className="absolute right-10 top-0 -z-10 h-80 w-80 rounded-full bg-cyan-500/20 blur-[120px]" />
         <div className="relative z-10 pb-2 lg:pb-8">
-          <p className="mb-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300"><Sparkles className="h-4 w-4" /> The Auraic experience</p>
-          <h1 className="max-w-xl text-5xl font-black leading-[0.96] tracking-[-0.06em] sm:text-7xl">Feel the <span className="bg-gradient-to-r from-fuchsia-300 via-violet-400 to-cyan-300 bg-clip-text text-transparent">Aura.</span><br /><em className="font-semibold text-white/85">Live the music.</em></h1>
-          <p className="mt-6 max-w-sm text-sm leading-6 text-white/55">A living soundtrack for your late nights, clear mornings, and everything in between.</p>
-          <button onClick={handleExplore} disabled={songs.length === 0} className="mt-8 inline-flex min-h-12 items-center gap-3 rounded-full bg-white px-5 text-sm font-bold text-[#0b0a14] shadow-[0_0_35px_rgba(196,120,255,0.4)] transition hover:-translate-y-0.5 hover:bg-fuchsia-100 disabled:opacity-50"><Play className="h-4 w-4 fill-current" /> Explore Auraic <ArrowUpRight className="h-4 w-4" /></button>
+          <motion.p className="mb-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+            <Sparkles className="h-4 w-4" /> The Auraic experience
+          </motion.p>
+          <motion.h1 className="max-w-xl text-5xl font-black leading-[0.96] tracking-[-0.06em] sm:text-7xl" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, type: "spring", damping: 20, stiffness: 100 }}>
+            Feel the <span className="bg-gradient-to-r from-fuchsia-300 via-violet-400 to-cyan-300 bg-clip-text text-transparent">Aura.</span><br />
+            <em className="font-semibold text-white/85">Live the music.</em>
+          </motion.h1>
+          <motion.p className="mt-6 max-w-sm text-sm leading-6 text-white/55" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            A living soundtrack for your late nights, clear mornings, and everything in between.
+          </motion.p>
+          <motion.button
+            onClick={handleExplore}
+            disabled={songs.length === 0}
+            className="mt-8 inline-flex min-h-12 items-center gap-3 rounded-full bg-white px-5 text-sm font-bold text-[#0b0a14] shadow-[0_0_35px_rgba(196,120,255,0.4)] transition hover:-translate-y-0.5 hover:bg-fuchsia-100 disabled:opacity-50"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Play className="h-4 w-4 fill-current" /> Explore Auraic <ArrowUpRight className="h-4 w-4" />
+          </motion.button>
         </div>
         <div className="relative mx-auto mt-8 aspect-square w-full max-w-[370px] lg:mt-0 lg:max-w-[460px]">
-          <div className="absolute inset-[-12%] rounded-full bg-gradient-to-br from-fuchsia-500/35 via-violet-500/25 to-cyan-400/30 blur-3xl" />
-          <div className="absolute inset-[3%] rounded-full border border-white/15 shadow-[0_0_70px_rgba(191,112,255,0.55)]" />
-          <Artwork src={featured?.image || "https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=1200&auto=format&fit=crop"} alt={featured?.title || "Auraic atmospheric artwork"} className="relative h-full w-full rounded-[24%] object-cover shadow-2xl transition duration-700 hover:scale-[1.025]" />
-          <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur-xl"><div className="min-w-0"><p className="text-[10px] uppercase tracking-[0.2em] text-white/50">Featured now</p><p className="mt-1 truncate text-sm font-bold">{featured?.title || "A new frequency"}</p><p className="truncate text-xs text-white/50">{featuredArtist || "Auraic radio"}</p></div><button aria-label="Phát bài hát nổi bật" onClick={() => featured && playTrack(featured, songs)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-105"><Play className="h-4 w-4 fill-current" /></button></div>
+          <motion.div className="absolute inset-[-12%] rounded-full bg-gradient-to-br from-fuchsia-500/35 via-violet-500/25 to-cyan-400/30 blur-3xl" animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} />
+          <motion.div className="absolute inset-[3%] rounded-full border border-white/15 shadow-[0_0_70px_rgba(191,112,255,0.55)]" animate={{ scale: [1, 1.02, 1] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div
+            className="relative h-full w-full rounded-[24%] object-cover shadow-2xl transition duration-700"
+            whileHover={{ scale: 1.025 }}
+          >
+            <Artwork src={featured?.image || "https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=1200&auto=format&fit=crop"} alt={featured?.title || "Auraic atmospheric artwork"} className="h-full w-full rounded-[24%] object-cover shadow-2xl" />
+          </motion.div>
+          <motion.div className="absolute bottom-5 left-5 right-5 flex items-end justify-between rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur-xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">Featured now</p>
+              <p className="mt-1 truncate text-sm font-bold">{featured?.title || "A new frequency"}</p>
+              <p className="truncate text-xs text-white/50">{featuredArtist || "Auraic radio"}</p>
+            </div>
+            <motion.button aria-label="Phát bài hát nổi bật" onClick={() => featured && playTrack(featured, songs)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-105" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Play className="h-4 w-4 fill-current" />
+            </motion.button>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
-      <section ref={vibeSectionRef} className="mt-10 scroll-mt-6">
-        <div className="mb-4 flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300">Choose your atmosphere</p><h2 className="mt-2 text-2xl font-bold tracking-tight">What are you feeling?</h2></div><span className="hidden text-xs text-white/35 sm:block">Curated for this moment</span></div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{vibes.map((vibe) => { const Icon = vibe.icon; const isSelected = selectedVibe === vibe.label; const isLoading = vibeLoading === vibe.label; return <button key={vibe.label} type="button" aria-pressed={isSelected} disabled={vibeLoading !== null} onClick={() => void handleVibe(vibe)} className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_rgba(109,78,255,0.18)] disabled:cursor-wait disabled:opacity-80 ${vibe.className} ${isSelected ? "border-white/60 shadow-[0_0_28px_rgba(217,140,255,0.3)]" : "border-white/10"}`}><Icon className={`mb-8 h-5 w-5 text-white/80 transition group-hover:rotate-12 ${isLoading ? "animate-pulse" : ""}`} /><p className="font-bold">{isLoading ? "Tuning..." : vibe.label}</p><p className="mt-1 text-xs text-white/45">{isSelected && !isLoading ? "Now playing" : vibe.note}</p></button>; })}</div>
-      </section>
-
-      <section className="mt-12 space-y-4">
-        <div className="flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">On repeat</p><h2 className="mt-2 text-2xl font-bold tracking-tight">Trending now</h2></div><button type="button" onClick={() => router.push("/discover")} className="text-xs font-semibold text-white/45 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300">View all <ArrowUpRight className="ml-1 inline h-3.5 w-3.5" /></button></div>
-        {loading ? (
-          <div className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45"><Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning your atmosphere...</div>
-        ) : songs.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">{songs.slice(0, 5).map((song, index) => { const artist = typeof song.artist === "object" ? song.artist?.name : song.artist; const isCurrent = String(currentTrack?.id) === String(song.id); const liked = likedIds.some((id: any) => String(id) === String(song.id)); return <article key={song.id} className="group min-w-0"><button onClick={() => playTrack(song, songs, "Trending now")} className="relative block aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left"><Artwork src={song.image} alt={song.title} loading={index > 1 ? "lazy" : "eager"} className="h-full w-full object-cover transition duration-500 group-hover:scale-105 group-hover:opacity-70" /><span className="absolute bottom-3 right-3 flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-white text-black opacity-0 shadow-xl transition duration-300 group-hover:translate-y-0 group-hover:opacity-100"><Play className="h-4 w-4 fill-current" /></span>{isCurrent && isPlaying && <span className="absolute left-3 top-3 rounded-full bg-fuchsia-500 px-2 py-1 text-[9px] font-bold uppercase tracking-wider">Playing</span>}</button><div className="flex items-start justify-between gap-2 pt-3"><div className="min-w-0"><h3 className="truncate text-sm font-semibold group-hover:text-fuchsia-200">{song.title}</h3><p className="mt-1 truncate text-xs text-white/45">{artist}</p></div><div className="flex shrink-0 items-center gap-1"><button aria-label={liked ? "Bỏ thích" : "Yêu thích"} onClick={() => toggleLike(song)} className={`mt-0.5 ${liked ? "text-pink-400" : "text-white/25 hover:text-pink-300"}`}><Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} /></button><TrackActionMenu track={song} /></div></div></article>; })}</div>
-        ) : catalogError ? <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/[0.06] px-5 py-10 text-center text-sm text-rose-100"><p>{catalogError}</p><button type="button" onClick={() => window.location.reload()} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10">Thử lại</button></div> : <div className="border-b border-white/10 py-10 text-center text-sm text-white/40">Chưa có bài hát nào trong catalog Auraic.</div>}
-      </section>
-
-      <section className="mt-12 space-y-4">
-        <div className="flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.25em] text-violet-300">Based on your likes</p><h2 className="mt-2 text-2xl font-bold tracking-tight">For you</h2></div></div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-white/50 gap-2">
-            <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
-            <span>Đang tải bài hát từ API...</span>
+      {/* VIBE BENTO GRID */}
+      <motion.section ref={vibeSectionRef} className="mt-10 scroll-mt-6" variants={container} initial="hidden" animate="show">
+        <motion.div className="mb-4 flex items-end justify-between" variants={item}>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300">Choose your atmosphere</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight">What are you feeling?</h2>
           </div>
-        ) : recommendedSongs.length > 0 ? (
-          <div className="divide-y divide-white/10 border-y border-white/10">{recommendedSongs.map((song, index) => {
-                const liked = likedIds.some((id: any) => String(id) === String(song.id));
-                const isCurrent = String(currentTrack?.id) === String(song.id);
-                const artistName = typeof song.artist === "object" ? song.artist?.name : song.artist;
-                return (
-                  <div
-                    key={song.id}
-                    onClick={() => playTrack(song, recommendedSongs, "For you")}
-                    className={`group flex items-center gap-4 py-4 transition ${isCurrent ? "text-fuchsia-300" : "hover:text-fuchsia-200"}`}
-                  >
-                    <span className="w-6 text-xs text-white/25">{String(index + 1).padStart(2, "0")}</span><Artwork src={song.image} alt={song.title} className="h-12 w-12 shrink-0 rounded-xl object-cover" /><div onClick={() => playTrack(song, recommendedSongs, "For you")} className="min-w-0 flex-1 cursor-pointer"><h4 className="truncate text-sm font-semibold">{song.title}</h4><p className="mt-1 truncate text-xs text-white/40">{artistName}</p></div><div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleLike(song);
-                        }}
-                        className="text-white/40 hover:text-pink-500 transition-colors p-1.5 hover:bg-white/5 rounded-lg"
-                        title={liked ? "Bỏ thích" : "Yêu thích"}
-                      >
-                        <Heart className={`w-4 h-4 ${liked ? "fill-pink-500 text-pink-500" : ""}`} />
-                      </button>
+          <span className="hidden text-xs text-white/35 sm:block">Curated for this moment</span>
+        </motion.div>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {vibes.map((vibe, i) => {
+            const Icon = vibe.icon;
+            const isSelected = selectedVibe === vibe.label;
+            const isLoading = vibeLoading === vibe.label;
+            return (
+              <motion.button
+                key={vibe.label}
+                type="button"
+                aria-pressed={isSelected}
+                disabled={vibeLoading !== null}
+                onClick={() => void handleVibe(vibe)}
+                className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_rgba(109,78,255,0.18)] disabled:cursor-wait disabled:opacity-80 ${vibe.className}`}
+                variants={bentoVariants}
+                custom={i}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <motion.div
+                  className="absolute inset-0 bg-white/5 opacity-0 transition-opacity group-hover:opacity-100"
+                  initial={false}
+                  whileHover={{ opacity: 1 }}
+                />
+                <Icon className={`mb-8 h-5 w-5 text-white/80 transition group-hover:rotate-12 ${isLoading ? "animate-pulse" : ""}`} />
+                <p className="font-bold relative z-10">{isLoading ? "Tuning..." : vibe.label}</p>
+                <p className="mt-1 text-xs text-white/45 relative z-10">{isSelected && !isLoading ? "Now playing" : vibe.note}</p>
+                {isSelected && (
+                  <motion.div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-fuchsia-500 to-cyan-400" layoutId="vibe-indicator" transition={{ type: "spring", damping: 24, stiffness: 180 }} />
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      </motion.section>
 
+      {/* TRENDING BENTO GRID */}
+      <motion.section className="mt-12 space-y-4" variants={container} initial="hidden" animate="show">
+        <motion.div className="flex items-end justify-between" variants={item}>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">On repeat</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight">Trending now</h2>
+          </div>
+          <motion.button type="button" onClick={() => router.push("/discover")} className="text-xs font-semibold text-white/45 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300" whileHover={{ x: 4 }}>
+            View all <ArrowUpRight className="ml-1 inline h-3.5 w-3.5" />
+          </motion.button>
+        </motion.div>
+        {loading ? (
+          <motion.div className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45" variants={item}>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning your atmosphere...
+          </motion.div>
+        ) : songs.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {songs.slice(0, 5).map((song, index) => {
+              const artist = typeof song.artist === "object" ? song.artist?.name : song.artist;
+              const isCurrent = String(currentTrack?.id) === String(song.id);
+              const liked = likedIds.some((id: any) => String(id) === String(song.id));
+              return (
+                <motion.div key={song.id} variants={bentoVariants} custom={index}>
+                  <motion.button
+                    onClick={() => playTrack(song, songs, "Trending now")}
+                    className="relative block aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <Artwork src={song.image} alt={song.title} loading={index > 1 ? "lazy" : "eager"} className="h-full w-full object-cover transition duration-500 group-hover:scale-105 group-hover:opacity-70" />
+                    <span className="absolute bottom-3 right-3 flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-white text-black opacity-0 shadow-xl transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                      <Play className="h-4 w-4 fill-current" />
+                    </span>
+                    {isCurrent && isPlaying && (
+                      <span className="absolute left-3 top-3 rounded-full bg-fuchsia-500 px-2 py-1 text-[9px] font-bold uppercase tracking-wider">Playing</span>
+                    )}
+                  </motion.button>
+                  <div className="flex items-start justify-between gap-2 pt-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold group-hover:text-fuchsia-200">{song.title}</h3>
+                      <p className="mt-1 truncate text-xs text-white/45">{artist}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <motion.button aria-label={liked ? "Bỏ thích" : "Yêu thích"} onClick={() => toggleLike(song)} className={`mt-0.5 ${liked ? "text-pink-400" : "text-white/25 hover:text-pink-300"}`} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
+                        <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
+                      </motion.button>
                       <TrackActionMenu track={song} />
                     </div>
                   </div>
-                );
-              })}
+                </motion.div>
+              );
+            })}
           </div>
         ) : catalogError ? (
-          <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/[0.06] px-5 py-10 text-center text-sm text-rose-100"><p>{catalogError}</p><button type="button" onClick={() => window.location.reload()} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10">Thử lại</button></div>
+          <motion.div role="alert" className="rounded-2xl border border-rose-300/25 bg-rose-300/[0.08] px-5 py-10 text-center text-sm text-rose-100" variants={item}>
+            <p className="mb-2 font-semibold">Không thể tải bài hát lúc này</p>
+            <p className="text-xs text-rose-200/70">{catalogError}</p>
+            <motion.button type="button" onClick={() => loadCatalog(retryCount + 1)} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              Thử lại
+            </motion.button>
+          </motion.div>
         ) : (
-          <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl bg-white/[0.02]">
-            <p className="text-white/40 text-sm">Chưa có bài hát nào trong catalog Auraic.</p>
-          </div>
+          <motion.div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] py-12 text-center" variants={item}>
+            <p className="text-white/50 text-sm font-medium">Catalog đang trống</p>
+            <p className="mt-1 text-xs text-white/35">Hãy thử lại sau hoặc khám phá thể loại khác.</p>
+            <motion.button type="button" onClick={() => loadCatalog(retryCount + 1)} className="mt-4 min-h-11 rounded-xl border border-white/10 px-4 font-semibold text-white/70 hover:bg-white/5" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              Thử tải lại
+            </motion.button>
+          </motion.div>
         )}
-      </section>
-    </div>
-  );
-}
+      </motion.section>
+
+      {/* FOR YOU - Track Rows */}
+      <motion.section className="mt-12 space-y-4" variants={container} initial="hidden" animate="show">
+        <motion.div variants={item}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-violet-300">Based on your likes</p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight">For you</h2>
+        </motion.div>
+
+        {loading ? (
+          <motion.div className="flex items-center justify-center py-12 text-white/50 gap-2" variants={item}>
+            <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+            <span>Đang tải bài hát từ API...</span>
+          </motion.div>
+        ) : recommendedSongs.length > 0 ? (
+          <motion.div className="space-y-2" variants={container} initial="hidden" animate="show">
+            {recommendedSongs.map((song, index) => (
+              <TrackRow key={song.id} track={song} index={index} queue={recommendedSongs} contextTitle="For you" />
+            ))}
+          </motion.div>
+         ) : catalogError ? (
+           <motion.div role="alert" className="rounded-2xl border border-rose-300/25 bg-rose-300/[0.08] px-5 py-10 text-center text-sm text-rose-100" variants={item}>
+             <p className="mb-2 font-semibold">Không thể tải gợi ý lúc này</p>
+             <p className="text-xs text-rose-200/70">{catalogError}</p>
+             <motion.button type="button" onClick={() => loadCatalog(retryCount + 1)} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+               Thử lại
+             </motion.button>
+           </motion.div>
+         ) : (
+           <motion.div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] py-12 text-center" variants={item}>
+             <p className="text-white/50 text-sm font-medium">Chưa có gợi ý phù hợp</p>
+             <p className="mt-1 text-xs text-white/35">Hãy yêu thích vài bài hát để Auraic hiểu gu của bạn.</p>
+           </motion.div>
+         )}
+       </motion.section>
+     </motion.div>
+   );
+ }
