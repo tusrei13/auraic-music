@@ -34,7 +34,7 @@ interface PlaylistState {
 const hasToken = () => typeof window !== "undefined" && Boolean(localStorage.getItem("token"));
 
 const toLocalPlaylist = (playlist: any): Playlist => {
-  const dbSongs = playlist.songs?.map((item: any) => item.song).filter(Boolean) || [];
+  const dbSongs = playlist.songs?.map((item: any) => ({ ...item.song, addedAt: item.addedAt })).filter(Boolean) || [];
   const dbJamendo = playlist.jamendoSongs?.map((item: any) => ({
     id: item.trackId,
     title: item.title,
@@ -42,7 +42,14 @@ const toLocalPlaylist = (playlist: any): Playlist => {
     image: item.image,
     audioUrl: item.audioUrl,
     duration: item.duration,
+    addedAt: item.addedAt,
   })) || [];
+
+  const tracks = [...dbJamendo, ...dbSongs].sort((a: any, b: any) => {
+    const dateA = new Date(a.addedAt || 0).getTime();
+    const dateB = new Date(b.addedAt || 0).getTime();
+    return dateA - dateB;
+  });
 
   return {
     id: playlist.id,
@@ -50,7 +57,7 @@ const toLocalPlaylist = (playlist: any): Playlist => {
     description: playlist.description,
     coverImage: playlist.coverImage,
     createdAt: playlist.createdAt,
-    tracks: [...dbJamendo, ...dbSongs],
+    tracks,
   };
 };
 

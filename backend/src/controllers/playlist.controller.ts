@@ -103,7 +103,13 @@ export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
           duration: typeof duration === 'number' ? duration : null,
         },
       })
-      await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
+
+      if (!playlist.coverImage && jamendoSong.image) {
+        await prisma.playlist.update({ where: { id: playlistId }, data: { coverImage: jamendoSong.image } })
+      } else {
+        await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
+      }
+
       return res.status(201).json(jamendoSong)
     }
 
@@ -118,7 +124,12 @@ export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
     const playlistSong = await prisma.playlistSong.create({
       data: { playlistId, songId: numericSongId },
     })
-    await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
+
+    if (!playlist.coverImage && song.image) {
+      await prisma.playlist.update({ where: { id: playlistId }, data: { coverImage: song.image } })
+    } else {
+      await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
+    }
 
     return res.status(201).json(playlistSong)
   } catch (error) {
@@ -151,7 +162,24 @@ export const removeSongFromPlaylist = async (req: AuthRequest, res: Response) =>
       })
     }
 
-    await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
+    if (!playlist.coverImage) {
+      const [firstDbSong, firstJamendo] = await Promise.all([
+        prisma.playlistSong.findFirst({ where: { playlistId }, include: { song: true }, orderBy: { addedAt: 'asc' } }),
+        prisma.jamendoPlaylistSong.findFirst({ where: { playlistId }, orderBy: { addedAt: 'asc' } }),
+      ])
+
+      let coverImage: string | null = null
+      if (firstDbSong?.song?.image) {
+        coverImage = firstDbSong.song.image
+      } else if (firstJamendo?.image) {
+        coverImage = firstJamendo.image
+      }
+
+      await prisma.playlist.update({ where: { id: playlistId }, data: { coverImage, updatedAt: new Date() } })
+    } else {
+      await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
+    }
+
     return res.json({ message: 'Đã xóa bài hát khỏi playlist' })
   } catch (error) {
     return sendInternalError(res, 'PLAYLIST_SONG_DELETE_ERROR', 'Lỗi khi xóa bài hát khỏi playlist')

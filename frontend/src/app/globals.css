@@ -52,6 +52,12 @@
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  user-select: none;
+}
+
+input,
+textarea {
+  user-select: text;
 }
 
 *::-webkit-scrollbar {

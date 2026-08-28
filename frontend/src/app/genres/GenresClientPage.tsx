@@ -149,7 +149,7 @@ export default function GenresClientPage() {
   }, [hoveredGenre, selectedGenre, currentImage]);
 
   const { data: tracks = [], isPending, isError, error, isSuccess, isFetching, refetch } = useGenreTracks(debouncedGenre);
-  const isRequestLocked = isFetching || isPending;
+  const isRequestLocked = Boolean(debouncedGenre) && (isFetching || isPending);
 
   const handleSelectGenre = useCallback((tag: string) => {
     if (isRequestLocked) return;

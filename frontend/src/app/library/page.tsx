@@ -960,9 +960,14 @@ export default function LibraryPage() {
             {filteredPlaylists.map((pl: any, index: number) => {
               const pName = getStringValue(pl.title, "Playlist");
               const pSongCount = pl.tracks ? pl.tracks.length : (pl.songIds ? pl.songIds.length : 0);
+              const firstTrackImage = pl.tracks?.[0]?.image as string | undefined;
+              const catalogFirstImage = pl.tracks && pl.tracks[0]
+                ? (systemSongs.find((s: any) => String(s.id) === String(pl.tracks[0].id))?.image as string | undefined)
+                : undefined;
               const pImage =
                 getStringValue(pl.coverImage) ||
-                (pl.tracks?.[0]?.image as string | undefined) ||
+                firstTrackImage ||
+                catalogFirstImage ||
                 "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
               const pColor = getStringValue(pl.color, "from-indigo-900/80 via-purple-900/50 to-[#0b0c10]");
 
