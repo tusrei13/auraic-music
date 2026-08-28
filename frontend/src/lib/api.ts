@@ -194,22 +194,23 @@ export const searchSemantic = (query: string, options: { limit?: number; offset?
   fetcher<SemanticSearchResponse>(`/search/semantic?q=${encodeURIComponent(query)}&limit=${options.limit || 24}&offset=${options.offset || 0}`);
 
 export interface CatalogPage { tracks: JamendoSong[]; nextCursor: string | null }
-export const getJamendoTracksPage = async (options: { limit?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}): Promise<CatalogPage> => {
+export const getJamendoTracksPage = async (options: { limit?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string; signal?: AbortSignal } = {}): Promise<CatalogPage> => {
+  const { signal, ...rest } = options;
   const params = new URLSearchParams();
-  if (options.limit) params.set("limit", String(options.limit));
-  if (options.cursor) params.set("cursor", options.cursor);
-  if (options.tags) params.set("tags", options.tags);
-  if (options.search) params.set("search", options.search);
-  if (options.artistId) params.set("artistId", options.artistId);
-  if (options.artistName) params.set("artistName", options.artistName);
-  if (options.albumId) params.set("albumId", options.albumId);
-  if (options.order) params.set("order", options.order);
-  const response = await fetch(`${API_BASE_URL}/catalog/jamendo${params.size ? `?${params}` : ""}`, { cache: "no-store", headers: { ...(typeof window !== "undefined" && localStorage.getItem("token") ? { Authorization: `Bearer ${localStorage.getItem("token")}` } : {}) } });
+  if (rest.limit) params.set("limit", String(rest.limit));
+  if (rest.cursor) params.set("cursor", rest.cursor);
+  if (rest.tags) params.set("tags", rest.tags);
+  if (rest.search) params.set("search", rest.search);
+  if (rest.artistId) params.set("artistId", rest.artistId);
+  if (rest.artistName) params.set("artistName", rest.artistName);
+  if (rest.albumId) params.set("albumId", rest.albumId);
+  if (rest.order) params.set("order", rest.order);
+  const response = await fetch(`${API_BASE_URL}/catalog/jamendo${params.size ? `?${params}` : ""}`, { cache: "no-store", signal, headers: { ...(typeof window !== "undefined" && localStorage.getItem("token") ? { Authorization: `Bearer ${localStorage.getItem("token")}` } : {}) } });
   const payload = await response.json().catch(() => []);
   if (!response.ok) throw new ApiError(response.status, payload?.error || { code: "API_ERROR", message: response.statusText });
   return { tracks: catalogResponseContract.parse(payload) as JamendoSong[], nextCursor: response.headers.get("x-next-cursor") };
 };
-export const getJamendoTracks = (options: { limit?: number; offset?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string } = {}) => getJamendoTracksPage({ ...options, cursor: options.cursor || (options.offset ? btoa(String(options.offset)) : undefined) }).then((page) => page.tracks);
+export const getJamendoTracks = (options: { limit?: number; offset?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string; signal?: AbortSignal } = {}) => getJamendoTracksPage({ ...options, cursor: options.cursor || (options.offset ? btoa(String(options.offset)) : undefined) }).then((page) => page.tracks);
 
 export const getLyrics = (trackName: string, artistName: string) =>
   fetcher<LyricsResponse>(`/lyrics?trackName=${encodeURIComponent(trackName)}&artistName=${encodeURIComponent(artistName)}`);

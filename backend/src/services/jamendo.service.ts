@@ -134,8 +134,10 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
       response = await fetch(`${JAMENDO_API_URL}?${params}`, {
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
-      if (response.ok || (response.status < 500 && response.status !== 429)) break
-      lastError = new Error(`Jamendo request failed with ${response.status}`)
+      if (response.ok) break
+      const status = response.status
+      lastError = new Error(`Jamendo request failed with ${status}`)
+      if (status === 429 || (status >= 400 && status < 500)) break
     } catch (error) {
       lastError = error
     }

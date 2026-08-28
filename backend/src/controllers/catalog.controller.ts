@@ -27,14 +27,13 @@ export const getJamendoCatalog = async (req: Request, res: Response) => {
       albumId: typeof req.query.albumId === 'string' ? req.query.albumId : undefined,
       order: typeof req.query.order === 'string' ? req.query.order : undefined,
     }
-    let rawTracks
-    try {
-      rawTracks = await getJamendoTracks(options)
-    } catch (error) {
-      if (!options.tags) throw error
-      rawTracks = await getJamendoTracks({ ...options, tags: undefined, search: options.tags })
-    }
+    const rawTracks = await getJamendoTracks(options)
     const tracks = catalogResponseContract.parse(rawTracks)
+
+    if (tracks.length === 0 && options.tags) {
+      throw new Error(`Jamendo trả về kết quả rỗng cho thể loại: ${options.tags}`)
+    }
+
     if (tracks.length === limit) res.setHeader('x-next-cursor', encodeCatalogCursor(offset + limit))
     res.setHeader('x-page-limit', String(limit))
     res.json(tracks)
