@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { MoreHorizontal, Plus, ListMusic, User, Check, Heart, X, FolderPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -25,8 +25,10 @@ export default function TrackActionMenu({
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [playlistTitle, setPlaylistTitle] = useState("");
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const store = usePlayerStore() as any;
@@ -36,9 +38,47 @@ export default function TrackActionMenu({
   const activePlaylists = storePlaylists.length > 0 ? storePlaylists : (propPlaylists || []);
   const isLiked = store.likedIds?.some((id: any) => String(id) === String(track.id));
 
+  const updatePosition = useCallback(() => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      if (!isVisible) {
+        setIsOpen(false);
+        setShowPlaylists(false);
+        return;
+      }
+      setMenuPosition({
+        top: placement === "up" ? rect.top - 8 : rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [placement]);
+
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition();
+    }
+  }, [isOpen, updatePosition]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleScroll = () => {
+      updatePosition();
+    };
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, [isOpen, updatePosition]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedInMenu = menuRef.current?.contains(target);
+      const clickedOnTrigger = triggerRef.current?.contains(target);
+      if (!clickedInMenu && !clickedOnTrigger) {
         setIsOpen(false);
         setShowPlaylists(false);
       }
@@ -96,7 +136,7 @@ export default function TrackActionMenu({
 
   return (
     <>
-      <div className="relative inline-block text-left" ref={menuRef}>
+      <div className="relative inline-block text-left" ref={triggerRef}>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -107,102 +147,111 @@ export default function TrackActionMenu({
         >
           <MoreHorizontal className="w-4 h-4" />
         </button>
+      </div>
 
-        {isOpen && (
-          <div className={`absolute z-50 w-56 rounded-2xl border border-white/10 bg-[#18181c] py-2 text-xs text-white shadow-2xl backdrop-blur-xl ${placement === "up" ? "bottom-full left-0 mb-2" : "right-0 mt-2"}`}>
-            {/* Thêm vào Playlist */}
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (authStatus !== "authenticated") {
-                    setIsOpen(false);
-                    setShowPlaylists(false);
-                    openAuthModal();
-                    return;
-                  }
-                  setShowPlaylists(!showPlaylists);
-                }}
-                className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center justify-between transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-3 font-semibold">
-                  <Plus className="w-4 h-4 text-indigo-400" /> Thêm vào playlist
-                </span>
-              </button>
-
-              {/* Submenu chọn / tạo Playlist */}
-              {showPlaylists && (
-                <div className={`absolute top-0 z-50 w-52 space-y-1 overflow-y-auto rounded-2xl border border-white/10 bg-[#22222a] p-1.5 shadow-2xl scrollbar-none ${placement === "up" ? "left-full ml-1.5" : "right-full mr-1.5"}`}>
-                  {/* Nút Tạo playlist mới */}
-                  <button
-                    onClick={handleOpenCreateModal}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-semibold border border-indigo-500/20 transition-all cursor-pointer text-left"
-                  >
-                    <span>Tạo playlist mới</span>
-                  </button>
-
-                  <div className="h-[1px] bg-white/10 my-1" />
-
-                  {/* Danh sách Playlist */}
-                  {activePlaylists.length > 0 ? (
-                    activePlaylists.map((pl: any) => {
-                      const isInPlaylist =
-                        pl.tracks?.some((t: any) => String(t.id) === String(track.id)) ||
-                        pl.songIds?.some((id: any) => String(id) === String(track.id));
-
-                      return (
-                        <button
-                          key={pl.id}
-                          onClick={(e) => handleSelectPlaylist(e, pl.id)}
-                          className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-xl flex items-center justify-between text-white/80 hover:text-white transition-colors cursor-pointer"
-                        >
-                          <span className="truncate font-medium">{pl.title || pl.name}</span>
-                          {isInPlaylist && <Check className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0 ml-1" />}
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="px-3 py-2 text-white/40 italic text-[11px] text-center">
-                      Chưa có playlist nào
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Lưu vào yêu thích */}
+      {isOpen && menuPosition && typeof document !== "undefined" ? createPortal(
+        <div
+          ref={menuRef}
+          className={`fixed z-50 w-56 rounded-2xl border border-white/10 bg-[#18181c] py-2 text-xs text-white shadow-2xl pointer-events-auto ${placement === "up" ? "" : ""}`}
+          style={{
+            top: placement === "up" ? "auto" : menuPosition.top,
+            bottom: placement === "up" ? `${window.innerHeight - menuPosition.top}px` : "auto",
+            right: menuPosition.right,
+          }}
+        >
+          {/* Thêm vào Playlist */}
+          <div className="relative">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (store.toggleLike) store.toggleLike(track);
-                setIsOpen(false);
+                if (authStatus !== "authenticated") {
+                  setIsOpen(false);
+                  setShowPlaylists(false);
+                  openAuthModal();
+                  return;
+                }
+                setShowPlaylists(!showPlaylists);
               }}
-              className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-3 transition-colors cursor-pointer font-semibold"
+              className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center justify-between transition-colors cursor-pointer"
             >
-              <Heart className={`w-4 h-4 ${isLiked ? "fill-pink-500 text-pink-500" : "text-pink-400"}`} />
-              {isLiked ? "Xóa khỏi Yêu thích" : "Lưu vào bài hát đã thích"}
+              <span className="flex items-center gap-3 font-semibold">
+                <Plus className="w-4 h-4 text-indigo-400" /> Thêm vào playlist
+              </span>
             </button>
 
-            {/* Thêm vào hàng đợi */}
-            <button
-              onClick={handleAddToQueue}
-              className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-3 transition-colors cursor-pointer font-semibold"
-            >
-              <ListMusic className="w-4 h-4 text-purple-400" /> Thêm vào hàng đợi
-            </button>
+            {/* Submenu chọn / tạo Playlist */}
+            {showPlaylists && (
+              <div className={`absolute top-0 z-50 w-52 space-y-1 overflow-y-auto rounded-2xl border border-white/10 bg-[#22222a] p-1.5 shadow-2xl scrollbar-none ${placement === "up" ? "left-full ml-1.5" : "right-full mr-1.5"}`}>
+                {/* Nút Tạo playlist mới */}
+                <button
+                  onClick={handleOpenCreateModal}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-semibold border border-indigo-500/20 transition-all cursor-pointer text-left"
+                >
+                  <span>Tạo playlist mới</span>
+                </button>
 
-            <div className="my-1 border-t border-white/10" />
+                <div className="h-[1px] bg-white/10 my-1" />
 
-            {/* Xem nghệ sĩ */}
-            <button
-              onClick={handleGoToArtist}
-              className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-3 transition-colors cursor-pointer font-semibold"
-            >
-              <User className="w-4 h-4 text-cyan-400" /> Xem nghệ sĩ
-            </button>
+                {/* Danh sách Playlist */}
+                {activePlaylists.length > 0 ? (
+                  activePlaylists.map((pl: any) => {
+                    const isInPlaylist =
+                      pl.tracks?.some((t: any) => String(t.id) === String(track.id)) ||
+                      pl.songIds?.some((id: any) => String(id) === String(track.id));
+
+                    return (
+                      <button
+                        key={pl.id}
+                        onClick={(e) => handleSelectPlaylist(e, pl.id)}
+                        className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-xl flex items-center justify-between text-white/80 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <span className="truncate font-medium">{pl.title || pl.name}</span>
+                        {isInPlaylist && <Check className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0 ml-1" />}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="px-3 py-2 text-white/40 italic text-[11px] text-center">
+                    Chưa có playlist nào
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Lưu vào yêu thích */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (store.toggleLike) store.toggleLike(track);
+              setIsOpen(false);
+            }}
+            className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-3 transition-colors cursor-pointer font-semibold"
+          >
+            <Heart className={`w-4 h-4 ${isLiked ? "fill-pink-500 text-pink-500" : "text-pink-400"}`} />
+            {isLiked ? "Xóa khỏi Yêu thích" : "Lưu vào bài hát đã thích"}
+          </button>
+
+          {/* Thêm vào hàng đợi */}
+          <button
+            onClick={handleAddToQueue}
+            className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-3 transition-colors cursor-pointer font-semibold"
+          >
+            <ListMusic className="w-4 h-4 text-purple-400" /> Thêm vào hàng đợi
+          </button>
+
+          <div className="my-1 border-t border-white/10" />
+
+          {/* Xem nghệ sĩ */}
+          <button
+            onClick={handleGoToArtist}
+            className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-3 transition-colors cursor-pointer font-semibold"
+          >
+            <User className="w-4 h-4 text-cyan-400" /> Xem nghệ sĩ
+          </button>
+        </div>,
+        document.body
+      ) : null}
 
       {/* Modern Custom Modal Pop-up */}
       {isModalOpen && typeof document !== "undefined" ? createPortal((

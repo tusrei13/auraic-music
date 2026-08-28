@@ -24,11 +24,9 @@ import { sendError } from './lib/api-error'
 import { requestContext, rateLimit } from './middlewares/platform.middleware'
 import { observabilityMiddleware } from './middlewares/observability.middleware'
 import { setupGracefulShutdown } from './lib/shutdown'
-import { Sentry } from './lib/sentry'
 import { logger } from './lib/logger'
 
 dotenv.config()
-Sentry.init()
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -107,7 +105,6 @@ app.use((_req, res) => {
 
 app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const requestId = (req as express.Request & { context?: { requestId?: string } }).context?.requestId
-  Sentry.captureException(err, { requestId })
   logger.error('Unhandled API error', { requestId }, { error: err })
   sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Lỗi server không xác định')
 })
