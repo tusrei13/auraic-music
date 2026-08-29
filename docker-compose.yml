@@ -19,6 +19,17 @@ services:
     networks:
       - auraic-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: auraic-redis
+    restart: unless-stopped
+    volumes:
+      - auraic_redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - auraic-network
+
   backend:
     build:
       context: ./backend
@@ -32,6 +43,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       DATABASE_URL: postgresql://${POSTGRES_USER:-auraic}:${POSTGRES_PASSWORD:-auraic_secret}@postgres:5432/${POSTGRES_DB:-auraic_db}?schema=public
+      REDIS_URL: redis://redis:6379
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
@@ -88,7 +100,7 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - auraic_grafana_data:/var/lib/grafana
     ports:
-      - "3000:3000"
+      - "3030:3000"
     networks:
       - auraic-network
 
@@ -100,3 +112,4 @@ volumes:
   auraic_postgres_data:
   auraic_prometheus_data:
   auraic_grafana_data:
+  auraic_redis_data:
