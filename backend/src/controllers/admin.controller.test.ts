@@ -24,8 +24,8 @@ describe('admin.controller audit logging', () => {
       getHeader: vi.fn(),
     } as any
 
-    vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({ role: 'USER' })
-    vi.spyOn(prisma.user, 'update').mockResolvedValue({ id: 'user-1', email: 'u@test.com', name: 'U', role: 'ADMIN' })
+    vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({ role: 'USER' } as any)
+    vi.spyOn(prisma.user, 'update').mockResolvedValue({ id: 'user-1', email: 'u@test.com', name: 'U', role: 'ADMIN' } as any)
     vi.spyOn(prisma.adminAuditLog, 'create').mockResolvedValue({} as any)
 
     await updateAdminUserRole(req, res)
@@ -122,7 +122,7 @@ describe('admin.controller audit logging', () => {
     vi.spyOn(prisma.ingestionJob, 'create').mockResolvedValue({ id: 'job-1', status: 'RUNNING' } as any)
     vi.spyOn(prisma.ingestionJob, 'update').mockResolvedValue({ id: 'job-1', status: 'SUCCEEDED', imported: 10 } as any)
     vi.spyOn(prisma.adminAuditLog, 'create').mockResolvedValue({} as any)
-    vi.spyOn(global, 'setTimeout').mockImplementation(() => undefined)
+    vi.spyOn(global, 'setTimeout').mockImplementation(() => ({}) as ReturnType<typeof setTimeout>)
 
     await runIngestion(req, res)
 
@@ -148,8 +148,8 @@ describe('admin.controller audit logging', () => {
       getHeader: vi.fn(),
     } as any
 
-    vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({ role: 'ADMIN' })
-    vi.spyOn(prisma.user, 'update').mockResolvedValue({ id: 'user-2', email: 'u@test.com', name: 'U', role: 'USER' })
+    vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({ role: 'ADMIN' } as any)
+    vi.spyOn(prisma.user, 'update').mockResolvedValue({ id: 'user-2', email: 'u@test.com', name: 'U', role: 'USER' } as any)
     vi.spyOn(prisma.adminAuditLog, 'create').mockRejectedValue(new Error('DB error'))
 
     await updateAdminUserRole(req, res)

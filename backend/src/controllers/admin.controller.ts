@@ -1,11 +1,12 @@
 import { Response } from 'express'
+import { Prisma } from '@prisma/client'
 import { AuthRequest } from '../middlewares/auth.middleware'
 import { prisma } from '../lib/prisma'
 import { sendError, sendInternalError } from '../lib/api-error'
 import { getJamendoTracks } from '../services/jamendo.service'
 import { summarizeAnalyticsEvents } from '../services/analytics.service'
 
-const logAdminAction = async (req: AuthRequest, action: string, targetType?: string, targetId?: string, changes?: unknown) => {
+const logAdminAction = async (req: AuthRequest, action: string, targetType?: string, targetId?: string, changes?: Prisma.InputJsonValue) => {
   if (!req.user) return
   try {
     await prisma.adminAuditLog.create({
@@ -308,10 +309,14 @@ export const updateSystemSettings = async (req: AuthRequest, res: Response) => {
   if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
   const input = req.body as Record<string, unknown>
   const allowed = ['siteName', 'defaultLanguage', 'maintenanceMode']
-  const entries = Object.entries(input).filter(([key, value]) => allowed.includes(key) && typeof value === 'string')
+  const entries = Object.entries(input).filter((entry): entry is [string, string] => {
+    const [key, value] = entry
+    return allowed.includes(key) && typeof value === 'string'
+  })
   try {
     await prisma.$transaction(entries.map(([key, value]) => prisma.systemSetting.upsert({ where: { key }, create: { key, value: value as string, updatedById: req.user!.id }, update: { value: value as string, updatedById: req.user!.id } })))
-    await logAdminAction(req, 'UPDATE_SETTINGS', 'SystemSetting', undefined, Object.fromEntries(entries))
+    const changes: Prisma.InputJsonObject = Object.fromEntries(entries)
+    await logAdminAction(req, 'UPDATE_SETTINGS', 'SystemSetting', undefined, changes)
     return getSystemSettings(req, res)
   } catch {
     return sendInternalError(res, 'ADMIN_SETTINGS_WRITE_ERROR', 'Không thể lưu system settings')
