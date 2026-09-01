@@ -30,10 +30,6 @@ export const getJamendoCatalog = async (req: Request, res: Response) => {
     const rawTracks = await getJamendoTracks(options)
     const tracks = catalogResponseContract.parse(rawTracks)
 
-    if (tracks.length === 0 && options.tags) {
-      throw new Error(`Jamendo trả về kết quả rỗng cho thể loại: ${options.tags}`)
-    }
-
     if (tracks.length === limit) res.setHeader('x-next-cursor', encodeCatalogCursor(offset + limit))
     res.setHeader('x-page-limit', String(limit))
     res.json(tracks)
@@ -46,6 +42,7 @@ export const getJamendoCatalog = async (req: Request, res: Response) => {
     const message = error instanceof Error && error.message === 'Jamendo is not configured'
       ? 'Jamendo chưa được cấu hình'
       : 'Không thể tải catalog Jamendo'
-    sendError(res, 503, 'JAMENDO_CATALOG_ERROR', message)
+    const status = error instanceof Error && error.message === 'Jamendo is not configured' ? 500 : 503
+    sendError(res, status, 'JAMENDO_CATALOG_ERROR', message)
   }
 }

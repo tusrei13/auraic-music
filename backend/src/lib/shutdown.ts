@@ -1,31 +1,31 @@
 import { Server } from 'node:http'
 import { prisma } from './prisma'
 import { logger } from './logger'
+import { shutdownTracing } from './tracing'
 
 export function setupGracefulShutdown(server: Server): void {
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}. Starting graceful shutdown sequence...`)
 
-    // Stop accepting new connections
     server.close(async (err) => {
       if (err) {
         logger.error('Error while closing HTTP server sockets', undefined, { error: err })
         process.exit(1)
       }
 
-      logger.info('HTTP server closed. Disconnecting database client...')
+      logger.info('HTTP server closed. Disconnecting tracing and database client...')
 
       try {
+        await shutdownTracing()
         await prisma.$disconnect()
-        logger.info('Database connections closed cleanly. Auraic process exiting normally.')
+        logger.info('Tracing and database connections closed cleanly. Auraic process exiting normally.')
         process.exit(0)
-      } catch (dbErr) {
-        logger.error('Error disconnecting database client during shutdown', undefined, { error: dbErr })
+      } catch (err) {
+        logger.error('Error during graceful shutdown', undefined, { error: err })
         process.exit(1)
       }
     })
 
-    // Force shutdown after timeout (10 seconds) if requests are hung
     setTimeout(() => {
       logger.error('Graceful shutdown timed out after 10s. Forcing process exit.')
       process.exit(1)

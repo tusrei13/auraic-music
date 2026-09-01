@@ -14,7 +14,7 @@ const logAdminAction = async (req: AuthRequest, action: string, targetType?: str
         action,
         targetType,
         targetId,
-        changes,
+        changes: changes as any,
         ipAddress: typeof req.ip === 'string' ? req.ip.slice(0, 45) : undefined,
         userAgent: typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'].slice(0, 200) : undefined,
       },

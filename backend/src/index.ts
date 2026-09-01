@@ -25,8 +25,11 @@ import { requestContext, rateLimit } from './middlewares/platform.middleware'
 import { observabilityMiddleware } from './middlewares/observability.middleware'
 import { setupGracefulShutdown } from './lib/shutdown'
 import { logger } from './lib/logger'
+import { setupTracing, shutdownTracing } from './lib/tracing'
 
 dotenv.config()
+
+setupTracing()
 
 const app = express()
 const PORT = process.env.PORT || 5000

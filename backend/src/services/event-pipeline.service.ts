@@ -2,6 +2,9 @@ import { prisma } from '../lib/prisma'
 import { AnalyticsEventType } from '@prisma/client'
 import { logger } from '../lib/logger'
 import { recordTrackPlayInChart } from './chart.service'
+import { getTracer } from '../lib/tracing'
+
+const tracer = getTracer('auraic-backend')
 
 export interface IngestionEventInput {
   eventType: 'TRACK_STARTED' | 'TRACK_COMPLETED' | 'TRACK_SKIPPED'
@@ -44,105 +47,118 @@ export async function processListeningEventsBatch(
     errors: []
   }
 
-  const validEventsToInsert: Array<{
-    userId: string
-    eventType: AnalyticsEventType
-    trackId: string
-    source: string
-    title: string
-    position: number | null
-    duration: number | null
-    occurredAt: Date
-  }> = []
-
-  const now = Date.now()
-  const MAX_DRIFT_MS = 5 * 60 * 1000 // 5 minutes
-
-  for (const ev of events) {
-    // 1. Basic validation
-    if (!ev.trackId || !ev.title || !ev.eventType) {
-      result.rejected += 1
-      result.errors.push('Missing required event fields (trackId, title, eventType)')
-      continue
-    }
-
-    const eventDate = ev.occurredAt ? new Date(ev.occurredAt) : new Date()
-    const eventTime = eventDate.getTime()
-
-    // 2. Timestamp drift check
-    if (Math.abs(now - eventTime) > MAX_DRIFT_MS) {
-      result.rejected += 1
-      result.errors.push(`Timestamp drift exceeded limit for track ${ev.trackId}`)
-      continue
-    }
-
-    // 3. Deduplication check (same user + trackId + eventType within 15 seconds)
-    const dedupKey = `${userId}:${ev.trackId}:${ev.eventType}`
-    const lastSeen = recentEventsCache.get(dedupKey)
-    if (lastSeen && eventTime - lastSeen < 15_000) {
-      result.duplicate += 1
-      continue
-    }
-
-    recentEventsCache.set(dedupKey, eventTime)
-
-    // 4. Map Prisma Enum
-    let prismaEventType: AnalyticsEventType
-    switch (ev.eventType) {
-      case 'TRACK_STARTED':
-        prismaEventType = AnalyticsEventType.TRACK_STARTED
-        break
-      case 'TRACK_COMPLETED':
-        prismaEventType = AnalyticsEventType.TRACK_COMPLETED
-        break
-      case 'TRACK_SKIPPED':
-        prismaEventType = AnalyticsEventType.TRACK_SKIPPED
-        break
-      default:
-        result.rejected += 1
-        result.errors.push(`Invalid event type: ${ev.eventType}`)
-        continue
-    }
-
-    validEventsToInsert.push({
-      userId,
-      eventType: prismaEventType,
-      trackId: String(ev.trackId),
-      source: ev.source || 'jamendo',
-      title: ev.title.slice(0, 300),
-      position: ev.position !== undefined && ev.position !== null ? Math.max(0, ev.position) : null,
-      duration: ev.duration !== undefined && ev.duration !== null ? Math.max(0, ev.duration) : null,
-      occurredAt: eventDate
+  return tracer.startActiveSpan('event_pipeline.process_batch', async (span) => {
+    span.setAttributes({
+      'event_pipeline.user_id': userId,
+      'event_pipeline.batch_size': events.length,
     })
-  }
 
-  if (validEventsToInsert.length > 0) {
-    try {
-      await prisma.analyticsEvent.createMany({
-        data: validEventsToInsert
-      })
-      result.accepted = validEventsToInsert.length
-      logger.debug(`Ingested ${result.accepted} analytics events for user ${userId.slice(0, 8)}`)
+    const validEventsToInsert: Array<{
+      userId: string
+      eventType: AnalyticsEventType
+      trackId: string
+      source: string
+      title: string
+      position: number | null
+      duration: number | null
+      occurredAt: Date
+    }> = []
 
-      // Update real-time Redis chart asynchronously for started tracks
-      for (const item of validEventsToInsert) {
-        if (item.eventType === AnalyticsEventType.TRACK_STARTED) {
-          recordTrackPlayInChart({
-            id: item.trackId,
-            title: item.title,
-            artistName: 'Jamendo Artist',
-            duration: item.duration
-          }).catch(err => logger.warn('Failed to update chart in Redis', undefined, { error: err }))
-        }
+    const now = Date.now()
+    const MAX_DRIFT_MS = 5 * 60 * 1000 // 5 minutes
+
+    for (const ev of events) {
+      // 1. Basic validation
+      if (!ev.trackId || !ev.title || !ev.eventType) {
+        result.rejected += 1
+        result.errors.push('Missing required event fields (trackId, title, eventType)')
+        continue
       }
-    } catch (err) {
-      logger.error('Failed to batch insert analytics events', undefined, { error: err })
-      result.rejected += validEventsToInsert.length
-      result.errors.push('Database insertion failed')
-    }
-  }
 
-  return result
+      const eventDate = ev.occurredAt ? new Date(ev.occurredAt) : new Date()
+      const eventTime = eventDate.getTime()
+
+      // 2. Timestamp drift check
+      if (Math.abs(now - eventTime) > MAX_DRIFT_MS) {
+        result.rejected += 1
+        result.errors.push(`Timestamp drift exceeded limit for track ${ev.trackId}`)
+        continue
+      }
+
+      // 3. Deduplication check (same user + trackId + eventType within 15 seconds)
+      const dedupKey = `${userId}:${ev.trackId}:${ev.eventType}`
+      const lastSeen = recentEventsCache.get(dedupKey)
+      if (lastSeen && eventTime - lastSeen < 15_000) {
+        result.duplicate += 1
+        continue
+      }
+
+      recentEventsCache.set(dedupKey, eventTime)
+
+      // 4. Map Prisma Enum
+      let prismaEventType: AnalyticsEventType
+      switch (ev.eventType) {
+        case 'TRACK_STARTED':
+          prismaEventType = AnalyticsEventType.TRACK_STARTED
+          break
+        case 'TRACK_COMPLETED':
+          prismaEventType = AnalyticsEventType.TRACK_COMPLETED
+          break
+        case 'TRACK_SKIPPED':
+          prismaEventType = AnalyticsEventType.TRACK_SKIPPED
+          break
+        default:
+          result.rejected += 1
+          result.errors.push(`Invalid event type: ${ev.eventType}`)
+          continue
+      }
+
+      validEventsToInsert.push({
+        userId,
+        eventType: prismaEventType,
+        trackId: String(ev.trackId),
+        source: ev.source || 'jamendo',
+        title: ev.title.slice(0, 300),
+        position: ev.position !== undefined && ev.position !== null ? Math.max(0, ev.position) : null,
+        duration: ev.duration !== undefined && ev.duration !== null ? Math.max(0, ev.duration) : null,
+        occurredAt: eventDate
+      })
+    }
+
+    if (validEventsToInsert.length > 0) {
+      try {
+        await prisma.analyticsEvent.createMany({
+          data: validEventsToInsert
+        })
+        result.accepted = validEventsToInsert.length
+        logger.debug(`Ingested ${result.accepted} analytics events for user ${userId.slice(0, 8)}`)
+
+        // Update real-time Redis chart asynchronously for started tracks
+        for (const item of validEventsToInsert) {
+          if (item.eventType === AnalyticsEventType.TRACK_STARTED) {
+            recordTrackPlayInChart({
+              id: item.trackId,
+              title: item.title,
+              artistName: 'Jamendo Artist',
+              duration: item.duration
+            }).catch(err => logger.warn('Failed to update chart in Redis', undefined, { error: err }))
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to batch insert analytics events', undefined, { error: err })
+        result.rejected += validEventsToInsert.length
+        result.errors.push('Database insertion failed')
+      }
+    }
+
+    span.setAttributes({
+      'event_pipeline.accepted': result.accepted,
+      'event_pipeline.rejected': result.rejected,
+      'event_pipeline.duplicate': result.duplicate,
+    })
+    span.end()
+    return result
+  })
 }
 
 export async function getUserListeningInsights(userId: string, days = 14) {
