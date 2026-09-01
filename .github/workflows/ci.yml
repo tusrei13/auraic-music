@@ -113,3 +113,15 @@ jobs:
           format: sarif
           output: trivy-frontend.sarif
           severity: HIGH,CRITICAL
+
+      - name: Generate SBOM for Backend Image
+        uses: anchore/sbom-action@v0
+        with:
+          image: auraic-backend:test
+          format: cyclonedx
+
+      - name: Generate SBOM for Frontend Image
+        uses: anchore/sbom-action@v0
+        with:
+          image: auraic-frontend:test
+          format: cyclonedx
