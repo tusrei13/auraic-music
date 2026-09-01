@@ -65,6 +65,21 @@ model SystemSetting {
   updatedById String?
 }
 
+model AdminAuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  action     String   @db.VarChar(100)
+  targetType String?  @db.VarChar(50)
+  targetId   String?
+  changes    Json?
+  ipAddress  String?  @db.VarChar(45)
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+}
+
 model Artist {
   id        String   @id @default(uuid())
   name      String

@@ -5,6 +5,25 @@ import { sendError, sendInternalError } from '../lib/api-error'
 import { getJamendoTracks } from '../services/jamendo.service'
 import { summarizeAnalyticsEvents } from '../services/analytics.service'
 
+const logAdminAction = async (req: AuthRequest, action: string, targetType?: string, targetId?: string, changes?: unknown) => {
+  if (!req.user) return
+  try {
+    await prisma.adminAuditLog.create({
+      data: {
+        actorId: req.user.id,
+        action,
+        targetType,
+        targetId,
+        changes,
+        ipAddress: typeof req.ip === 'string' ? req.ip.slice(0, 45) : undefined,
+        userAgent: typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'].slice(0, 200) : undefined,
+      },
+    })
+  } catch {
+    // Never fail the request due to audit logging errors
+  }
+}
+
 export const getAdminAnalytics = async (req: AuthRequest, res: Response) => {
   if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
 
@@ -71,11 +90,13 @@ export const updateAdminUserRole = async (req: AuthRequest, res: Response) => {
   if (req.user.id === req.params.id) return sendError(res, 400, 'SELF_ROLE_CHANGE_FORBIDDEN', 'Không thể tự thay đổi quyền của chính mình')
 
   try {
+    const previousRole = await prisma.user.findUnique({ where: { id: req.params.id }, select: { role: true } })
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: { role: req.body.role },
       select: { id: true, email: true, name: true, role: true },
     })
+    await logAdminAction(req, 'UPDATE_USER_ROLE', 'User', user.id, { previousRole: previousRole?.role ?? null, newRole: user.role })
     return res.json({ user })
   } catch {
     return sendError(res, 404, 'ADMIN_USER_NOT_FOUND', 'Không tìm thấy người dùng')
@@ -197,6 +218,7 @@ export const deleteAdminPlaylist = async (req: AuthRequest, res: Response) => {
     const playlist = await prisma.playlist.delete({
       where: { id: req.params.id },
     })
+    await logAdminAction(req, 'DELETE_PLAYLIST', 'Playlist', playlist.id, { name: playlist.name })
     return res.json({ message: 'Đã xóa playlist', playlistId: playlist.id })
   } catch {
     return sendError(res, 404, 'PLAYLIST_NOT_FOUND', 'Không tìm thấy playlist để xóa')
@@ -259,12 +281,15 @@ export const getIngestionStatus = async (req: AuthRequest, res: Response) => {
 export const runIngestion = async (req: AuthRequest, res: Response) => {
   if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
   const job = await prisma.ingestionJob.create({ data: { status: 'RUNNING', createdById: req.user.id } })
+  await logAdminAction(req, 'RUN_INGESTION', 'IngestionJob', job.id, { status: 'RUNNING' })
   try {
     const tracks = await getJamendoTracks({ limit: 100 })
     const completed = await prisma.ingestionJob.update({ where: { id: job.id }, data: { status: 'SUCCEEDED', finishedAt: new Date(), imported: tracks.length } })
+    await logAdminAction(req, 'RUN_INGESTION', 'IngestionJob', completed.id, { status: 'SUCCEEDED', imported: tracks.length })
     return res.status(202).json({ job: completed })
   } catch (error) {
     const failed = await prisma.ingestionJob.update({ where: { id: job.id }, data: { status: 'FAILED', finishedAt: new Date(), errorMessage: error instanceof Error ? error.message.slice(0, 500) : 'Unknown error' } })
+    await logAdminAction(req, 'RUN_INGESTION', 'IngestionJob', failed.id, { status: 'FAILED', errorMessage: failed.errorMessage?.slice(0, 200) ?? null })
     return res.status(503).json({ job: failed })
   }
 }
@@ -286,6 +311,7 @@ export const updateSystemSettings = async (req: AuthRequest, res: Response) => {
   const entries = Object.entries(input).filter(([key, value]) => allowed.includes(key) && typeof value === 'string')
   try {
     await prisma.$transaction(entries.map(([key, value]) => prisma.systemSetting.upsert({ where: { key }, create: { key, value: value as string, updatedById: req.user!.id }, update: { value: value as string, updatedById: req.user!.id } })))
+    await logAdminAction(req, 'UPDATE_SETTINGS', 'SystemSetting', undefined, Object.fromEntries(entries))
     return getSystemSettings(req, res)
   } catch {
     return sendInternalError(res, 'ADMIN_SETTINGS_WRITE_ERROR', 'Không thể lưu system settings')

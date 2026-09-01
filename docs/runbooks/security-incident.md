@@ -21,8 +21,18 @@
 3. **Rà soát Audit Logs:**
    ```sql
    -- Tra cứu các thao tác admin gần nhất
-   SELECT * FROM "AdminAuditLog" ORDER BY "createdAt" DESC LIMIT 50;
+   SELECT id, actorId, action, targetType, targetId, ipAddress, createdAt
+   FROM "AdminAuditLog"
+   ORDER BY "createdAt" DESC
+   LIMIT 50;
+   
+   -- Tra cứu thao tác của một admin cụ thể
+   SELECT action, targetType, targetId, changes, ipAddress, createdAt
+   FROM "AdminAuditLog"
+   WHERE actorId = '<suspicious-admin-id>'
+   ORDER BY "createdAt" DESC;
    ```
+   - Các thao tác được ghi nhận: `UPDATE_USER_ROLE`, `DELETE_PLAYLIST`, `UPDATE_SETTINGS`, `RUN_INGESTION`.
 4. **Siết chặt Rate Limit & Chặn IP tấn công:**
    - Trên Cloudflare WAF: Tạo rule Block IP hoặc Challenge (Managed Challenge) đối với các IP có lượng request bất thường.
 
