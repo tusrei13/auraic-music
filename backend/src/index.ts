@@ -19,6 +19,7 @@ import healthRoutes from './routes/health.route'
 import moodRoutes from './routes/mood.route'
 import recommendationRoutes from './routes/recommendation.route'
 import chartRoutes from './routes/chart.route'
+import userDataRoutes from './routes/user-data.route'
 
 import { sendError } from './lib/api-error'
 import { requestContext, rateLimit } from './middlewares/platform.middleware'
@@ -82,6 +83,7 @@ app.use('/api/analytics', analyticsRoutes)
 app.use('/api/moods', moodRoutes)
 app.use('/api/recommendations', recommendationRoutes)
 app.use('/api/charts', chartRoutes)
+app.use('/api/user', userDataRoutes)
 
 // Versioned contract for modern clients (/api/v1)
 app.use('/api/v1/auth', rateLimit(60_000, 30), authRoutes)
@@ -96,6 +98,7 @@ app.use('/api/v1/admin', adminRoutes)
 app.use('/api/v1/moods', moodRoutes)
 app.use('/api/v1/recommendations', recommendationRoutes)
 app.use('/api/v1/charts', chartRoutes)
+app.use('/api/v1/user', userDataRoutes)
 app.use('/api/v1', genreRoutes)
 app.use('/api', genreRoutes)
 
