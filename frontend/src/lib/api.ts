@@ -270,3 +270,22 @@ export const getAdminTopJamendo = () => fetcher<AdminTopSongsResponse>("/admin/t
 export const getAdminAnalytics = () => fetcher<AdminAnalytics>("/admin/analytics");
 export const getAdminArtists = () => fetcher<AdminArtistsResponse>("/admin/artists");
 export const updateUserProfile = (name?: string, avatar?: string) => fetcher<{ message: string; user: CurrentUser }>("/auth/profile", { method: "PATCH", body: JSON.stringify({ ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) }) });
+
+export type PrivacySettings = {
+  privateHistory: boolean;
+  hideFromCharts: boolean;
+  allowAnalytics: boolean;
+};
+export const getPrivacySettings = (userId: string): PrivacySettings => {
+  if (typeof window === "undefined") return { privateHistory: true, hideFromCharts: false, allowAnalytics: true };
+  const stored = window.localStorage.getItem(`auraic-privacy-${userId}`);
+  if (stored) {
+    try { return JSON.parse(stored); } catch { /* ignore */ }
+  }
+  return { privateHistory: true, hideFromCharts: false, allowAnalytics: true };
+};
+export const savePrivacySettings = (userId: string, settings: PrivacySettings) => {
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(`auraic-privacy-${userId}`, JSON.stringify(settings));
+  }
+};

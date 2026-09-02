@@ -3,27 +3,62 @@
 import Artwork from "@/components/Artwork";
 
 import { useEffect, useState } from "react";
-import { Check, Clipboard, Heart, Music2, Play, Settings2, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Check, Clipboard, Heart, Music2, Play, Settings2, SlidersHorizontal, Sparkles, Shield } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { getPrivacySettings, savePrivacySettings, type PrivacySettings } from "@/lib/api";
 
 const fallbackTrack = { id: "", title: "Chưa có bài hát đang phát", artist: "Chọn một bài từ Auraic", image: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=1000&auto=format&fit=crop", audioUrl: "", duration: 0 };
 type ExperienceKind = "now-playing" | "track-info" | "download" | "credits" | "settings";
+
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${checked ? "bg-fuchsia-300" : "bg-white/15"}`}
+    >
+      <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-6" : "translate-x-1"}`} />
+    </button>
+  );
+}
 
 export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
   const { currentTrack, isPlaying, togglePlay, likedIds, toggleLike } = usePlayerStore();
   const { user } = useAuthStore();
   const [quality, setQualityState] = useState("High");
   const [copied, setCopied] = useState(false);
+  const [privacy, setPrivacy] = useState<PrivacySettings>({ privateHistory: true, hideFromCharts: false, allowAnalytics: true });
   useEffect(() => { const stored = window.localStorage.getItem(`auraic-settings-${user?.id || "guest"}`); if (stored) setQualityState(stored); }, [user?.id]);
   const setQuality = (value: string) => { setQualityState(value); window.localStorage.setItem(`auraic-settings-${user?.id || "guest"}`, value); };
+  useEffect(() => { setPrivacy(getPrivacySettings(user?.id || "guest")); }, [user?.id]);
+  const updatePrivacy = (patch: Partial<PrivacySettings>) => {
+    const next = { ...privacy, ...patch };
+    setPrivacy(next);
+    savePrivacySettings(user?.id || "guest", next);
+  };
   const track = currentTrack || fallbackTrack;
   const artist = typeof track.artist === "string" ? track.artist : track.artist.name;
   const liked = likedIds.some((id) => String(id) === String(track.id));
   const attribution = `"${track.title}" by ${artist}. Source and usage terms are available from the original track page.`;
   const copyCredit = async () => { await navigator.clipboard.writeText(attribution); setCopied(true); window.setTimeout(() => setCopied(false), 1800); };
 
-  if (kind === "settings") return <div className="min-h-full px-5 pb-36 pt-8 text-white sm:px-8 lg:px-12"><header className="border-b border-white/10 pb-8"><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-300"><Settings2 className="h-4 w-4" /> Your space</p><h1 className="mt-4 text-4xl font-black sm:text-6xl">Settings</h1><p className="mt-4 max-w-xl text-sm leading-6 text-white/50">Shape how Auraic feels, sounds and remembers your listening.</p></header><div className="mt-8 max-w-2xl divide-y divide-white/10 border-y border-white/10"><div className="flex items-center gap-4 py-6"><Sparkles className="h-5 w-5 text-fuchsia-200" /><div className="flex-1"><h2 className="font-semibold">Appearance</h2><p className="mt-1 text-xs text-white/40">Dark cosmic theme</p></div><Check className="h-4 w-4 text-emerald-300" /></div><div className="flex items-center gap-4 py-6"><SlidersHorizontal className="h-5 w-5 text-fuchsia-200" /><div className="flex-1"><h2 className="font-semibold">Streaming quality</h2><p className="mt-1 text-xs text-white/40">Saved for this device</p></div><select value={quality} onChange={(event) => setQuality(event.target.value)} className="rounded-xl border border-white/10 bg-[#14131f] px-3 py-2 text-sm text-white outline-none focus:border-fuchsia-300" aria-label="Chất lượng phát nhạc"><option>Standard</option><option>High</option><option>Lossless</option></select></div></div><p className="mt-8 text-xs text-white/35">{user ? `Đang đồng bộ với ${user.email}` : "Đăng nhập để đồng bộ cài đặt trên các thiết bị."}</p></div>;
+  if (kind === "settings") return <div className="min-h-full px-5 pb-36 pt-8 text-white sm:px-8 lg:px-12"><header className="border-b border-white/10 pb-8"><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-300"><Settings2 className="h-4 w-4" /> Your space</p><h1 className="mt-4 text-4xl font-black sm:text-6xl">Settings</h1><p className="mt-4 max-w-xl text-sm leading-6 text-white/50">Shape how Auraic feels, sounds and remembers your listening.</p></header><div className="mt-8 max-w-2xl divide-y divide-white/10 border-y border-white/10"><div className="flex items-center gap-4 py-6"><Sparkles className="h-5 w-5 text-fuchsia-200" /><div className="flex-1"><h2 className="font-semibold">Appearance</h2><p className="mt-1 text-xs text-white/40">Dark cosmic theme</p></div><Check className="h-4 w-4 text-emerald-300" /></div><div className="flex items-center gap-4 py-6"><SlidersHorizontal className="h-5 w-5 text-fuchsia-200" /><div className="flex-1"><h2 className="font-semibold">Streaming quality</h2><p className="mt-1 text-xs text-white/40">Saved for this device</p></div><select value={quality} onChange={(event) => setQuality(event.target.value)} className="rounded-xl border border-white/10 bg-[#14131f] px-3 py-2 text-sm text-white outline-none focus:border-fuchsia-300" aria-label="Chất lượng phát nhạc"><option>Standard</option><option>High</option><option>Lossless</option></select></div><div className="flex items-center gap-4 py-6"><Shield className="h-5 w-5 text-fuchsia-200" /><div className="flex-1"><h2 className="font-semibold">Privacy</h2><p className="mt-1 text-xs text-white/40">Control how your listening data is used</p></div></div><div className="space-y-4 pb-2">
+          <div className="flex items-center justify-between gap-4">
+            <div><h3 className="text-sm font-semibold text-white">Private listening history</h3><p className="text-xs text-white/45">Keep your listening history personal and non-public</p></div>
+            <Toggle checked={privacy.privateHistory} onChange={(value) => updatePrivacy({ privateHistory: value })} />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div><h3 className="text-sm font-semibold text-white">Hide from public charts</h3><p className="text-xs text-white/45">Exclude your plays from public charts and leaderboards</p></div>
+            <Toggle checked={privacy.hideFromCharts} onChange={(value) => updatePrivacy({ hideFromCharts: value })} />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div><h3 className="text-sm font-semibold text-white">Allow analytics collection</h3><p className="text-xs text-white/45">Help improve Auraic with anonymized usage data</p></div>
+            <Toggle checked={privacy.allowAnalytics} onChange={(value) => updatePrivacy({ allowAnalytics: value })} />
+          </div>
+        </div></div><p className="mt-8 text-xs text-white/35">{user ? `Đang đồng bộ với ${user.email}` : "Đăng nhập để đồng bộ cài đặt trên các thiết bị."}</p></div>;
 
   return <div className="min-h-full px-5 pb-36 pt-8 text-white sm:px-8 lg:px-12"><header className="flex flex-col gap-5 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between"><div><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-fuchsia-300"><Music2 className="h-4 w-4" /> {kind === "credits" ? "Artist credits" : "Track details"}</p><h1 className="mt-4 text-4xl font-black sm:text-6xl">{kind === "track-info" ? "Track & license" : kind === "download" ? "Use this track" : kind === "credits" ? "Give credit well" : "Track details"}</h1></div>{currentTrack ? <button type="button" onClick={() => void toggleLike(track as any)} aria-label={liked ? "Bỏ thích" : "Yêu thích"} className={`flex h-11 w-11 items-center justify-center rounded-full border ${liked ? "border-pink-300/60 text-pink-300" : "border-white/10 text-white/50"}`}><Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} /></button> : null}</header><div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_1.2fr] lg:items-center"><div className="relative aspect-square max-w-[440px] overflow-hidden rounded-[28px] border border-white/10 shadow-2xl shadow-fuchsia-950/30"><Artwork src={track.image} alt={track.title} className="h-full w-full object-cover" /><div className="absolute inset-x-5 bottom-5 flex items-center justify-between rounded-2xl border border-white/15 bg-black/45 p-3 backdrop-blur-xl"><div className="min-w-0"><p className="truncate text-sm font-bold">{track.title}</p><p className="truncate text-xs text-white/50">{artist}</p></div><button type="button" onClick={togglePlay} aria-label={isPlaying ? "Tạm dừng" : "Phát"} className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-black">{isPlaying ? "||" : <Play className="h-4 w-4 fill-current" />}</button></div></div><div className="max-w-xl space-y-6"><div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.05] p-6"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200">Usage information</p><h2 className="mt-2 text-xl font-bold">Original source terms</h2><p className="mt-4 text-sm leading-6 text-white/60">Review the license before publishing, remixing or using this track commercially. Attribution may be required.</p><div className="mt-5"><button type="button" onClick={() => void copyCredit()} className="flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-slate-950"><Clipboard className="h-4 w-4" />{copied ? "Copied" : "Copy attribution"}</button></div></div><p className="text-sm leading-6 text-white/45">{currentTrack ? attribution : "Chọn một bài hát từ Auraic để xem thông tin chi tiết."}</p></div></div></div>;
 }

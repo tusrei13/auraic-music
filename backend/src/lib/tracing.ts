@@ -25,7 +25,7 @@ const traceExporter = exporterEndpoint
               kind: span.kind,
               startTime: span.startTime,
               endTime: span.endTime,
-              attributes: Object.fromEntries(span.attributes),
+              attributes: span.attributes && typeof span.attributes === 'object' ? Object.fromEntries(Object.entries(span.attributes)) : span.attributes,
               status: span.status,
             }),
             null,
