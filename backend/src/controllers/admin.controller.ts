@@ -317,3 +317,24 @@ export const updateSystemSettings = async (req: AuthRequest, res: Response) => {
     return sendInternalError(res, 'ADMIN_SETTINGS_WRITE_ERROR', 'Không thể lưu system settings')
   }
 }
+
+export const updateSongLyrics = async (req: AuthRequest, res: Response) => {
+  if (!req.user) return sendError(res, 401, 'UNAUTHENTICATED', 'Chưa đăng nhập')
+
+  try {
+    const songId = Number(req.params.id)
+    const lyrics = req.body.lyrics
+
+    const song = await prisma.song.update({
+      where: { id: songId },
+      data: { lyrics: lyrics as any },
+      select: { id: true, title: true, lyrics: true },
+    })
+
+    await logAdminAction(req, 'UPDATE_SONG_LYRICS', 'Song', String(song.id), { title: song.title, lyricsUpdated: true })
+
+    return res.json({ id: song.id, title: song.title, lyrics: song.lyrics })
+  } catch {
+    return sendError(res, 404, 'SONG_NOT_FOUND', 'Không tìm thấy bài hát')
+  }
+}

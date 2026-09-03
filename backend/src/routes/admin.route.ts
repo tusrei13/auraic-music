@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { deleteAdminPlaylist, getAdminAnalytics, getAdminArtists, getAdminOverview, getAdminPlaylists, getAdminSongs, getAdminTopJamendo, getAdminUsers, updateAdminUserRole, getIngestionStatus, runIngestion, getSystemSettings, updateSystemSettings } from '../controllers/admin.controller'
+import { deleteAdminPlaylist, getAdminAnalytics, getAdminArtists, getAdminOverview, getAdminPlaylists, getAdminSongs, getAdminTopJamendo, getAdminUsers, updateAdminUserRole, getIngestionStatus, runIngestion, getSystemSettings, updateSystemSettings, updateSongLyrics } from '../controllers/admin.controller'
 import { authenticate, requireAdmin } from '../middlewares/auth.middleware'
-import { adminSettingsSchema, adminUserRoleSchema, validate } from '../middlewares/validate.middleware'
+import { adminSettingsSchema, adminUserRoleSchema, songLyricsSchema, validate } from '../middlewares/validate.middleware'
 
 const router = Router()
 
@@ -18,5 +18,6 @@ router.get('/ingestion/status', authenticate, requireAdmin, getIngestionStatus)
 router.post('/ingestion/run', authenticate, requireAdmin, runIngestion)
 router.get('/settings', authenticate, requireAdmin, getSystemSettings)
 router.put('/settings', authenticate, requireAdmin, validate(adminSettingsSchema), updateSystemSettings)
+router.patch('/songs/:id/lyrics', authenticate, requireAdmin, validate(songLyricsSchema), updateSongLyrics)
 
 export default router

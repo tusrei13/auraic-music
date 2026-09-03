@@ -134,3 +134,10 @@ export const adminSettingsSchema = z.object({
   params: z.record(z.string(), z.unknown()).optional(),
   query: z.record(z.string(), z.unknown()).optional(),
 })
+
+export const songLyricsSchema = z.object({
+  params: z.object({ id: z.coerce.number().int().positive() }),
+  body: z.object({
+    lyrics: z.union([z.string(), z.array(z.object({ time: z.number(), text: z.string() })), z.null()]),
+  }),
+})
