@@ -8,11 +8,11 @@
     "build": "tsc",
     "start": "node dist/src/index.js",
     "test": "vitest run",
-    "admin:grant": "tsx src/scripts/make-admin.ts",
-    "songs:purge-local": "tsx src/scripts/purge-local-songs.ts",
-    "analytics:daily": "tsx src/scripts/analytics-daily.ts",
-    "db:backup": "tsx src/scripts/backup-database.ts",
-    "db:restore": "tsx src/scripts/restore-database.ts",
+    "admin:grant": "node dist/src/scripts/make-admin.js",
+    "songs:purge-local": "node dist/src/scripts/purge-local-songs.js",
+    "analytics:daily": "node dist/src/scripts/analytics-daily.js",
+    "db:backup": "node dist/src/scripts/backup-database.js",
+    "db:restore": "node dist/src/scripts/restore-database.js",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
@@ -55,3 +55,4 @@
     "deepmerge-ts": "^8.0.0"
   }
 }
+
