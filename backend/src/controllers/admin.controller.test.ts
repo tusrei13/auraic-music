@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { updateAdminUserRole, deleteAdminPlaylist, updateSystemSettings, runIngestion } from './admin.controller'
+import { updateAdminUserRole, deleteAdminPlaylist, updateSystemSettings, runIngestion, updateSongLyrics } from './admin.controller'
 import { prisma } from '../lib/prisma'
 
 vi.mock('../services/jamendo.service', () => ({
@@ -157,5 +157,71 @@ describe('admin.controller audit logging', () => {
     await updateAdminUserRole(req, res)
 
     expect(res.json).toHaveBeenCalledWith({ user: { id: 'user-2', email: 'u@test.com', name: 'U', role: 'USER' } })
+  })
+})
+
+describe('admin.controller lyrics', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('updates song lyrics and logs admin action', async () => {
+    const req = {
+      user: { id: 'admin-1' },
+      params: { id: '1' },
+      body: { lyrics: [{ time: 0, text: 'Hello' }] },
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'test' },
+    } as any
+    const res = {
+      json: vi.fn(),
+      status: vi.fn(() => res),
+      getHeader: vi.fn(),
+    } as any
+
+    vi.spyOn(prisma.song, 'update').mockResolvedValue({ id: 1, title: 'Song', lyrics: [{ time: 0, text: 'Hello' }] } as any)
+    vi.spyOn(prisma.adminAuditLog, 'create').mockResolvedValue({} as any)
+
+    await updateSongLyrics(req, res)
+
+    expect(prisma.song.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { lyrics: [{ time: 0, text: 'Hello' }] },
+      select: { id: true, title: true, lyrics: true },
+    })
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'UPDATE_SONG_LYRICS',
+        targetType: 'Song',
+        targetId: '1',
+        changes: { title: 'Song', lyricsUpdated: true },
+        ipAddress: '127.0.0.1',
+        userAgent: 'test',
+      },
+    })
+    expect(res.json).toHaveBeenCalledWith({ id: 1, title: 'Song', lyrics: [{ time: 0, text: 'Hello' }] })
+  })
+
+  it('returns 404 when song does not exist', async () => {
+    const req = {
+      user: { id: 'admin-1' },
+      params: { id: '999' },
+      body: { lyrics: null },
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'test' },
+    } as any
+    const res = {
+      json: vi.fn(),
+      status: vi.fn(() => res),
+      getHeader: vi.fn(),
+    } as any
+
+    vi.spyOn(prisma.song, 'update').mockRejectedValue(new Error('Record not found'))
+
+    await updateSongLyrics(req, res)
+
+    expect(res.status).toHaveBeenCalledWith(404)
+    expect(res.json).toHaveBeenCalledWith({ error: { code: 'SONG_NOT_FOUND', message: 'Không tìm thấy bài hát' } })
   })
 })
