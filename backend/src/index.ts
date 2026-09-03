@@ -27,6 +27,7 @@ import { observabilityMiddleware } from './middlewares/observability.middleware'
 import { setupGracefulShutdown } from './lib/shutdown'
 import { logger } from './lib/logger'
 import { setupTracing, shutdownTracing } from './lib/tracing'
+import { setupOpenAPI } from './lib/openapi'
 
 dotenv.config()
 
@@ -104,6 +105,9 @@ app.use('/api', genreRoutes)
 
 // Static Media Hosting
 app.use('/media', express.static(path.resolve(process.env.MEDIA_ROOT || path.join(process.cwd(), 'media'))))
+
+// OpenAPI Documentation
+setupOpenAPI(app)
 
 app.use((_req, res) => {
   sendError(res, 404, 'ENDPOINT_NOT_FOUND', 'Không tìm thấy endpoint')
