@@ -1,5 +1,7 @@
 import 'dotenv/config'
 
+import { cacheGet, cacheSet } from '../lib/redis'
+
 interface JamendoTrack {
   id: number
   name: string
@@ -45,7 +47,6 @@ const JAMENDO_ARTISTS_API_URL = 'https://api.jamendo.com/v3.0/artists/'
 const CACHE_TTL_MS = 300_000 // 5 minutes cache
 const MAX_ATTEMPTS = 3
 const REQUEST_TIMEOUT_MS = 15_000 // 15 seconds timeout
-const cache = new Map<string, { expiresAt: number; tracks: JamendoSong[] }>()
 
 const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
@@ -123,9 +124,10 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
   if (resolvedArtistId) params.set('artist_id', resolvedArtistId)
   if (options.albumId?.trim()) params.set('album_id', options.albumId.replace(/^jamendo:/, ''))
 
-  const cacheKey = params.toString()
-  const cached = cache.get(cacheKey)
-  if (cached && cached.expiresAt > Date.now()) return cached.tracks
+  const paramsKey = params.toString()
+  const redisCacheKey = `jamendo:tracks:${paramsKey}`
+  const cached = await cacheGet<JamendoSong[]>(redisCacheKey)
+  if (cached) return cached
 
   let response: Response | undefined
   let lastError: unknown
@@ -144,11 +146,7 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     if (attempt < MAX_ATTEMPTS) await wait(300 * 2 ** (attempt - 1))
   }
 
-  // If request failed but we have stale cached data, return stale cache gracefully
   if (!response?.ok) {
-    if (cached && cached.tracks.length > 0) {
-      return cached.tracks
-    }
     throw lastError instanceof Error ? lastError : new Error('Jamendo request failed')
   }
 
@@ -179,6 +177,6 @@ export const getJamendoTracks = async (options: { limit?: number; offset?: numbe
     genres: track.musicinfo?.tags?.genres || [],
   }))
 
-  if (tracks.length > 0) cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, tracks })
+  if (tracks.length > 0) await cacheSet(redisCacheKey, tracks, 300)
   return tracks
 }

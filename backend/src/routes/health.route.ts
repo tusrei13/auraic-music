@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { register } from '../lib/metrics'
+import { getCacheStatus } from '../lib/redis'
 
 const router = Router()
 
@@ -25,7 +26,6 @@ router.get('/readyz', async (_req: Request, res: Response) => {
 
   try {
     const dbStart = Date.now()
-    // Simple query to verify PostgreSQL connection pool
     await prisma.$queryRaw`SELECT 1`
     dbLatency = Date.now() - dbStart
   } catch (error) {
@@ -33,6 +33,7 @@ router.get('/readyz', async (_req: Request, res: Response) => {
   }
 
   const memory = process.memoryUsage()
+  const cache = getCacheStatus()
   const isHealthy = dbStatus === 'healthy'
 
   const responsePayload = {
@@ -41,6 +42,10 @@ router.get('/readyz', async (_req: Request, res: Response) => {
       database: {
         status: dbStatus,
         latencyMs: dbLatency
+      },
+      cache: {
+        mode: cache.mode,
+        inMemoryKeyCount: cache.inMemoryKeyCount
       },
       process: {
         uptimeSeconds: Math.floor(process.uptime()),

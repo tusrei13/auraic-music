@@ -47,6 +47,8 @@ COPY --from=builder --chown=auraic:auraic /app/prisma ./prisma
 COPY --from=builder --chown=auraic:auraic /app/src/controllers ./src/controllers
 COPY --from=builder --chown=auraic:auraic /app/src/routes ./src/routes
 COPY --from=builder --chown=auraic:auraic /app/src/lib ./src/lib
+COPY --from=builder --chown=auraic:auraic /app/src/services ./src/services
+COPY --from=builder --chown=auraic:auraic /app/src/middlewares ./src/middlewares
 COPY --from=builder --chown=auraic:auraic /app/package.json ./package.json
 
 RUN mkdir -p /app/media && chown -R auraic:auraic /app/media
