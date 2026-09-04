@@ -576,7 +576,11 @@ export default function Player() {
                     return (
                       <motion.div
                         key={index}
-                        ref={isCurrent ? activeLyricRef : null}
+                        ref={(node) => {
+                          if (isCurrent) {
+                            activeLyricRef.current = node;
+                          }
+                        }}
                         onClick={() => handleLyricClick(line.time)}
                         className={`cursor-pointer select-none transition-all duration-300 py-1 ${
                           isCurrent

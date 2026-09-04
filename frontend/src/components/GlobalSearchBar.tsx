@@ -140,18 +140,28 @@ export default function GlobalSearchBar() {
           <Loader2 className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-indigo-300" />
         ) : (
           <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
-            {voiceSearch.state !== "unsupported" && (
+            {voiceSearch.state !== "unsupported" ? (
               <button
                 type="button"
                 onClick={voiceSearch.toggle}
                 aria-label={voiceSearch.isListening ? "Dừng ghi âm" : "Tìm kiếm bằng giọng nói"}
                 title={voiceSearch.isListening ? "Dừng ghi âm" : "Tìm kiếm bằng giọng nói"}
-                className={`flex h-9 w-9 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${voiceSearch.isListening ? "text-rose-300 hover:bg-rose-400/15" : "text-white/35 hover:bg-white/[0.08] hover:text-white"}`}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${voiceSearch.isListening ? "text-rose-300 hover:bg-rose-400/15" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
               >
                 {voiceSearch.isListening && (
                   <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500/40" />
                 )}
                 <Mic className="relative h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled
+                aria-label="Trình duyệt không hỗ trợ tìm kiếm bằng giọng nói"
+                title="Trình duyệt không hỗ trợ tìm kiếm bằng giọng nói"
+                className="flex h-9 w-9 cursor-not-allowed items-center justify-center rounded-full text-white/25 focus-visible:outline-none"
+              >
+                <Mic className="h-4 w-4" />
               </button>
             )}
             {query ? (
