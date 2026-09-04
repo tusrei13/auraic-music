@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Play, Search, X } from "lucide-react";
+import { Loader2, Mic, Play, Search, X } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { searchAll, type Album, type Artist, type JamendoSong } from "@/lib/api";
 import Artwork from "@/components/Artwork";
+import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 
 const fallbackArtwork = "/favicon.ico";
 
@@ -28,6 +29,14 @@ export default function GlobalSearchBar() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const voiceSearch = useVoiceSearch("vi-VN");
+
+  useEffect(() => {
+    if (voiceSearch.transcript) {
+      setQuery(voiceSearch.transcript);
+      setOpen(true);
+    }
+  }, [voiceSearch.transcript]);
 
   useEffect(() => {
     const normalizedQuery = query.trim();
@@ -125,15 +134,33 @@ export default function GlobalSearchBar() {
           aria-expanded={open && Boolean(query.trim())}
           aria-controls="global-search-results"
           role="combobox"
-          className="w-full rounded-2xl border border-white/15 bg-white/[0.07] py-4 pl-12 pr-12 text-base text-white outline-none backdrop-blur-xl transition placeholder:text-white/35 focus:border-fuchsia-400/70 focus:bg-white/[0.1]"
+          className="w-full rounded-2xl border border-white/15 bg-white/[0.07] py-4 pl-12 pr-24 text-base text-white outline-none backdrop-blur-xl transition placeholder:text-white/35 focus:border-fuchsia-400/70 focus:bg-white/[0.1]"
         />
         {loading ? (
           <Loader2 className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-indigo-300" />
-        ) : query ? (
-          <button type="button" onClick={() => setQuery("")} aria-label="Xóa nội dung tìm kiếm" className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-white/35 transition hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
-            <X aria-hidden="true" className="h-4 w-4" />
-          </button>
-        ) : null}
+        ) : (
+          <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+            {voiceSearch.state !== "unsupported" && (
+              <button
+                type="button"
+                onClick={voiceSearch.toggle}
+                aria-label={voiceSearch.isListening ? "Dừng ghi âm" : "Tìm kiếm bằng giọng nói"}
+                title={voiceSearch.isListening ? "Dừng ghi âm" : "Tìm kiếm bằng giọng nói"}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${voiceSearch.isListening ? "text-rose-300 hover:bg-rose-400/15" : "text-white/35 hover:bg-white/[0.08] hover:text-white"}`}
+              >
+                {voiceSearch.isListening && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500/40" />
+                )}
+                <Mic className="relative h-4 w-4" />
+              </button>
+            )}
+            {query ? (
+              <button type="button" onClick={() => setQuery("")} aria-label="Xóa nội dung tìm kiếm" className="flex h-9 w-9 items-center justify-center rounded-full text-white/35 transition hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
+                <X aria-hidden="true" className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+        )}
 
         {open && query.trim() && !loading && (
           <div id="global-search-results" role="listbox" aria-label="Kết quả tìm kiếm" className="absolute left-0 right-0 top-[calc(100%+8px)] max-h-[min(32rem,calc(100vh-8rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#15151d]/95 p-3 shadow-2xl backdrop-blur-2xl">
@@ -168,8 +195,11 @@ export default function GlobalSearchBar() {
         )}
       </div>
       <p className="sr-only" role="status" aria-live="polite">
-        {loading ? "Đang tìm kiếm" : query.trim() ? `Tìm thấy ${results.length} bài hát` : ""}
+        {loading ? "Đang tìm kiếm" : voiceSearch.isListening ? "Đang nghe giọng nói..." : query.trim() ? `Tìm thấy ${results.length} bài hát` : ""}
       </p>
+      {voiceSearch.errorMessage && (
+        <p className="mx-auto mt-2 max-w-4xl text-center text-xs text-rose-300/80">{voiceSearch.errorMessage}</p>
+      )}
     </div>
   );
 }
