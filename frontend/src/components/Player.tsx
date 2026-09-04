@@ -20,6 +20,7 @@ import {
   X,
   Heart,
   ListMusic,
+  Radio,
 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -74,6 +75,9 @@ export default function Player() {
     playbackError,
     setPlaybackStatus,
     recordListening,
+    crossfadeEnabled,
+    crossfadeDuration,
+    toggleCrossfade,
   } = usePlayerStore();
 
   const [volume, setVolume] = useState(0.7);
@@ -452,7 +456,7 @@ export default function Player() {
     }
     if (repeatMode === "one" && audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(() => { });
     } else {
       nextTrack();
     }
@@ -582,21 +586,19 @@ export default function Player() {
                           }
                         }}
                         onClick={() => handleLyricClick(line.time)}
-                        className={`cursor-pointer select-none transition-all duration-300 py-1 ${
-                          isCurrent
-                            ? "opacity-100 text-white"
-                            : isPassed
+                        className={`cursor-pointer select-none transition-all duration-300 py-1 ${isCurrent
+                          ? "opacity-100 text-white"
+                          : isPassed
                             ? "opacity-35 text-white hover:opacity-75 hover:translate-x-1"
                             : "opacity-20 text-white hover:opacity-65 hover:translate-x-1"
-                        }`}
+                          }`}
                         whileHover={{ x: 4 }}
                       >
                         <h2
-                          className={`text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-[34px] transition-colors duration-300 ${
-                            isCurrent
-                              ? "font-extrabold text-white drop-shadow-[0_2px_20px_rgba(255,255,255,0.45)]"
-                              : ""
-                          }`}
+                          className={`text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-[34px] transition-colors duration-300 ${isCurrent
+                            ? "font-extrabold text-white drop-shadow-[0_2px_20px_rgba(255,255,255,0.45)]"
+                            : ""
+                            }`}
                         >
                           {line.text}
                         </h2>
@@ -762,6 +764,16 @@ export default function Player() {
                 whileTap={{ scale: 0.9 }}
               >
                 <Shuffle className="w-4 h-4" />
+              </motion.button>
+
+              <motion.button
+                onClick={toggleCrossfade}
+                className={`transition-all p-1 cursor-pointer ${crossfadeEnabled ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-white/40 hover:text-white'}`}
+                title={`Crossfade ${crossfadeEnabled ? 'bật' : 'tắt'} (${crossfadeDuration}s)`}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Radio className="w-4 h-4" />
               </motion.button>
 
               <motion.button onClick={() => handleSkip("previous")} className="text-white/60 hover:text-white transition-all cursor-pointer" whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>

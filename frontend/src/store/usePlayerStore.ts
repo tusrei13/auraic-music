@@ -36,6 +36,8 @@ interface PlayerState {
   playbackError: string | null;
   isShuffle: boolean;
   repeatMode: RepeatMode;
+  crossfadeEnabled: boolean;
+  crossfadeDuration: number;
   likedIds: (number | string)[];
   likedTracks: Track[];
 
@@ -51,6 +53,8 @@ interface PlayerState {
   togglePlay: () => void;
   toggleShuffle: () => void;
   toggleRepeat: () => void;
+  toggleCrossfade: () => void;
+  setCrossfadeDuration: (duration: number) => void;
   nextTrack: () => void;
   prevTrack: () => void;
   toggleLike: (trackOrId: number | string | Track) => Promise<void>;
@@ -77,6 +81,33 @@ const shuffleArray = <T>(array: T[]): T[] => {
   return arr;
 };
 
+const getGenrePriority = (track: Track, currentTrack: Track | null): number => {
+  if (!currentTrack) return 0;
+  const currentGenre = typeof currentTrack.genre === "string" ? currentTrack.genre : currentTrack.genre?.name;
+  const trackGenre = typeof track.genre === "string" ? track.genre : track.genre?.name;
+  if (currentGenre && trackGenre && currentGenre === trackGenre) return 2;
+  return 0;
+};
+
+const getArtistPenalty = (track: Track, currentTrack: Track | null): number => {
+  if (!currentTrack) return 0;
+  const currentArtist = typeof currentTrack.artist === "string" ? currentTrack.artist : currentTrack.artist?.name;
+  const trackArtist = typeof track.artist === "string" ? track.artist : track.artist?.name;
+  if (currentArtist && trackArtist && currentArtist === trackArtist) return -5;
+  return 0;
+};
+
+export const smartShuffleArray = (array: Track[], currentTrack: Track | null): Track[] => {
+  if (array.length <= 1) return array;
+  const arr = [...array];
+  const scored = arr.map((track) => ({
+    track,
+    score: getGenrePriority(track, currentTrack) + getArtistPenalty(track, currentTrack) + Math.random() * 2,
+  }));
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map((item) => item.track);
+};
+
 let activeUserId: string | null = null;
 
 const saveLikes = (userId: string | null, likedIds: (number | string)[]) => {
@@ -99,6 +130,8 @@ export const usePlayerStore = create<PlayerState>()(
       playbackError: null,
       isShuffle: false,
       repeatMode: "off",
+      crossfadeEnabled: false,
+      crossfadeDuration: 3,
       likedIds: [],
       likedTracks: [],
 
@@ -115,7 +148,7 @@ export const usePlayerStore = create<PlayerState>()(
             likedIds = [];
           }
         }
-        set({ currentTrack: null, userQueue: [], contextQueue: [], originalQueue: [], contextIndex: 0, isPlaying: false, playbackStatus: "idle", playbackError: null, likedIds, likedTracks: [] });
+        set({ currentTrack: null, userQueue: [], contextQueue: [], originalQueue: [], contextIndex: 0, isPlaying: false, playbackStatus: "idle", playbackError: null, isShuffle: false, repeatMode: "off", crossfadeEnabled: false, crossfadeDuration: 3, likedIds, likedTracks: [] });
         if (userId && typeof window !== "undefined" && localStorage.getItem("token")) {
           void getLikedSongs().then((likes) => {
             if (activeUserId !== userId) return;
@@ -275,7 +308,7 @@ export const usePlayerStore = create<PlayerState>()(
 
             return { 
               isShuffle: true, 
-              contextQueue: [...played, ...shuffleArray(remaining)] 
+              contextQueue: [...played, ...smartShuffleArray(remaining, state.currentTrack)] 
             };
           } else if (!newIsShuffle && state.originalQueue.length > 0 && state.currentTrack) {
             const cleanOriginal = removeDuplicateTracks(state.originalQueue);
@@ -295,8 +328,14 @@ export const usePlayerStore = create<PlayerState>()(
           return { repeatMode: modes[(modes.indexOf(state.repeatMode) + 1) % modes.length] };
         }),
 
+      toggleCrossfade: () =>
+        set((state) => ({ crossfadeEnabled: !state.crossfadeEnabled })),
+
+      setCrossfadeDuration: (duration: number) =>
+        set({ crossfadeDuration: Math.min(10, Math.max(1, duration)) }),
+
       nextTrack: () => {
-        const { userQueue, contextQueue, contextIndex, repeatMode, isShuffle } = get();
+        const { userQueue, contextQueue, contextIndex, repeatMode, isShuffle, currentTrack } = get();
 
         if (repeatMode === "one") {
           set({ isPlaying: true });
@@ -320,18 +359,12 @@ export const usePlayerStore = create<PlayerState>()(
 
         if (isShuffle) {
           if (contextIndex < newQueue.length - 1) {
-            const randomIndex = Math.floor(
-              Math.random() * (newQueue.length - (contextIndex + 1))
-            ) + (contextIndex + 1);
-
-            [newQueue[contextIndex + 1], newQueue[randomIndex]] = [
-              newQueue[randomIndex],
-              newQueue[contextIndex + 1],
-            ];
-
+            const remaining = newQueue.slice(contextIndex + 1);
+            const shuffled = smartShuffleArray(remaining, currentTrack);
+            newQueue = [...newQueue.slice(0, contextIndex + 1), ...shuffled];
             nextIdx = contextIndex + 1;
           } else {
-            newQueue = shuffleArray(newQueue);
+            newQueue = smartShuffleArray(newQueue, currentTrack);
             nextIdx = 0;
           }
         } else {
