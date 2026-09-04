@@ -17,6 +17,52 @@ test('search input is keyboard accessible', async ({ page }) => {
   await expect(search).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('voice search puts the recognized phrase into the search input', async ({ page }) => {
+  await page.addInitScript(() => {
+    class FakeSpeechRecognition {
+      static instance: FakeSpeechRecognition;
+      onstart: (() => void) | null = null;
+      onresult: ((event: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null = null;
+      onerror: ((event: { error: string; message: string }) => void) | null = null;
+      onnomatch: (() => void) | null = null;
+      onend: (() => void) | null = null;
+
+      constructor() {
+        FakeSpeechRecognition.instance = this;
+      }
+
+      start() {
+        this.onstart?.();
+      }
+
+      stop() {
+        this.onend?.();
+      }
+
+      abort() {
+        this.onend?.();
+      }
+    }
+
+    Object.defineProperty(window, 'SpeechRecognition', { value: FakeSpeechRecognition });
+    Object.defineProperty(window, 'webkitSpeechRecognition', { value: FakeSpeechRecognition });
+    Object.defineProperty(window, '__emitSpeechResult', {
+      value: (transcript: string) => FakeSpeechRecognition.instance.onresult?.({
+        resultIndex: 0,
+        results: [{ isFinal: true, 0: { transcript } }],
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Tìm kiếm bằng giọng nói' }).click();
+  await page.evaluate(() => {
+    (window as unknown as { __emitSpeechResult: (transcript: string) => void }).__emitSpeechResult('nhạc ambient');
+  });
+
+  await expect(page.getByRole('combobox', { name: 'Tìm kiếm nhạc' })).toHaveValue('nhạc ambient');
+});
+
 test('search keeps a visible keyboard focus indicator', async ({ page }) => {
   await page.goto('/');
   const search = page.getByRole('combobox', { name: 'Tìm kiếm nhạc' });

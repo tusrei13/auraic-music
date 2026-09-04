@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Mic, Play, Search, X } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
@@ -30,7 +30,36 @@ export default function GlobalSearchBar() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const voiceSearch = useVoiceSearch("vi-VN");
+  const wasListeningRef = useRef(false);
 
+  const executeSearch = useCallback((searchTerm: string) => {
+    const normalized = searchTerm.trim();
+    if (!normalized) {
+      setResults([]);
+      setArtists([]);
+      setAlbums([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    searchAll(normalized)
+      .then((searchResult) => {
+        setResults(searchResult.songs as JamendoSong[]);
+        setArtists(searchResult.artists);
+        setAlbums(searchResult.albums);
+      })
+      .catch(() => {
+        setResults([]);
+        setArtists([]);
+        setAlbums([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  // Update query when voice recognition updates
   useEffect(() => {
     if (voiceSearch.transcript) {
       setQuery(voiceSearch.transcript);
@@ -38,7 +67,23 @@ export default function GlobalSearchBar() {
     }
   }, [voiceSearch.transcript]);
 
+  // When voice search finishes listening, immediately trigger search for instant response
   useEffect(() => {
+    if (wasListeningRef.current && !voiceSearch.isListening) {
+      const phraseToSearch = (voiceSearch.transcript || query).trim();
+      if (phraseToSearch) {
+        setQuery(phraseToSearch);
+        setOpen(true);
+        executeSearch(phraseToSearch);
+      }
+    }
+    wasListeningRef.current = voiceSearch.isListening;
+  }, [voiceSearch.isListening, voiceSearch.transcript, query, executeSearch]);
+
+  // Debounced search for manual typing
+  useEffect(() => {
+    if (voiceSearch.isListening) return; // Don't debounce while voice is streaming
+
     const normalizedQuery = query.trim();
     if (!normalizedQuery) {
       setResults([]);
@@ -75,7 +120,7 @@ export default function GlobalSearchBar() {
       active = false;
       window.clearTimeout(timeoutId);
     };
-  }, [query]);
+  }, [query, voiceSearch.isListening]);
 
   useEffect(() => {
     const closeResults = (event: MouseEvent) => {
@@ -112,6 +157,8 @@ export default function GlobalSearchBar() {
     router.push(`/album/${encodeURIComponent(album.id)}?name=${encodeURIComponent(album.title)}`);
   };
 
+  const hasResults = results.length > 0 || artists.length > 0 || albums.length > 0;
+
   return (
     <div ref={containerRef} className="sticky top-0 z-40 border-b border-white/10 bg-[#090910]/80 px-5 py-4 backdrop-blur-2xl sm:px-8">
       <div className="relative mx-auto max-w-4xl">
@@ -123,13 +170,15 @@ export default function GlobalSearchBar() {
             if (event.key === "Escape") {
               setOpen(false);
               event.currentTarget.blur();
+            } else if (event.key === "Enter" && query.trim()) {
+              executeSearch(query);
             }
           }}
           onChange={(event) => {
             setQuery(event.target.value);
             setOpen(true);
           }}
-          placeholder="Tìm bài hát, nghệ sĩ hoặc album..."
+          placeholder={voiceSearch.isListening ? "Đang nghe giọng nói của bạn..." : "Tìm bài hát, nghệ sĩ hoặc album..."}
           aria-label="Tìm kiếm nhạc"
           aria-expanded={open && Boolean(query.trim())}
           aria-controls="global-search-results"
@@ -146,10 +195,10 @@ export default function GlobalSearchBar() {
                 onClick={voiceSearch.toggle}
                 aria-label={voiceSearch.isListening ? "Dừng ghi âm" : "Tìm kiếm bằng giọng nói"}
                 title={voiceSearch.isListening ? "Dừng ghi âm" : "Tìm kiếm bằng giọng nói"}
-                className={`flex h-9 w-9 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${voiceSearch.isListening ? "text-rose-300 hover:bg-rose-400/15" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
+                className={`relative flex h-9 w-9 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${voiceSearch.isListening ? "text-rose-300 hover:bg-rose-400/15" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
               >
                 {voiceSearch.isListening && (
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500/40" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500/40 opacity-75" />
                 )}
                 <Mic className="relative h-4 w-4" />
               </button>
@@ -172,9 +221,14 @@ export default function GlobalSearchBar() {
           </div>
         )}
 
-        {open && query.trim() && !loading && (
+        {open && query.trim() && (
           <div id="global-search-results" role="listbox" aria-label="Kết quả tìm kiếm" className="absolute left-0 right-0 top-[calc(100%+8px)] max-h-[min(32rem,calc(100vh-8rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#15151d]/95 p-3 shadow-2xl backdrop-blur-2xl">
-            {results.length > 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-white/50">
+                <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
+                <span>Đang tìm kiếm &ldquo;{query.trim()}&rdquo;...</span>
+              </div>
+            ) : hasResults ? (
               <div className="space-y-4">
                 {artists.slice(0, 4).length > 0 && <div>
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Nghệ sĩ</p>
@@ -183,14 +237,14 @@ export default function GlobalSearchBar() {
                     <span className="truncate text-sm font-semibold text-white">{artist.name}</span>
                   </button>)}
                 </div>}
-                <div>
+                {results.slice(0, 8).length > 0 && <div>
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Bài hát</p>
                   {results.slice(0, 8).map((track) => <button key={track.id} role="option" aria-selected={false} type="button" onClick={() => chooseTrack(track)} className="group flex min-h-12 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
                     <Artwork src={track.image || fallbackArtwork} alt="" className="h-10 w-10 rounded-lg object-cover" width={40} height={40} />
                     <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-white">{track.title}</span><span className="block truncate text-xs text-white/45">{track.artist.name}</span></span>
                     <Play aria-hidden="true" className="h-4 w-4 shrink-0 fill-white text-white/60 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100" />
                   </button>)}
-                </div>
+                </div>}
                 {albums.slice(0, 4).length > 0 && <div>
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Album</p>
                   {albums.slice(0, 4).map((album) => <button key={album.id} role="option" aria-selected={false} type="button" onClick={() => chooseAlbum(album)} className="flex min-h-11 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
@@ -199,7 +253,7 @@ export default function GlobalSearchBar() {
                 </div>}
               </div>
             ) : (
-              <p className="px-3 py-4 text-center text-xs text-white/45">Không tìm thấy bài hát phù hợp.</p>
+              <p className="px-3 py-6 text-center text-xs text-white/45">Không tìm thấy bài hát, nghệ sĩ hoặc album phù hợp cho &ldquo;{query.trim()}&rdquo;.</p>
             )}
           </div>
         )}
