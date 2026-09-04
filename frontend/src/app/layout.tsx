@@ -23,8 +23,40 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" className={`${plusJakarta.variable} dark`}>
-      <body className={`${plusJakarta.className} h-screen flex flex-col overflow-hidden bg-auraic-bg text-auraic-text antialiased`}>
+    <html lang="vi" className={`${plusJakarta.variable} dark`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const removeBis = function() {
+                    const elements = document.querySelectorAll('[bis_skin_checked]');
+                    for (let i = 0; i < elements.length; i++) {
+                      elements[i].removeAttribute('bis_skin_checked');
+                    }
+                  };
+                  removeBis();
+                  const observer = new MutationObserver(function(mutations) {
+                    for (let i = 0; i < mutations.length; i++) {
+                      const m = mutations[i];
+                      if (m.type === 'attributes' && m.attributeName === 'bis_skin_checked' && m.target && m.target.removeAttribute) {
+                        m.target.removeAttribute('bis_skin_checked');
+                      }
+                    }
+                  });
+                  observer.observe(document.documentElement, {
+                    attributes: true,
+                    subtree: true,
+                    attributeFilter: ['bis_skin_checked'],
+                  });
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className={`${plusJakarta.className} h-screen flex flex-col overflow-hidden bg-auraic-bg text-auraic-text antialiased`} suppressHydrationWarning>
         <AuthProvider>
         <QueryProvider>
         <DynamicTheme />

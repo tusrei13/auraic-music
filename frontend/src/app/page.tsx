@@ -143,9 +143,9 @@ export default function HomePage() {
   };
 
   return (
-    <motion.div className="min-h-full overflow-y-auto scrollbar-none px-5 pb-36 pt-3 text-white sm:px-8 lg:px-12" variants={container} initial="hidden" animate="show">
+    <motion.div suppressHydrationWarning className="min-h-full overflow-y-auto scrollbar-none px-5 pb-36 pt-3 text-white sm:px-8 lg:px-12" variants={container} initial="hidden" animate="show">
       {catalogError && (
-        <motion.div className="mb-4 flex items-center justify-between rounded-2xl border border-rose-300/25 bg-rose-300/[0.08] px-5 py-3" variants={item} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div suppressHydrationWarning className="mb-4 flex items-center justify-between rounded-2xl border border-rose-300/25 bg-rose-300/[0.08] px-5 py-3" variants={item} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-3">
             <span className="h-2 w-2 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(251,113,133,0.8)]" />
             <p className="text-sm text-rose-100">{catalogError}</p>
@@ -156,10 +156,10 @@ export default function HomePage() {
         </motion.div>
       )}
       {/* HERO SECTION */}
-      <motion.section style={{ opacity: heroOpacity, scale: heroScale }} className="relative isolate grid min-h-[470px] grid-cols-1 items-end overflow-hidden rounded-[32px] border border-auraic-border bg-auraic-surface p-6 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:p-14">
-        <div className="absolute -left-20 top-10 -z-10 h-72 w-72 rounded-full bg-fuchsia-600/25 blur-[110px]" />
-        <div className="absolute right-10 top-0 -z-10 h-80 w-80 rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="relative z-10 pb-2 lg:pb-8">
+      <motion.section suppressHydrationWarning style={{ opacity: heroOpacity, scale: heroScale }} className="relative isolate grid min-h-[470px] grid-cols-1 items-end overflow-hidden rounded-[32px] border border-auraic-border bg-auraic-surface p-6 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:p-14">
+        <div suppressHydrationWarning className="absolute -left-20 top-10 -z-10 h-72 w-72 rounded-full bg-fuchsia-600/25 blur-[110px]" />
+        <div suppressHydrationWarning className="absolute right-10 top-0 -z-10 h-80 w-80 rounded-full bg-cyan-500/20 blur-[120px]" />
+        <div suppressHydrationWarning className="relative z-10 pb-2 lg:pb-8">
           <motion.p className="mb-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
             <Sparkles className="h-4 w-4" /> The Auraic experience
           </motion.p>
@@ -190,7 +190,13 @@ export default function HomePage() {
             className="relative h-full w-full rounded-[24%] object-cover shadow-2xl transition duration-700"
             whileHover={{ scale: 1.025 }}
           >
-            <Artwork src={featured?.image || "https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=1200&auto=format&fit=crop"} alt={featured?.title || "Auraic atmospheric artwork"} className="h-full w-full rounded-[24%] object-cover shadow-2xl" />
+            <Artwork
+              src={featured?.image || "https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=1200&auto=format&fit=crop"}
+              alt={featured?.title || "Auraic atmospheric artwork"}
+              priority
+              loading="eager"
+              className="h-full w-full rounded-[24%] object-cover shadow-2xl"
+            />
           </motion.div>
           <motion.div className="absolute bottom-5 left-5 right-5 flex items-end justify-between rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur-xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
             <div className="min-w-0">
