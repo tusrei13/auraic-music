@@ -4,7 +4,7 @@ import Artwork from "@/components/Artwork";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Library, User as UserIcon, LogIn, LogOut, ShieldCheck, Disc3, Settings2, BadgeCheck } from "lucide-react";
+import { Home, Compass, Library, User as UserIcon, LogIn, LogOut, ShieldCheck, Disc3, Settings2, BadgeCheck, BarChart3 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { name: "Khám phá", href: "/discover", icon: Compass },
   { name: "Thể loại", href: "/genres", icon: Disc3 },
   { name: "Thư viện", href: "/library", icon: Library },
+  { name: "Thống kê", href: "/stats", icon: BarChart3 },
   { name: "Trang cá nhân", href: "/profile", icon: UserIcon },
   { name: "Cài đặt", href: "/settings", icon: Settings2 },
 ];
