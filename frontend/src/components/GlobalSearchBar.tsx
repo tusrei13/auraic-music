@@ -29,8 +29,9 @@ export default function GlobalSearchBar() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const voiceSearch = useVoiceSearch("vi-VN");
-  const wasListeningRef = useRef(false);
+  const hasAutoSearchedRef = useRef(false);
 
   const executeSearch = useCallback((searchTerm: string) => {
     const normalized = searchTerm.trim();
@@ -67,18 +68,19 @@ export default function GlobalSearchBar() {
     }
   }, [voiceSearch.transcript]);
 
-  // When voice search finishes listening, immediately trigger search for instant response
+  // When voice search finishes listening, immediately trigger search for instant response.
+  // Also covers the case where onend fires before the final onresult transcript arrives.
   useEffect(() => {
-    if (wasListeningRef.current && !voiceSearch.isListening) {
-      const phraseToSearch = (voiceSearch.transcript || query).trim();
-      if (phraseToSearch) {
-        setQuery(phraseToSearch);
-        setOpen(true);
-        executeSearch(phraseToSearch);
-      }
+    if (!voiceSearch.isListening && voiceSearch.transcript && !hasAutoSearchedRef.current) {
+      hasAutoSearchedRef.current = true;
+      setQuery(voiceSearch.transcript);
+      setOpen(true);
+      executeSearch(voiceSearch.transcript);
     }
-    wasListeningRef.current = voiceSearch.isListening;
-  }, [voiceSearch.isListening, voiceSearch.transcript, query, executeSearch]);
+    if (voiceSearch.isListening) {
+      hasAutoSearchedRef.current = false;
+    }
+  }, [voiceSearch.isListening, voiceSearch.transcript, executeSearch]);
 
   // Debounced search for manual typing
   useEffect(() => {
@@ -164,6 +166,7 @@ export default function GlobalSearchBar() {
       <div className="relative mx-auto max-w-4xl">
         <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
         <input
+          ref={inputRef}
           value={query}
           onFocus={() => setOpen(true)}
           onKeyDown={(event) => {
@@ -205,10 +208,12 @@ export default function GlobalSearchBar() {
             ) : (
               <button
                 type="button"
-                disabled
-                aria-label="Trình duyệt không hỗ trợ tìm kiếm bằng giọng nói"
-                title="Trình duyệt không hỗ trợ tìm kiếm bằng giọng nói"
-                className="flex h-9 w-9 cursor-not-allowed items-center justify-center rounded-full text-white/25 focus-visible:outline-none"
+                onClick={() => {
+                  inputRef.current?.focus();
+                }}
+                aria-label="Trình duyệt không hỗ trợ tìm kiếm bằng giọng nói. Nhấn để gõ tìm kiếm."
+                title="Trình duyệt này chưa hỗ trợ tìm kiếm bằng giọng nói. Vui lòng dùng Chrome hoặc Edge."
+                className="flex h-9 w-9 items-center justify-center rounded-full text-white/25 transition hover:bg-white/[0.08] hover:text-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
               >
                 <Mic className="h-4 w-4" />
               </button>

@@ -4,9 +4,9 @@ services:
     container_name: auraic-postgres-dev
     restart: unless-stopped
     environment:
-      POSTGRES_USER: auraic
-      POSTGRES_PASSWORD: auraic_dev_secret
-      POSTGRES_DB: auraic_dev
+      POSTGRES_USER: ${POSTGRES_USER:-auraic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-auraic_dev_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-auraic_dev}
     volumes:
       - auraic_dev_pgdata:/var/lib/postgresql/data
     ports:
@@ -36,8 +36,8 @@ services:
     depends_on:
       - prometheus
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-auraic_admin}
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:

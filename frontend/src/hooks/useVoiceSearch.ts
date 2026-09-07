@@ -82,6 +82,7 @@ export function useVoiceSearch(language = "vi-VN"): UseVoiceSearchResult {
   const isListeningRef = useRef(false);
   const currentTranscriptRef = useRef("");
   const isFinishingRef = useRef(false);
+  const errorMessageRef = useRef<string | null>(null);
 
   // Timers
   const maxSessionTimeoutRef = useRef<number | null>(null);
@@ -107,6 +108,11 @@ export function useVoiceSearch(language = "vi-VN"): UseVoiceSearchResult {
       noSpeechTimeoutRef.current = null;
     }
   }, []);
+
+  // Keep errorMessageRef in sync with state so onend sees the latest value
+  useEffect(() => {
+    errorMessageRef.current = errorMessage;
+  }, [errorMessage]);
 
   // Check support on mount
   useEffect(() => {
@@ -300,7 +306,7 @@ export function useVoiceSearch(language = "vi-VN"): UseVoiceSearchResult {
       const finalPhrase = currentTranscriptRef.current.trim();
       if (finalPhrase) {
         setTranscript(finalPhrase);
-      } else if (!errorMessage) {
+      } else if (!errorMessageRef.current) {
         setErrorMessage("Không nghe rõ giọng nói, hãy thử lại");
       }
 
@@ -321,7 +327,7 @@ export function useVoiceSearch(language = "vi-VN"): UseVoiceSearchResult {
       setErrorMessage("Không thể bật micro, vui lòng kiểm tra quyền thiết bị");
       recognitionRef.current = null;
     }
-  }, [clearAllTimers, errorMessage, finishRecognition, language]);
+  }, [clearAllTimers, finishRecognition, language]);
 
   const toggle = useCallback(() => {
     if (isListeningRef.current) {

@@ -61,4 +61,4 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:5000/healthz || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/src/index.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/src/index.js"]
