@@ -134,7 +134,8 @@ export default function SessionLobbyPage() {
             <TiltCard
               key={session.id}
               onClick={() => handleJoinOrCreate(session.id)}
-              glowColor="rgba(139, 92, 246, 0.45)"
+              glowColor="rgba(139, 92, 246, 0.5)"
+              depthZ={16}
               className="group p-5"
             >
               <div className="space-y-4">
@@ -144,7 +145,7 @@ export default function SessionLobbyPage() {
                     <img
                       src={session.hostAvatar}
                       alt={session.hostName}
-                      className="h-9 w-9 rounded-full object-cover border border-cyan-400/40"
+                      className="h-9 w-9 rounded-full object-cover border border-cyan-400/40 shadow-sm"
                     />
                     <div>
                       <p className="text-xs font-semibold text-white/90">{session.hostName}</p>
@@ -155,20 +156,23 @@ export default function SessionLobbyPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80">
+                  <div className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80 border border-white/10">
                     <Headphones className="h-3 w-3 text-cyan-300" />
                     <span>{session.listenersCount}</span>
                   </div>
                 </div>
 
-                {/* Cover & Track Title */}
-                <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/10 shadow-md">
+                {/* Cover & Track Title with 3D elevation */}
+                <div
+                  style={{ transform: "translateZ(14px)" }}
+                  className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/15 shadow-[0_8px_25px_rgba(0,0,0,0.6)]"
+                >
                   <img
                     src={session.coverImage}
                     alt={session.title}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
                   <div className="absolute bottom-3 left-3 right-3">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1">
                       <Disc3 className="h-3 w-3 animate-spin" /> Đang phát

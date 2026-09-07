@@ -311,27 +311,71 @@ export default function LibraryPage() {
 
   return (
     <div className="h-full overflow-y-auto scrollbar-none pb-28 text-white">
-      {/* Header Section */}
-      <div className="p-6 sm:p-8 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 text-indigo-400 text-xs font-semibold tracking-wider uppercase mb-1"
-            >
-              <Bookmark className="w-4 h-4" /> Space của riêng bạn
-            </motion.div>
-            <motion.h1
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="text-3xl sm:text-4xl font-black text-white tracking-tight"
-            >
-              Thư Viện Âm Nhạc
-            </motion.h1>
+      {/* Immersive Edge-to-Edge Frosted Glass Hero Header */}
+      <div className="p-5 sm:p-7 lg:p-8 space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="relative overflow-hidden rounded-[32px] border border-white/20 bg-gradient-to-br from-violet-950/40 via-purple-950/20 to-black/60 p-6 sm:p-9 lg:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.65),inset_0_1px_0_0_rgba(255,255,255,0.22)] backdrop-blur-3xl"
+        >
+          {/* Ambient Artwork Backdrop */}
+          <div className="pointer-events-none absolute -right-10 -top-10 h-80 w-80 rounded-full bg-violet-600/25 blur-[90px]" />
+          <div className="pointer-events-none absolute -bottom-10 left-1/3 h-72 w-72 rounded-full bg-cyan-500/20 blur-[85px]" />
+          {latestImage && (
+            <div className="pointer-events-none absolute -right-4 -top-4 h-64 w-64 overflow-hidden rounded-full opacity-20 blur-3xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={latestImage} alt="" className="h-full w-full object-cover scale-150" />
+            </div>
+          )}
+
+          <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div className="space-y-3.5 max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1 text-xs font-semibold backdrop-blur-md">
+                <Bookmark className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
+                <span className="text-white/90">Audiophile Collection & Vault</span>
+              </div>
+
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
+                Thư Viện <br />
+                <span className="bg-gradient-to-r from-white via-violet-200 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(168,85,247,0.3)]">
+                  Cá Nhân Hóa.
+                </span>
+              </h1>
+
+              <p className="text-sm text-white/65 leading-relaxed max-w-xl">
+                Không gian lưu trữ giai điệu riêng biệt của bạn. Đồng bộ danh sách phát, bài hát yêu thích và lịch sử thưởng âm với chuẩn phòng thu.
+              </p>
+
+              {/* Spatial Collection Badges */}
+              <div className="flex items-center flex-wrap gap-2.5 pt-2 font-mono text-xs">
+                <span className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-white/85">
+                  <span className="font-bold text-cyan-300">{sourceTracks.length}</span> Bài hát
+                </span>
+                <span className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-white/85">
+                  <span className="font-bold text-fuchsia-300">{playlists.length}</span> Danh sách phát
+                </span>
+                <span className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-white/85">
+                  <span className="font-bold text-rose-300">{likedSongsList.length}</span> Đã thích
+                </span>
+              </div>
+            </div>
+
+            {likedSongsList.length > 0 && (
+              <div className="flex items-center gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handlePlaySong(likedSongsList[0], likedSongsList, "Bài hát đã thích")}
+                  className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 px-6 py-3.5 text-xs font-bold text-white shadow-[0_0_25px_rgba(99,102,241,0.5)] transition hover:brightness-110 cursor-pointer"
+                >
+                  <Play className="h-4 w-4 fill-white" />
+                  <span>Phát nhanh mục yêu thích</span>
+                </motion.button>
+              </div>
+            )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Capsule Filter Pills + Search */}
         <motion.div
@@ -577,12 +621,12 @@ export default function LibraryPage() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.03 }}
                           onClick={() => handlePlaySong(song, activePlaylistSongs, activePlaylistTitle)}
-                          className={`grid grid-cols-12 items-center px-6 py-3.5 transition-all duration-200 cursor-pointer group relative ${
+                          className={`grid grid-cols-12 items-center px-6 py-3.5 transition-all duration-200 cursor-pointer group relative zebra-glass-row border-b border-white/[0.04] ${
                             index === activePlaylistSongs.length - 1 ? "rounded-b-3xl" : ""
                           } ${
                             isCurrent
-                              ? "bg-indigo-500/15 border-l-4 border-indigo-500 text-white"
-                              : "hover:bg-white/[0.05] border-l-4 border-transparent"
+                              ? "bg-violet-500/20 border-l-4 border-l-cyan-400 text-white shadow-[0_0_20px_rgba(168,85,247,0.25)]"
+                              : "hover:bg-white/[0.08] hover:border-white/20 border-l-4 border-l-transparent"
                           }`}
                         >
                           <div className="col-span-1 text-xs font-mono font-bold text-white/40">
@@ -1335,12 +1379,12 @@ export default function LibraryPage() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.03 }}
                       onClick={() => handlePlaySong(song, likedSongsList, "Bài hát đã thích")}
-                      className={`grid grid-cols-12 items-center px-6 py-3.5 transition-all duration-200 cursor-pointer group relative ${
+                      className={`grid grid-cols-12 items-center px-6 py-3.5 transition-all duration-200 cursor-pointer group relative zebra-glass-row border-b border-white/[0.04] ${
                         index === likedSongsList.length - 1 ? "rounded-b-3xl" : ""
                       } ${
                         isCurrent
-                          ? "bg-indigo-500/15 border-l-4 border-indigo-500"
-                          : "hover:bg-white/[0.06] border-l-4 border-transparent"
+                          ? "bg-rose-500/20 border-l-4 border-l-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.25)]"
+                          : "hover:bg-white/[0.08] hover:border-white/20 border-l-4 border-l-transparent"
                       }`}
                     >
                       <div className="col-span-1 text-xs font-mono font-bold text-white/40">

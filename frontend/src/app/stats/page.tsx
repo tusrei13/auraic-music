@@ -38,7 +38,7 @@ const RADAR_AXES: RadarAxis[] = [
 ];
 
 function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
-  const size = 280;
+  const size = 300;
   const center = size / 2;
   const radius = size * 0.38;
   const total = axes.length;
@@ -60,8 +60,25 @@ function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
     .join(" ");
 
   return (
-    <div className="relative flex flex-col items-center justify-center">
+    <div className="relative flex flex-col items-center justify-center py-2">
       <svg width={size} height={size} className="overflow-visible">
+        <defs>
+          <radialGradient id="radarGlowGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#a855f7" stopOpacity="0.45" />
+            <stop offset="60%" stopColor="#06b6d4" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#ec4899" stopOpacity="0.05" />
+          </radialGradient>
+          <filter id="radarNeonGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="4" result="blur1" />
+            <feGaussianBlur stdDeviation="12" result="blur2" />
+            <feMerge>
+              <feMergeNode in="blur2" />
+              <feMergeNode in="blur1" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
         {/* Background polygon webs */}
         {[0.25, 0.5, 0.75, 1].map((level) => {
           const webPoints = axes
@@ -76,8 +93,8 @@ function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
               key={level}
               points={webPoints}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
-              strokeWidth={1}
+              stroke="rgba(255, 255, 255, 0.1)"
+              strokeWidth={level === 1 ? 1.5 : 1}
             />
           );
         })}
@@ -92,36 +109,49 @@ function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
               y1={center}
               x2={x}
               y2={y}
-              stroke="rgba(255, 255, 255, 0.12)"
+              stroke="rgba(255, 255, 255, 0.15)"
               strokeDasharray="2 2"
             />
           );
         })}
 
-        {/* Data polygon filled with neon glow */}
+        {/* Data polygon filled with neon 3D glow */}
         <motion.polygon
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.9, ease: "easeOut" }}
           points={points}
-          fill="rgba(168, 85, 247, 0.35)"
-          stroke="#a855f7"
-          strokeWidth={2.5}
-          className="filter drop-shadow-[0_0_15px_rgba(168,85,247,0.7)]"
+          fill="url(#radarGlowGrad)"
+          stroke="#c084fc"
+          strokeWidth={3}
+          filter="url(#radarNeonGlow)"
         />
 
-        {/* Vertex dots */}
+        {/* Vertex dots with outer pulse glow ring */}
         {axes.map((axis, i) => {
           const { x, y } = getCoordinates(i, axis.value);
           return (
-            <circle
-              key={i}
-              cx={x}
-              cy={y}
-              r={4}
-              fill="#06b6d4"
-              className="filter drop-shadow-[0_0_6px_#06b6d4]"
-            />
+            <g key={i}>
+              <circle
+                cx={x}
+                cy={y}
+                r={7}
+                fill="none"
+                stroke="#06b6d4"
+                strokeWidth={1.5}
+                opacity={0.6}
+                className="animate-ping"
+              />
+              <circle
+                cx={x}
+                cy={y}
+                r={4.5}
+                fill="#ffffff"
+                stroke="#06b6d4"
+                strokeWidth={2}
+                className="filter drop-shadow-[0_0_8px_#06b6d4]"
+              />
+            </g>
           );
         })}
 
@@ -134,7 +164,7 @@ function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
               x={x}
               y={y + 4}
               textAnchor="middle"
-              className="fill-white/70 text-[10px] font-bold tracking-wider"
+              className="fill-white/80 text-[10px] font-mono font-bold tracking-wider"
             >
               {axis.label}
             </text>
@@ -253,7 +283,9 @@ export default function StatsPage() {
   const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [16, -16]);
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-16, 16]);
 
-  const holoAngle = useTransform(mouseXSpring, [-0.5, 0.5], [0, 360]);
+  const holoX = useTransform(mouseXSpring, [-0.5, 0.5], ["10%", "90%"]);
+  const holoY = useTransform(mouseYSpring, [-0.5, 0.5], ["10%", "90%"]);
+  const holoRotate = useTransform(mouseXSpring, [-0.5, 0.5], [0, 360]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -447,64 +479,95 @@ export default function StatsPage() {
                 rotateY,
                 transformStyle: "preserve-3d",
               }}
-              whileHover={{ scale: 1.03 }}
-              className="relative w-full max-w-md aspect-[1.58/1] rounded-3xl border-2 border-white/25 bg-gradient-to-br from-neutral-900 via-indigo-950/80 to-neutral-950 p-6 shadow-[0_25px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(168,85,247,0.3)] overflow-hidden cursor-pointer backdrop-blur-2xl"
+              whileHover={{ scale: 1.04 }}
+              className="relative w-full max-w-md aspect-[1.58/1] rounded-3xl border-2 border-white/30 bg-gradient-to-br from-[#0c0d18] via-[#141026] to-[#08121f] p-6 shadow-[0_25px_65px_rgba(0,0,0,0.85),0_0_40px_rgba(168,85,247,0.4),inset_0_1px_0_0_rgba(255,255,255,0.4)] overflow-hidden cursor-pointer backdrop-blur-3xl group"
             >
-              {/* Holographic Refraction Foil Layer */}
+              {/* Dynamic Conic-Gradient Rainbow Prism Foil */}
               <motion.div
-                className="pointer-events-none absolute inset-0 opacity-50 mix-blend-color-dodge transition-opacity group-hover:opacity-75"
+                className="pointer-events-none absolute -inset-10 opacity-55 mix-blend-color-dodge transition-opacity duration-300 group-hover:opacity-85"
                 style={{
-                  background:
-                    "linear-gradient(115deg, transparent 20%, rgba(236,72,153,0.3) 35%, rgba(6,182,212,0.35) 50%, rgba(234,179,8,0.3) 65%, transparent 80%)",
+                  background: `conic-gradient(from 45deg at ${holoX} ${holoY}, #ec4899, #a855f7, #3b82f6, #06b6d4, #10b981, #eab308, #ec4899)`,
+                  filter: "blur(18px)",
                 }}
               />
 
-              {/* Shimmer Glare overlay */}
+              {/* Holographic Micro-Grating Diffraction Texture */}
               <div
+                className="pointer-events-none absolute inset-0 opacity-20 mix-blend-screen"
+                style={{
+                  backgroundImage: "repeating-linear-gradient(115deg, transparent, transparent 3px, rgba(255,255,255,0.12) 3px, rgba(255,255,255,0.12) 5px)",
+                }}
+              />
+
+              {/* Specular Glare overlay */}
+              <motion.div
                 className="pointer-events-none absolute inset-0 opacity-40 mix-blend-overlay"
                 style={{
-                  background:
-                    "radial-gradient(circle at 40% 30%, rgba(255,255,255,0.8) 0%, transparent 60%)",
+                  background: `radial-gradient(circle at ${holoX} ${holoY}, rgba(255, 255, 255, 0.85) 0%, transparent 55%)`,
                 }}
               />
 
               <div
-                style={{ transform: "translateZ(30px)" }}
+                style={{ transform: "translateZ(35px)", transformStyle: "preserve-3d" }}
                 className="relative z-10 flex h-full flex-col justify-between"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">
-                    Auraic Sound Passport
-                  </span>
-                  <div className="flex items-center gap-1 text-[10px] font-mono text-amber-300 font-bold bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
-                    <Sparkles className="h-3 w-3" /> Gold Tier
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] font-black uppercase tracking-[0.25em] text-cyan-300 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">
+                      AURAIC HI-RES PASSPORT
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-amber-300 font-bold bg-amber-400/15 px-2.5 py-0.5 rounded-full border border-amber-400/30 shadow-[0_0_12px_rgba(234,179,8,0.4)]">
+                    <Sparkles className="h-3 w-3 animate-spin-slow" /> MASTER 24-BIT
                   </div>
                 </div>
 
-                {/* Body Details */}
-                <div>
-                  <h3 className="text-2xl font-black text-white tracking-tight">
-                    {currentUser?.name || currentUser?.email?.split("@")[0] || "Auraic Explorer"}
-                  </h3>
-                  <p className="text-xs text-white/60 mt-0.5">
-                    Master Audiophile • Member since 2026
-                  </p>
+                {/* 3D Audiophile Microchip & User Info */}
+                <div className="flex items-center justify-between gap-4 my-auto">
+                  <div>
+                    <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+                      {currentUser?.name || currentUser?.email?.split("@")[0] || "Auraic Explorer"}
+                    </h3>
+                    <p className="text-xs text-white/70 mt-1 font-mono flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Certified Audiophile • 96kHz</span>
+                    </p>
+                  </div>
+
+                  {/* 3D Gold / Hi-Res Metallic Microchip */}
+                  <div
+                    style={{ transform: "translateZ(25px)" }}
+                    className="relative h-11 w-14 rounded-lg bg-gradient-to-br from-amber-200 via-amber-400 to-yellow-600 p-1 shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.7)] border border-yellow-300/80 flex flex-col justify-between shrink-0"
+                  >
+                    <div className="h-0.5 w-full bg-yellow-800/40 rounded-full" />
+                    <div className="flex justify-between items-center h-full px-1">
+                      <div className="w-2.5 h-4 border-r border-yellow-800/40" />
+                      <span className="text-[7px] font-mono font-black text-yellow-900/80 tracking-tighter">HI-RES</span>
+                      <div className="w-2.5 h-4 border-l border-yellow-800/40" />
+                    </div>
+                    <div className="h-0.5 w-full bg-yellow-800/40 rounded-full" />
+                  </div>
                 </div>
 
-                {/* Footer details */}
-                <div className="flex items-end justify-between border-t border-white/10 pt-3">
+                {/* Footer details & Barcode */}
+                <div className="flex items-end justify-between border-t border-white/15 pt-3">
                   <div>
-                    <span className="text-[9px] uppercase font-mono text-white/40">Gu Nghe Nhạc</span>
-                    <p className="text-xs font-bold text-violet-300">Chillout & Ambient</p>
+                    <span className="text-[9px] uppercase font-mono text-white/45">Gu Âm Nhạc</span>
+                    <p className="text-xs font-bold text-violet-300">Chillout • Ambient</p>
                   </div>
                   <div>
-                    <span className="text-[9px] uppercase font-mono text-white/40">Giờ Nghe</span>
-                    <p className="text-xs font-bold text-cyan-300">148.5h</p>
+                    <span className="text-[9px] uppercase font-mono text-white/45">Thời Lượng</span>
+                    <p className="text-xs font-bold text-cyan-300">148.5h Hi-Res</p>
                   </div>
-                  <div>
-                    <span className="text-[9px] uppercase font-mono text-white/40">Mã Thẻ</span>
-                    <p className="font-mono text-[11px] text-white/70">#9948-HIRES</p>
+                  <div className="text-right">
+                    {/* Visual Barcode */}
+                    <div className="flex gap-0.5 justify-end h-5 mb-1 opacity-70">
+                      {[2, 1, 3, 1, 2, 4, 1, 3, 2, 1, 3, 2, 1, 4].map((w, idx) => (
+                        <span key={idx} className="bg-white rounded-xs h-full" style={{ width: `${w}px` }} />
+                      ))}
+                    </div>
+                    <p className="font-mono text-[9px] text-white/50">AUR-9948-PRO</p>
                   </div>
                 </div>
               </div>

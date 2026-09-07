@@ -112,80 +112,81 @@ export default function HomePage() {
   return (
     <div className="min-h-full px-5 pb-36 pt-4 text-white sm:px-8 lg:px-12 space-y-12">
       {/* ========================================================= */}
-      {/* 1. HEADER: REALTIME MESH GRADIENT BANNER                 */}
+      {/* 1. HEADER: SPATIAL 3D BENTO GLASS HERO BANNER            */}
       {/* ========================================================= */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className={`relative overflow-hidden rounded-[36px] border border-white/15 bg-gradient-to-br p-6 sm:p-10 lg:p-12 backdrop-blur-3xl transition-colors duration-1000 ${timeTheme.meshClasses}`}
+        className={`relative overflow-hidden rounded-[36px] border border-white/20 bg-gradient-to-br p-6 sm:p-10 lg:p-12 shadow-[0_25px_60px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.25)] backdrop-blur-3xl transition-colors duration-1000 ${timeTheme.meshClasses}`}
       >
-        {/* Animated Mesh Fluid Orbs */}
+        {/* Floating 3D Glowing Spheres */}
         <motion.div
           animate={{
-            x: [0, 50, -30, 0],
-            y: [0, -40, 20, 0],
+            x: [0, 40, -30, 0],
+            y: [0, -35, 25, 0],
+            scale: [1, 1.18, 0.92, 1],
+          }}
+          transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+          className="pointer-events-none absolute -top-16 -left-16 h-72 w-72 rounded-full bg-gradient-to-tr from-violet-600/40 via-fuchsia-500/30 to-cyan-400/20 shadow-[0_0_60px_rgba(168,85,247,0.5)] blur-[70px]"
+        />
+        <motion.div
+          animate={{
+            x: [0, -50, 30, 0],
+            y: [0, 40, -25, 0],
             scale: [1, 1.15, 0.95, 1],
           }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-20 -left-20 h-80 w-80 rounded-full bg-violet-500/30 blur-[90px] pointer-events-none"
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="pointer-events-none absolute -bottom-16 right-8 h-80 w-80 rounded-full bg-gradient-to-br from-cyan-400/30 via-indigo-500/20 to-pink-500/20 shadow-[0_0_80px_rgba(6,182,212,0.4)] blur-[80px]"
         />
         <motion.div
           animate={{
-            x: [0, -60, 40, 0],
-            y: [0, 50, -30, 0],
-            scale: [1, 1.2, 0.9, 1],
+            scale: [0.9, 1.1, 0.9],
+            opacity: [0.35, 0.65, 0.35],
           }}
-          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -bottom-20 right-10 h-96 w-96 rounded-full bg-cyan-400/25 blur-[100px] pointer-events-none"
-        />
-        <motion.div
-          animate={{
-            opacity: [0.3, 0.6, 0.3],
-            scale: [0.9, 1.05, 0.9],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 h-64 w-64 rounded-full bg-fuchsia-500/20 blur-[80px] pointer-events-none"
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-60 w-60 rounded-full bg-fuchsia-400/15 blur-[65px]"
         />
 
         <div className="relative z-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div className="max-w-2xl space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1.5 text-xs font-semibold backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/[0.08] px-4 py-1.5 text-xs font-semibold shadow-[0_4px_20px_rgba(0,0,0,0.3)] backdrop-blur-xl">
               <TimeIcon className="h-4 w-4 text-cyan-300 animate-pulse" />
-              <span className="text-white/90">{timeTheme.label}</span>
-              <span className="text-white/40">•</span>
-              <span className="font-mono text-cyan-300">
+              <span className="text-white/95 font-medium">{timeTheme.label}</span>
+              <span className="text-white/30">•</span>
+              <span className="font-mono text-cyan-300 font-bold">
                 {String(new Date().getHours()).padStart(2, "0")}:
                 {String(new Date().getMinutes()).padStart(2, "0")}
               </span>
+              <span className="text-white/30">•</span>
+              <span className="text-[10px] text-fuchsia-300 uppercase tracking-wider font-mono">Spatial Audio</span>
             </div>
 
-            <h1 className="text-4xl font-black tracking-tight sm:text-6xl sm:leading-[1.08]">
-              Trải nghiệm âm thanh <br />
-              <span className="bg-gradient-to-r from-white via-violet-200 to-cyan-300 bg-clip-text text-transparent">
-                Audiophile Không Giới Hạn.
+            <h1 className="text-4xl font-black tracking-tight sm:text-6xl lg:text-7xl sm:leading-[1.05]">
+              Thế Giới Âm Nhạc <br />
+              <span className="bg-gradient-to-r from-white via-violet-200 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(168,85,247,0.35)]">
+                Không Gian 3D.
               </span>
             </h1>
 
-            <p className="text-sm sm:text-base text-white/65 leading-relaxed">
-              {timeTheme.greeting}. Không gian tinh gọn, chất âm trung thực với
-              công nghệ mô phỏng trường âm độc bản.
+            <p className="text-sm sm:text-base text-white/70 leading-relaxed max-w-xl">
+              {timeTheme.greeting}. Không gian tinh hoa với chất âm Hi-Res trung thực, cộng hưởng cùng hiệu ứng ánh sáng quang học đa tầng.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3.5">
             <motion.button
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => recentPicks.length > 0 && playMix(recentPicks, "Auraic Flow")}
-              className="flex items-center gap-2.5 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-black shadow-[0_0_35px_rgba(255,255,255,0.4)] transition hover:bg-neutral-100"
+              className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-white via-neutral-100 to-white px-7 py-3.5 text-sm font-black text-black shadow-[0_0_35px_rgba(255,255,255,0.5),0_0_15px_rgba(168,85,247,0.4)] transition hover:brightness-105 cursor-pointer"
             >
               <Play className="h-4 w-4 fill-current" />
               <span>Khởi động luồng nhạc</span>
             </motion.button>
             <a
               href="/stations"
-              className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/[0.07] px-5 py-3.5 text-sm font-semibold text-white/90 backdrop-blur-md transition hover:bg-white/[0.14]"
+              className="flex items-center gap-2.5 rounded-2xl border border-white/20 bg-white/[0.08] px-5 py-3.5 text-sm font-semibold text-white backdrop-blur-xl shadow-[0_8px_25px_rgba(0,0,0,0.3)] transition hover:bg-white/[0.15] hover:border-white/30"
             >
               <Radio className="h-4 w-4 text-cyan-300" />
               <span>Ambient Studio</span>
@@ -195,18 +196,18 @@ export default function HomePage() {
       </motion.header>
 
       {/* ========================================================= */}
-      {/* 2. QUICK PICK GRID: 3D PARALLAX TILT + GLOW NEON          */}
+      {/* 2. QUICK PICK BENTO GRID: 3D PARALLAX TILT + GLOW NEON     */}
       {/* ========================================================= */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-violet-400">
-              Personalized Audio
+              Curated For Your Taste
             </span>
-            <h2 className="text-2xl font-bold tracking-tight">Gợi ý dành cho bạn</h2>
+            <h2 className="text-2xl font-black tracking-tight text-white/95">Gợi ý dành cho bạn</h2>
           </div>
-          <span className="text-xs text-white/40 hidden sm:inline">
-            Tương tác 3D Parallax Tilt & Neon Glow
+          <span className="text-xs text-white/40 hidden sm:inline font-mono">
+            3D Parallax Tilt • Neon Glow
           </span>
         </div>
 
@@ -231,25 +232,29 @@ export default function HomePage() {
                   glowColor={timeTheme.glowColor}
                   onClick={() => playTrack(track, recentPicks)}
                   className="group p-3.5"
+                  depthZ={16}
                 >
                   <div className="flex items-center gap-3.5">
-                    {/* Artwork Container */}
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl shadow-lg border border-white/10">
+                    {/* Elevated Artwork Container */}
+                    <div
+                      style={{ transform: "translateZ(12px)" }}
+                      className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.5)] border border-white/15"
+                    >
                       <Artwork
                         src={track.image}
                         alt={track.title}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       {/* Play overlay button */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                         {isCurrent && isPlaying ? (
-                          <div className="flex gap-0.5 items-end h-4">
+                          <div className="flex gap-1 items-end h-4">
                             <span className="w-1 bg-cyan-300 animate-pulse h-4 rounded-full" />
                             <span className="w-1 bg-violet-400 animate-pulse h-2.5 rounded-full" />
-                            <span className="w-1 bg-pink-400 animate-pulse h-3 rounded-full" />
+                            <span className="w-1 bg-pink-400 animate-pulse h-3.5 rounded-full" />
                           </div>
                         ) : (
-                          <Play className="h-5 w-5 fill-white text-white drop-shadow-md" />
+                          <Play className="h-5 w-5 fill-white text-white drop-shadow-lg" />
                         )}
                       </div>
                     </div>
@@ -258,12 +263,12 @@ export default function HomePage() {
                     <div className="min-w-0 flex-1">
                       <h3
                         className={`truncate text-sm font-bold transition-colors ${
-                          isCurrent ? "text-cyan-300" : "text-white group-hover:text-violet-200"
+                          isCurrent ? "text-cyan-300 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]" : "text-white group-hover:text-violet-200"
                         }`}
                       >
                         {track.title}
                       </h3>
-                      <p className="truncate text-xs text-white/50 mt-0.5">
+                      <p className="truncate text-xs text-white/55 mt-0.5">
                         {typeof track.artist === "object" ? track.artist.name : track.artist}
                       </p>
                       <div className="mt-1.5 flex items-center gap-2 text-[10px] text-white/40">
@@ -285,11 +290,11 @@ export default function HomePage() {
                         e.stopPropagation();
                         toggleLike(track);
                       }}
-                      className="rounded-full p-2 text-white/40 transition hover:scale-110 hover:text-rose-400"
+                      className="rounded-full p-2 text-white/40 transition hover:scale-115 hover:text-rose-400 cursor-pointer"
                     >
                       <Heart
                         className={`h-4 w-4 ${
-                          isLiked ? "fill-rose-500 text-rose-500" : ""
+                          isLiked ? "fill-rose-500 text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.7)]" : ""
                         }`}
                       />
                     </button>
@@ -302,17 +307,15 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================= */}
-      {/* 3. CURATED CAROUSELS: JAMENDO API WITH QUICK PLAY SCALE   */}
+      {/* 3. CURATED 3D CAROUSELS: JAMENDO WITH PARALLAX TILT       */}
       {/* ========================================================= */}
-      {/* Carousel 1: Lofi & Chillout Beats */}
       <CarouselRow
         title="Lofi & Ambient Sanctuary"
-        subtitle="Âm sắc dịu êm giúp bạn xoa dịu tâm trí"
+        subtitle="Âm sắc dịu êm giúp bạn xoa dịu tâm trí và an yên"
         tracks={lofiCarousel}
         onPlayTrack={(track) => playTrack(track, lofiCarousel)}
       />
 
-      {/* Carousel 2: Deep Focus & Piano */}
       <CarouselRow
         title="Deep Focus & Piano Chamber"
         subtitle="Không gian tập trung tuyệt đối cho công việc sáng tạo"
@@ -320,10 +323,9 @@ export default function HomePage() {
         onPlayTrack={(track) => playTrack(track, focusCarousel)}
       />
 
-      {/* Carousel 3: Nightfall Synthwave */}
       <CarouselRow
         title="Midnight Pulse & Synthwave"
-        subtitle="Dòng năng lượng điện tử lấp lánh trong màn đêm"
+        subtitle="Dòng năng lượng điện tử lấp lánh trong màn đêm vô tận"
         tracks={nightCarousel}
         onPlayTrack={(track) => playTrack(track, nightCarousel)}
       />
@@ -332,7 +334,7 @@ export default function HomePage() {
 }
 
 // =========================================================
-// REUSABLE HORIZONTAL CAROUSEL COMPONENT WITH QUICK PLAY
+// REUSABLE HORIZONTAL CAROUSEL COMPONENT WITH 3D TILT
 // =========================================================
 interface CarouselRowProps {
   title: string;
@@ -350,7 +352,7 @@ function CarouselRow({ title, subtitle, tracks, onPlayTrack }: CarouselRowProps)
     <section className="space-y-4">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white/95">{title}</h2>
+          <h2 className="text-xl font-black tracking-tight text-white/95">{title}</h2>
           <p className="text-xs text-white/50">{subtitle}</p>
         </div>
       </div>
@@ -360,20 +362,25 @@ function CarouselRow({ title, subtitle, tracks, onPlayTrack }: CarouselRowProps)
           const isCurrent = currentTrack?.id === track.id;
 
           return (
-            <div
+            <TiltCard
               key={track.id}
               onClick={() => onPlayTrack(track)}
-              className="group relative w-44 sm:w-48 shrink-0 cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-3 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-white/25 hover:bg-white/[0.07] hover:shadow-[0_15px_35px_rgba(0,0,0,0.5)]"
+              glowColor="rgba(168, 85, 247, 0.4)"
+              depthZ={14}
+              className="group w-44 sm:w-48 shrink-0 p-3"
             >
-              {/* Cover Art */}
-              <div className="relative aspect-square w-full overflow-hidden rounded-xl shadow-md">
+              {/* Cover Art Elevated in 3D */}
+              <div
+                style={{ transform: "translateZ(10px)" }}
+                className="relative aspect-square w-full overflow-hidden rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.5)] border border-white/10"
+              >
                 <Artwork
                   src={track.image}
                   alt={track.title}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-108"
                 />
 
-                {/* Smooth Scale-Up Quick Play Button */}
+                {/* Quick Play Button */}
                 <motion.button
                   whileHover={{ scale: 1.15 }}
                   whileTap={{ scale: 0.9 }}
@@ -381,7 +388,7 @@ function CarouselRow({ title, subtitle, tracks, onPlayTrack }: CarouselRowProps)
                     e.stopPropagation();
                     onPlayTrack(track);
                   }}
-                  className="absolute bottom-2.5 right-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.7)] opacity-0 translate-y-3 scale-75 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100"
+                  className="absolute bottom-2.5 right-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-violet-600 to-indigo-500 text-white shadow-[0_0_22px_rgba(168,85,247,0.85)] opacity-0 translate-y-3 scale-75 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 cursor-pointer"
                   aria-label="Phát ngay"
                 >
                   {isCurrent && isPlaying ? (
@@ -395,8 +402,8 @@ function CarouselRow({ title, subtitle, tracks, onPlayTrack }: CarouselRowProps)
               {/* Title & Artist */}
               <div className="mt-3">
                 <h3
-                  className={`truncate text-sm font-semibold transition-colors ${
-                    isCurrent ? "text-cyan-300" : "text-white/90 group-hover:text-white"
+                  className={`truncate text-sm font-bold transition-colors ${
+                    isCurrent ? "text-cyan-300 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]" : "text-white/90 group-hover:text-white"
                   }`}
                 >
                   {track.title}
@@ -405,7 +412,7 @@ function CarouselRow({ title, subtitle, tracks, onPlayTrack }: CarouselRowProps)
                   {typeof track.artist === "object" ? track.artist.name : track.artist}
                 </p>
               </div>
-            </div>
+            </TiltCard>
           );
         })}
       </div>

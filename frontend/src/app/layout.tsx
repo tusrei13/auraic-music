@@ -8,13 +8,14 @@ import AuthModal from '@/components/AuthModal';
 import DynamicTheme from '@/components/DynamicTheme';
 import GlobalSearchBar from '@/components/GlobalSearchBar';
 import { QueryProvider } from '@/providers/QueryProvider';
+import SpatialStarfieldCanvas from '@/components/visualizer/SpatialStarfieldCanvas';
 import './globals.css';
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-plus-jakarta' });
 
 export const metadata: Metadata = {
   title: 'Auraic | Cảm nhận âm nhạc',
-  description: 'Nền tảng âm nhạc tối giản và cao cấp',
+  description: 'Nền tảng âm nhạc không gian 3D tối giản và cao cấp',
 };
 
 export default function RootLayout({
@@ -56,20 +57,24 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${plusJakarta.className} h-screen flex flex-col overflow-hidden bg-auraic-bg text-auraic-text antialiased`} suppressHydrationWarning>
+      <body className={`${plusJakarta.className} h-screen flex flex-col overflow-hidden bg-[#060812] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-950/25 via-[#060812] to-[#04050a] text-auraic-text antialiased selection:bg-fuchsia-500/30 selection:text-white`} suppressHydrationWarning>
         <AuthProvider>
         <QueryProvider>
         <DynamicTheme />
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-        <div className="flex flex-1 gap-3 overflow-hidden p-3 pb-2 sm:gap-4 sm:p-4">
-            <Sidebar />
-          <main className="relative flex-1 overflow-y-auto rounded-[28px] border border-auraic-border bg-auraic-glass shadow-2xl backdrop-blur-2xl">
-            <GlobalSearchBar />
-            {children}
-          </main>
-        </div>
+        <SpatialStarfieldCanvas />
 
-          <div className="px-4 pb-4 w-full z-50">
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+          {/* Spatial Floating Stage Shell */}
+          <div className="flex flex-1 gap-3.5 overflow-hidden p-3 pb-2 sm:gap-4 sm:p-4 lg:p-5">
+            <Sidebar />
+            <main className="relative flex-1 overflow-y-auto rounded-[32px] border border-white/15 bg-slate-950/35 shadow-[0_30px_70px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.22)] backdrop-blur-2xl scroll-smooth">
+              <GlobalSearchBar />
+              {children}
+            </main>
+          </div>
+
+          {/* Floating Island Player Bar */}
+          <div className="px-3 pb-3 sm:px-5 sm:pb-4 w-full z-50 pointer-events-auto">
             <Player />
           </div>
 
