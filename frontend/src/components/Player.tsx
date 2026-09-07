@@ -502,20 +502,23 @@ export default function Player() {
   if (!currentTrack) {
     return (
       <motion.div
-        className="px-4 pb-4 w-full"
+        className="w-full"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        <div className="glass-panel-strong flex h-20 items-center justify-center px-6 w-full rounded-[28px] border-dashed z-50 relative overflow-hidden">
+        <div className="relative flex h-20 items-center justify-center px-6 w-full rounded-[30px] border border-white/15 bg-white/[0.035] shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.18)] backdrop-blur-3xl overflow-hidden">
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-fuchsia-500/10 via-cyan-500/5 to-fuchsia-500/10"
-            animate={{ x: ["-100%", "100%"] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            className="absolute -inset-1 bg-gradient-to-r from-fuchsia-500/15 via-cyan-400/10 to-violet-500/15 opacity-60 blur-xl pointer-events-none"
+            animate={{ x: ["-40%", "40%", "-40%"] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           />
-          <p className="text-auraic-text-muted text-sm flex items-center gap-2 relative z-10">
-            <Music className="w-4 h-4 animate-pulse text-fuchsia-400" /> Vui lòng chọn một bài hát để bắt đầu
-          </p>
+          <div className="relative z-10 flex items-center gap-3 text-xs font-semibold text-white/70">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 text-fuchsia-300 shadow-[0_0_15px_rgba(192,100,255,0.4)]">
+              <Music className="w-4 h-4 animate-pulse" />
+            </div>
+            <span>Khám phá và chọn bài hát từ thư viện để bắt đầu hành trình âm thanh Spatial 3D</span>
+          </div>
         </div>
       </motion.div>
     );
@@ -695,19 +698,20 @@ export default function Player() {
       )}
 
       <motion.div
-        className="relative z-50 w-full px-3 pb-3 sm:px-4 sm:pb-4"
+        className="relative z-50 w-full"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         exit="exit"
       >
         <motion.div
-          className="relative flex min-h-28 w-full flex-col items-center justify-between overflow-visible rounded-[28px] border border-auraic-border bg-auraic-surface/80 px-4 py-3 backdrop-blur-2xl md:min-h-24 md:flex-row md:px-6 md:py-2"
+          className="relative flex min-h-24 w-full flex-col items-center justify-between overflow-visible rounded-[30px] border border-white/15 bg-[#0f111c]/85 px-4 py-3 shadow-[0_25px_65px_-8px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.22)] backdrop-blur-3xl md:min-h-20 md:flex-row md:px-6 md:py-2.5"
           {...pulseGlow}
           animate={isPlaying ? "animate" : "initial"}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-fuchsia-500/10 via-transparent to-cyan-400/10 opacity-80 mix-blend-screen" />
+          {/* Subtle Ambient Bleed Overlay */}
+          <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-gradient-to-r from-fuchsia-500/10 via-transparent to-cyan-400/10 opacity-70 mix-blend-screen" />
 
           <audio
             ref={audioRef}
@@ -724,18 +728,55 @@ export default function Player() {
           />
           <AudioVisualizer audioRef={audioRef} isPlaying={isPlaying} />
 
-          {/* LEFT: Track Info */}
-          <div className="relative z-10 mb-2 flex min-w-0 w-full items-center gap-3 md:mb-0 md:w-1/3">
-            <motion.div
-              className={`h-14 w-14 shrink-0 overflow-hidden rounded-full border border-auraic-border-strong shadow-[0_0_24px_rgba(192,100,255,0.28)] transition-all duration-500 ${isPlaying ? 'scale-[1.03]' : ''}`}
-              animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
-              transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-            >
-              <Artwork src={currentTrack.image} alt={currentTrack.title} className="w-full h-full object-cover" />
-            </motion.div>
+          {/* LEFT: Track Info with Rotating Vinyl & Equalizer Aura */}
+          <div className="relative z-10 mb-2 flex min-w-0 w-full items-center gap-3.5 md:mb-0 md:w-1/3">
+            {/* Vinyl Record & Concentric Equalizer Aura Rings */}
+            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
+              {isPlaying && (
+                <>
+                  <span className="pointer-events-none absolute h-14 w-14 rounded-full border border-fuchsia-400/50 equalizer-aura-pulse" />
+                  <span className="pointer-events-none absolute h-18 w-18 rounded-full border border-cyan-400/35 equalizer-aura-pulse [animation-delay:0.8s]" />
+                  <span className="pointer-events-none absolute h-22 w-22 rounded-full border border-violet-400/25 equalizer-aura-pulse [animation-delay:1.6s]" />
+                </>
+              )}
+
+              {/* Ambient Glow behind the Vinyl */}
+              <div
+                className="absolute -inset-1 rounded-full opacity-60 blur-md transition-opacity duration-500"
+                style={{
+                  background: isPlaying
+                    ? "radial-gradient(circle, var(--auraic-accent, #a855f7) 0%, transparent 70%)"
+                    : "none",
+                }}
+              />
+
+              {/* Rotating Vinyl Record */}
+              <motion.div
+                className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white/30 bg-black shadow-[0_0_24px_rgba(168,85,247,0.45)] transition-transform duration-500 ${
+                  isPlaying ? "scale-105" : ""
+                }`}
+                animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
+                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+              >
+                {/* Vinyl Grooves Texture */}
+                <div className="pointer-events-none absolute inset-0 z-10 rounded-full bg-[radial-gradient(circle,transparent_28%,rgba(255,255,255,0.1)_30%,transparent_32%,rgba(255,255,255,0.08)_48%,transparent_50%,rgba(255,255,255,0.08)_68%,transparent_70%)]" />
+                {/* Vinyl Specular Gloss */}
+                <div className="pointer-events-none absolute inset-0 z-10 rounded-full bg-gradient-to-tr from-transparent via-white/20 to-transparent" />
+                {/* Center Spindle Hole */}
+                <div className="absolute inset-[40%] z-20 rounded-full border border-neutral-900 bg-neutral-200 shadow-inner" />
+                <Artwork
+                  src={currentTrack.image}
+                  alt={currentTrack.title}
+                  className="h-full w-full object-cover"
+                />
+              </motion.div>
+            </div>
+
             <div className="min-w-0 max-w-[min(48vw,260px)] flex-none truncate pr-1 sm:max-w-[220px]">
-              <h4 className="text-sm font-bold text-white tracking-wide drop-shadow-md truncate">{currentTrack.title}</h4>
-              <p className="text-xs text-white/50 mt-0.5 truncate">{artistName}</p>
+              <h4 className="text-sm font-bold text-white tracking-wide drop-shadow-md truncate">
+                {currentTrack.title}
+              </h4>
+              <p className="text-xs text-white/60 mt-0.5 truncate">{artistName}</p>
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
@@ -746,19 +787,29 @@ export default function Player() {
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <Heart className={`w-5 h-5 transition-transform ${liked ? "fill-pink-500 text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" : ""}`} />
+                <Heart
+                  className={`w-5 h-5 transition-transform ${
+                    liked
+                      ? "fill-pink-500 text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]"
+                      : ""
+                  }`}
+                />
               </motion.button>
 
               <TrackActionMenu track={currentTrack} placement="up" />
             </div>
           </div>
 
-          {/* CENTER: Controls & Waveform */}
-          <div className="relative z-10 flex w-full max-w-[430px] flex-col items-center">
+          {/* CENTER: Controls & Neon Tube Seek-Bar */}
+          <div className="relative z-10 flex w-full max-w-[450px] flex-col items-center">
             <div className="mb-1 flex items-center gap-7">
               <motion.button
                 onClick={toggleShuffle}
-                className={`transition-all p-1 cursor-pointer ${isShuffle ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'text-white/40 hover:text-white'}`}
+                className={`transition-all p-1 cursor-pointer ${
+                  isShuffle
+                    ? "text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+                    : "text-white/40 hover:text-white"
+                }`}
                 title={isShuffle ? "Tắt trộn bài" : "Bật trộn bài"}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.9 }}
@@ -768,46 +819,79 @@ export default function Player() {
 
               <motion.button
                 onClick={toggleCrossfade}
-                className={`transition-all p-1 cursor-pointer ${crossfadeEnabled ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-white/40 hover:text-white'}`}
-                title={`Crossfade ${crossfadeEnabled ? 'bật' : 'tắt'} (${crossfadeDuration}s)`}
+                className={`transition-all p-1 cursor-pointer ${
+                  crossfadeEnabled
+                    ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]"
+                    : "text-white/40 hover:text-white"
+                }`}
+                title={`Crossfade ${crossfadeEnabled ? "bật" : "tắt"} (${crossfadeDuration}s)`}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.9 }}
               >
                 <Radio className="w-4 h-4" />
               </motion.button>
 
-              <motion.button onClick={() => handleSkip("previous")} className="text-white/60 hover:text-white transition-all cursor-pointer" whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
+              <motion.button
+                onClick={() => handleSkip("previous")}
+                className="text-white/60 hover:text-white transition-all cursor-pointer"
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+              >
                 <SkipBack className="w-5 h-5 fill-current" />
               </motion.button>
 
               <motion.button
                 onClick={togglePlay}
                 aria-label={isPlaying ? "Tạm dừng" : "Phát"}
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-white to-fuchsia-100 shadow-[0_0_26px_rgba(217,140,255,0.55)] transition-transform"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-white via-neutral-100 to-fuchsia-100 shadow-[0_0_28px_rgba(255,255,255,0.6),0_0_15px_rgba(168,85,247,0.4)] transition-transform"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.85 }}
               >
-                {isPlaying ? <Pause className="w-5 h-5 fill-black text-black" /> : <Play className="w-5 h-5 fill-black text-black ml-0.5" />}
+                {isPlaying ? (
+                  <Pause className="w-5 h-5 fill-black text-black" />
+                ) : (
+                  <Play className="w-5 h-5 fill-black text-black ml-0.5" />
+                )}
               </motion.button>
 
-              <motion.button onClick={() => handleSkip("next")} className="text-white/60 hover:text-white transition-all cursor-pointer" whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
+              <motion.button
+                onClick={() => handleSkip("next")}
+                className="text-white/60 hover:text-white transition-all cursor-pointer"
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+              >
                 <SkipForward className="w-5 h-5 fill-current" />
               </motion.button>
 
               <motion.button
                 onClick={toggleRepeat}
-                className={`transition-all p-1 cursor-pointer ${repeatMode !== 'off' ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'text-white/40 hover:text-white'}`}
-                title={repeatMode === "off" ? "Bật lặp lại tất cả" : repeatMode === "all" ? "Bật lặp lại 1 bài" : "Tắt lặp lại"}
+                className={`transition-all p-1 cursor-pointer ${
+                  repeatMode !== "off"
+                    ? "text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+                    : "text-white/40 hover:text-white"
+                }`}
+                title={
+                  repeatMode === "off"
+                    ? "Bật lặp lại tất cả"
+                    : repeatMode === "all"
+                    ? "Bật lặp lại 1 bài"
+                    : "Tắt lặp lại"
+                }
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.9 }}
               >
-                {repeatMode === "one" ? <Repeat1 className="w-4 h-4" /> : <Repeat className="w-4 h-4" />}
+                {repeatMode === "one" ? (
+                  <Repeat1 className="w-4 h-4" />
+                ) : (
+                  <Repeat className="w-4 h-4" />
+                )}
               </motion.button>
             </div>
 
-            <div className="flex items-center gap-3 w-full text-[10px] font-medium text-white/50">
+            {/* NEON TUBE TIMELINE SEEK-BAR */}
+            <div className="flex items-center gap-3 w-full text-[10px] font-mono text-white/55">
               <span>{formatTime(displayTime)}</span>
-              <div className="flex-1 relative flex items-center group py-2">
+              <div className="flex-1 relative flex items-center group py-2.5">
                 <input
                   type="range"
                   min="0"
@@ -816,23 +900,28 @@ export default function Player() {
                   value={displayTime}
                   onInput={handleSeekInput}
                   onChange={handleSeekChange}
-                  className="absolute w-full h-2 opacity-0 z-20 cursor-pointer"
+                  className="absolute w-full h-3 opacity-0 z-20 cursor-pointer"
                 />
-                <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
+                {/* Neon Tube Grooved Track */}
+                <div className="h-2 w-full bg-black/60 rounded-full overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)] border border-white/10">
+                  {/* Neon Radiant Progress */}
                   <motion.div
-                    className="relative h-full rounded-full bg-gradient-to-r from-cyan-300 via-violet-400 to-fuchsia-400"
+                    className="relative h-full rounded-full bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 shadow-[0_0_14px_rgba(168,85,247,0.9),0_0_24px_rgba(6,182,212,0.6)]"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
+                {/* Neon Tube Glowing Bead */}
                 <motion.div
-                  className="w-3.5 h-3.5 bg-white rounded-full absolute top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-[0_0_10px_rgba(255,255,255,0.8)] ring-2 ring-white/30"
+                  className="w-4 h-4 bg-white rounded-full absolute top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-[0_0_14px_rgba(255,255,255,1),0_0_22px_rgba(168,85,247,0.9)] ring-2 ring-violet-400"
                   style={{ left: `${progressPercent}%` }}
                 />
               </div>
               <span>{formatTime(duration)}</span>
             </div>
             {playbackStatus === "error" ? (
-              <span className="mt-1 text-[10px] text-rose-300">{playbackError || "Lỗi phát nhạc"}</span>
+              <span className="mt-1 text-[10px] text-rose-300">
+                {playbackError || "Lỗi phát nhạc"}
+              </span>
             ) : null}
           </div>
 
@@ -840,7 +929,11 @@ export default function Player() {
           <div className="relative z-10 hidden w-1/3 items-center justify-end gap-3 text-white/50 md:flex">
             <motion.button
               onClick={() => setShowLyrics(!showLyrics)}
-              className={`transition-all p-2 rounded-full cursor-pointer ${showLyrics ? 'text-indigo-400 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'hover:text-white'}`}
+              className={`transition-all p-2 rounded-full cursor-pointer ${
+                showLyrics
+                  ? "text-indigo-400 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400/30"
+                  : "hover:text-white hover:bg-white/5"
+              }`}
               title="Bật/Tắt Lời bài hát"
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.9 }}
@@ -850,7 +943,11 @@ export default function Player() {
 
             <motion.button
               onClick={() => setShowQueue(!showQueue)}
-              className={`transition-all p-2 rounded-full cursor-pointer ${showQueue ? 'text-indigo-400 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'hover:text-white'}`}
+              className={`transition-all p-2 rounded-full cursor-pointer ${
+                showQueue
+                  ? "text-indigo-400 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400/30"
+                  : "hover:text-white hover:bg-white/5"
+              }`}
               title="Hàng chờ phát nhạc"
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.9 }}
@@ -858,9 +955,18 @@ export default function Player() {
               <ListMusic className="w-4 h-4" />
             </motion.button>
 
-            <div className="flex items-center gap-2 group">
-              <motion.button onClick={() => setVolume(volume === 0 ? 0.7 : 0)} className="cursor-pointer" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                {volume === 0 ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 hover:text-white transition-all" />}
+            <div className="flex items-center gap-2.5 group">
+              <motion.button
+                onClick={() => setVolume(volume === 0 ? 0.7 : 0)}
+                className="cursor-pointer"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {volume === 0 ? (
+                  <VolumeX className="w-4 h-4 text-red-400" />
+                ) : (
+                  <Volume2 className="w-4 h-4 hover:text-white transition-all" />
+                )}
               </motion.button>
               <div className="w-20 relative flex items-center py-2">
                 <input
@@ -870,18 +976,17 @@ export default function Player() {
                   step="0.01"
                   value={volume}
                   onChange={handleVolumeChange}
-                  className="absolute w-full h-1 opacity-0 z-10 cursor-pointer"
+                  className="absolute w-full h-2 opacity-0 z-10 cursor-pointer"
                 />
-                <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
+                <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden shadow-inner border border-white/5">
                   <motion.div
-                    className="h-full bg-white/80 rounded-full transition-all"
+                    className="h-full bg-gradient-to-r from-violet-400 to-cyan-300 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.6)] transition-all"
                     style={{ width: `${volume * 100}%` }}
                   />
                 </div>
               </div>
             </div>
           </div>
-
         </motion.div>
       </motion.div>
     </>
