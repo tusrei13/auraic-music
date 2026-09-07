@@ -4,7 +4,7 @@ import Artwork from "@/components/Artwork";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Library, User as UserIcon, LogIn, LogOut, ShieldCheck, Disc3, Settings2, BadgeCheck, BarChart3 } from "lucide-react";
+import { Home, Compass, Library, ShieldCheck, Disc3 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
@@ -12,22 +12,14 @@ const navItems = [
   { name: "Khám phá", href: "/discover", icon: Compass },
   { name: "Thể loại", href: "/genres", icon: Disc3 },
   { name: "Thư viện", href: "/library", icon: Library },
-  { name: "Thống kê", href: "/stats", icon: BarChart3 },
-  { name: "Trang cá nhân", href: "/profile", icon: UserIcon },
-  { name: "Cài đặt", href: "/settings", icon: Settings2 },
-];
-
-const trackItems = [
-  { name: "Quyền sử dụng", href: "/track-info", icon: BadgeCheck },
-  { name: "Credits nghệ sĩ", href: "/credits", icon: BadgeCheck },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, status, signOut, openAuthModal } = useAuthStore();
+  const { user, status, openAuthModal } = useAuthStore();
 
   return (
-    <aside className="group/sidebar flex h-full w-[68px] shrink-0 flex-col justify-between overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.035] p-3 transition-[width] duration-300 hover:w-56 sm:w-[76px] sm:p-4">
+    <aside className="group/sidebar flex h-full w-[68px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.035] p-3 transition-[width] duration-300 hover:w-56 sm:w-[76px] sm:p-4">
       <div className="space-y-10">
         {/* LOGO */}
         <div className="flex items-center gap-3 px-1">
@@ -67,20 +59,6 @@ export default function Sidebar() {
             );
           })}
         </nav>
-        <div className="border-t border-white/10 pt-5">
-          <p className="mb-3 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-white/25 opacity-0 transition-opacity group-hover/sidebar:opacity-100">Track & License</p>
-          <nav className="space-y-2">
-            {trackItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link key={item.href} href={item.href} className={`flex min-h-11 items-center gap-4 rounded-2xl px-3 text-xs font-semibold transition-all duration-300 ${isActive ? "bg-fuchsia-500/20 text-white" : "text-white/40 hover:bg-white/5 hover:text-white"}`}>
-                  <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-fuchsia-200" : "text-white/40"}`} />
-                  <span className="whitespace-nowrap opacity-0 transition-opacity group-hover/sidebar:opacity-100">{item.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
         {status === "authenticated" && user?.role === "ADMIN" ? (
           <nav>
             <Link href="/admin" className={`flex min-h-12 items-center gap-4 rounded-2xl px-3 text-xs font-semibold transition-all ${pathname.startsWith("/admin") ? "bg-fuchsia-500/20 text-white" : "text-white/50 hover:bg-white/5 hover:text-white"}`} title="Admin">
@@ -89,28 +67,6 @@ export default function Sidebar() {
           </nav>
         ) : null}
       </div>
-
-      {status === "authenticated" && user ? (
-        <div className="space-y-3 border-t border-white/10 pt-4">
-          <div className="truncate px-2 text-xs text-white/60 opacity-0 transition-opacity group-hover/sidebar:opacity-100">{user.name || user.email}</div>
-          <button
-            type="button"
-            onClick={signOut}
-            title="Đăng xuất"
-            aria-label="Đăng xuất"
-            className="flex min-h-12 w-full items-center gap-4 rounded-2xl px-3 text-xs font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
-          >
-            <LogOut className="h-5 w-5 shrink-0" /><span className="whitespace-nowrap opacity-0 transition-opacity group-hover/sidebar:opacity-100">Đăng xuất</span>
-          </button>
-        </div>
-      ) : (
-        <Link
-          href="/login"
-          className="flex min-h-12 items-center gap-3 rounded-2xl px-3 text-xs font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
-        >
-          <LogIn className="h-5 w-5 shrink-0" /><span className="whitespace-nowrap opacity-0 transition-opacity group-hover/sidebar:opacity-100">Đăng nhập</span>
-        </Link>
-      )}
     </aside>
   );
 }

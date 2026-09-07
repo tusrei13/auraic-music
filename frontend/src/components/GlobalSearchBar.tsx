@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Mic, Play, Search, X } from "lucide-react";
+import { Bell, ChevronDown, Loader2, LogIn, LogOut, Mic, Play, Search, Settings2, User, X } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { searchAll, type Album, type Artist, type JamendoSong } from "@/lib/api";
 import Artwork from "@/components/Artwork";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
@@ -22,13 +23,16 @@ function ArtistAvatar({ artist }: { artist: Artist }) {
 export default function GlobalSearchBar() {
   const router = useRouter();
   const playTrack = usePlayerStore((state) => state.playTrack);
+  const { user, status, openAuthModal, signOut } = useAuthStore();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<JamendoSong[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const voiceSearch = useVoiceSearch("vi-VN");
   const hasAutoSearchedRef = useRef(false);
@@ -125,11 +129,12 @@ export default function GlobalSearchBar() {
   }, [query, voiceSearch.isListening]);
 
   useEffect(() => {
-    const closeResults = (event: MouseEvent) => {
+    const closeMenus = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!accountMenuRef.current?.contains(event.target as Node)) setAccountMenuOpen(false);
     };
-    document.addEventListener("mousedown", closeResults);
-    return () => document.removeEventListener("mousedown", closeResults);
+    document.addEventListener("mousedown", closeMenus);
+    return () => document.removeEventListener("mousedown", closeMenus);
   }, []);
 
   const chooseTrack = (track: JamendoSong) => {
@@ -160,10 +165,18 @@ export default function GlobalSearchBar() {
   };
 
   const hasResults = results.length > 0 || artists.length > 0 || albums.length > 0;
+  const accountLabel = user?.name || user?.email || "Tài khoản";
+  const accountInitials = accountLabel
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "A";
 
   return (
-    <div ref={containerRef} className="sticky top-0 z-40 border-b border-white/10 bg-[#090910]/80 px-5 py-4 backdrop-blur-2xl sm:px-8">
-      <div className="relative mx-auto max-w-4xl">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#090910]/80 px-4 py-3 backdrop-blur-md sm:px-6">
+      <div className="flex min-h-12 items-center gap-3">
+        <div ref={containerRef} className="relative min-w-0 flex-1 sm:w-[min(480px,52vw)] sm:flex-none">
         <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
         <input
           ref={inputRef}
@@ -186,7 +199,7 @@ export default function GlobalSearchBar() {
           aria-expanded={open && Boolean(query.trim())}
           aria-controls="global-search-results"
           role="combobox"
-          className="w-full rounded-2xl border border-white/15 bg-white/[0.07] py-4 pl-12 pr-24 text-base text-white outline-none backdrop-blur-xl transition placeholder:text-white/35 focus:border-fuchsia-400/70 focus:bg-white/[0.1]"
+          className="h-12 w-full rounded-xl border border-white/15 bg-white/[0.07] py-3 pl-11 pr-24 text-sm text-white outline-none backdrop-blur-xl transition-[border-color,box-shadow,background-color] placeholder:text-white/35 focus:border-fuchsia-400/70 focus:bg-white/[0.1] focus:shadow-[0_0_0_3px_rgba(217,70,239,0.12)]"
         />
         {loading ? (
           <Loader2 className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-indigo-300" />
@@ -262,13 +275,43 @@ export default function GlobalSearchBar() {
             )}
           </div>
         )}
+        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+          {status === "authenticated" && user ? (
+            <>
+              <button type="button" aria-label="Thông báo" title="Thông báo" className="flex h-10 w-10 items-center justify-center rounded-full text-white/60 transition hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400">
+                <Bell className="h-[18px] w-[18px]" />
+              </button>
+              <div ref={accountMenuRef} className="relative">
+                <button type="button" onClick={() => setAccountMenuOpen((isOpen) => !isOpen)} aria-expanded={accountMenuOpen} aria-haspopup="menu" className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] pl-1 pr-2 text-left transition hover:border-white/20 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400">
+                  <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-400 to-cyan-400 text-xs font-black text-slate-950">{accountInitials}</span>
+                  <span className="hidden max-w-24 truncate text-xs font-semibold text-white/80 md:block">{accountLabel}</span>
+                  <ChevronDown className={`hidden h-3.5 w-3.5 text-white/45 transition sm:block ${accountMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+                {accountMenuOpen && (
+                  <div role="menu" className="absolute right-0 top-[calc(100%+10px)] w-52 rounded-xl border border-white/10 bg-[#171720]/95 p-2 shadow-2xl backdrop-blur-xl">
+                    <div className="border-b border-white/10 px-3 pb-2 pt-1">
+                      <p className="truncate text-sm font-semibold text-white">{accountLabel}</p>
+                      <p className="truncate text-xs text-white/40">{user.email}</p>
+                    </div>
+                    <button type="button" role="menuitem" onClick={() => { setAccountMenuOpen(false); router.push("/profile"); }} className="mt-2 flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/70 transition hover:bg-white/[0.08] hover:text-white"><User className="h-4 w-4" />Trang cá nhân</button>
+                    <button type="button" role="menuitem" onClick={() => { setAccountMenuOpen(false); router.push("/settings"); }} className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/70 transition hover:bg-white/[0.08] hover:text-white"><Settings2 className="h-4 w-4" />Cài đặt</button>
+                    <button type="button" role="menuitem" onClick={() => { setAccountMenuOpen(false); signOut(); }} className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm text-rose-300/80 transition hover:bg-rose-400/10 hover:text-rose-200"><LogOut className="h-4 w-4" />Đăng xuất</button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <button type="button" onClick={openAuthModal} className="flex h-10 items-center gap-2 rounded-full bg-fuchsia-400 px-4 text-sm font-bold text-slate-950 transition hover:bg-fuchsia-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090910]"><LogIn className="h-4 w-4" /> <span className="hidden sm:inline">Đăng nhập</span></button>
+          )}
+        </div>
       </div>
       <p className="sr-only" role="status" aria-live="polite">
         {loading ? "Đang tìm kiếm" : voiceSearch.isListening ? "Đang nghe giọng nói..." : query.trim() ? `Tìm thấy ${results.length} bài hát` : ""}
       </p>
       {voiceSearch.errorMessage && (
-        <p className="mx-auto mt-2 max-w-4xl text-center text-xs text-rose-300/80">{voiceSearch.errorMessage}</p>
+        <p className="mt-2 text-center text-xs text-rose-300/80">{voiceSearch.errorMessage}</p>
       )}
-    </div>
+    </header>
   );
 }
