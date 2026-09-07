@@ -3,23 +3,25 @@
 import React, { useRef, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
-export interface TiltCardProps {
+export interface Card3DProps {
   children: React.ReactNode;
   className?: string;
   glowColor?: string;
   maxTilt?: number;
   depthZ?: number;
+  neonBorder?: boolean;
   onClick?: () => void;
 }
 
-export default function TiltCard({
+export default function Card3D({
   children,
   className = "",
   glowColor = "rgba(168, 85, 247, 0.45)",
   maxTilt = 12,
   depthZ = 16,
+  neonBorder = true,
   onClick,
-}: TiltCardProps) {
+}: Card3DProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -33,7 +35,7 @@ export default function TiltCard({
   const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [maxTilt, -maxTilt]);
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-maxTilt, maxTilt]);
 
-  // Specular glare position
+  // Glare position
   const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["0%", "100%"]);
   const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["0%", "100%"]);
 
@@ -76,13 +78,13 @@ export default function TiltCard({
         transformStyle: "preserve-3d",
       }}
       whileHover={{
-        scale: 1.035,
-        boxShadow: `0 24px 55px -10px rgba(0, 0, 0, 0.7), 0 0 32px -4px ${glowColor}, inset 0 1px 0 0 rgba(255, 255, 255, 0.25)`,
+        scale: 1.03,
+        boxShadow: `0 24px 50px -10px rgba(0, 0, 0, 0.65), 0 0 30px -4px ${glowColor}, inset 0 1px 0 0 rgba(255, 255, 255, 0.25)`,
       }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 350, damping: 25 }}
       className={`relative cursor-pointer rounded-2xl border border-white/12 bg-white/[0.035] backdrop-blur-2xl transition-all duration-300 ${
-        isHovered ? "border-white/35" : "border-white/12"
+        isHovered && neonBorder ? "border-white/30" : "border-white/12"
       } ${className}`}
     >
       {/* Dynamic Specular Glare Overlay */}
@@ -93,6 +95,7 @@ export default function TiltCard({
         }}
       />
 
+      {/* 3D Elevated Children Container */}
       <div
         style={{
           transform: `translateZ(${depthZ}px)`,
