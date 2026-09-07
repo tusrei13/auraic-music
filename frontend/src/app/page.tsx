@@ -1,365 +1,414 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Play, Sparkles, Heart, Loader2, ArrowUpRight, Waves, Disc3, Dumbbell, PartyPopper, CloudRain, Sun } from "lucide-react";
-import { usePlayerStore } from "@/store/usePlayerStore";
-import { getJamendoTracks, getListeningHistory } from "@/lib/api";
-import { rankRecommendations } from "@/lib/recommendations";
-import TrackActionMenu from "@/components/TrackActionMenu";
-import { useAuthStore } from "@/store/useAuthStore";
-import TrackRow from "@/components/TrackRow";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { motion } from "framer-motion";
+import {
+  Play,
+  Pause,
+  Sparkles,
+  Heart,
+  Radio,
+  ChevronRight,
+  Sun,
+  Sunset,
+  Moon,
+  Headphones,
+  Disc3,
+  SlidersHorizontal,
+} from "lucide-react";
+import { usePlayerStore, Track } from "@/store/usePlayerStore";
+import { getJamendoTracks, JamendoSong } from "@/lib/api";
 import Artwork from "@/components/Artwork";
+import TiltCard from "@/components/ui/TiltCard";
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.1 } as const,
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 24, scale: 0.97 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, damping: 22, stiffness: 160 } },
-};
-
-const bentoVariants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  show: (i: number) => ({
-    opacity: 1,
-    scale: 1,
-    transition: { delay: i * 0.08, type: "spring" as const, damping: 22, stiffness: 160 },
-  }),
-};
+interface TimeOfDayTheme {
+  label: string;
+  greeting: string;
+  icon: React.ComponentType<{ className?: string }>;
+  meshClasses: string;
+  accentColor: string;
+  glowColor: string;
+}
 
 export default function HomePage() {
-  const { playMix, playTrack, toggleLike, likedIds, currentTrack, isPlaying } = usePlayerStore();
-  const router = useRouter();
-  const vibeSectionRef = useRef<HTMLElement>(null);
-  const [songs, setSongs] = useState<any[]>([]);
+  const { playTrack, playMix, currentTrack, isPlaying, toggleLike, likedIds } =
+    usePlayerStore();
+
+  const [recentPicks, setRecentPicks] = useState<JamendoSong[]>([]);
+  const [lofiCarousel, setLofiCarousel] = useState<JamendoSong[]>([]);
+  const [focusCarousel, setFocusCarousel] = useState<JamendoSong[]>([]);
+  const [nightCarousel, setNightCarousel] = useState<JamendoSong[]>([]);
   const [loading, setLoading] = useState(true);
-  const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
-  const [vibeLoading, setVibeLoading] = useState<string | null>(null);
-  const [listenedIds, setListenedIds] = useState<Array<string | number>>([]);
-  const authStatus = useAuthStore((state) => state.status);
-  const { scrollY } = useScroll();
-  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0.3]);
-  const heroScale = useTransform(scrollY, [0, 300], [1, 0.97]);
+  const [currentHour, setCurrentHour] = useState<number>(new Date().getHours());
 
-  const [retryCount, setRetryCount] = useState(0);
+  // Determine Time of Day Theme
+  useEffect(() => {
+    const updateHour = () => setCurrentHour(new Date().getHours());
+    updateHour();
+    const interval = setInterval(updateHour, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const loadCatalog = useCallback(async (attempt = 0) => {
+  const timeTheme: TimeOfDayTheme = useMemo(() => {
+    if (currentHour >= 5 && currentHour < 12) {
+      return {
+        label: "Buổi Sáng",
+        greeting: "Khởi đầu ngày mới với giai điệu thanh khiết",
+        icon: Sun,
+        meshClasses:
+          "from-amber-500/25 via-orange-500/15 to-sky-500/20 shadow-[0_0_80px_rgba(245,158,11,0.2)]",
+        accentColor: "#f59e0b",
+        glowColor: "rgba(245, 158, 11, 0.4)",
+      };
+    } else if (currentHour >= 12 && currentHour < 18) {
+      return {
+        label: "Buổi Chiều",
+        greeting: "Nạp năng lượng tích cực với dải âm hoàng hôn",
+        icon: Sunset,
+        meshClasses:
+          "from-violet-600/30 via-fuchsia-500/20 to-cyan-500/25 shadow-[0_0_80px_rgba(168,85,247,0.25)]",
+        accentColor: "#a855f7",
+        glowColor: "rgba(168, 85, 247, 0.45)",
+      };
+    } else {
+      return {
+        label: "Buổi Tối & Đêm",
+        greeting: "Không gian tĩnh mịch cho tâm hồn thưởng âm",
+        icon: Moon,
+        meshClasses:
+          "from-indigo-900/40 via-purple-900/25 to-cyan-900/30 shadow-[0_0_80px_rgba(99,102,241,0.3)]",
+        accentColor: "#6366f1",
+        glowColor: "rgba(99, 102, 241, 0.45)",
+      };
+    }
+  }, [currentHour]);
+
+  // Load Curated Jamendo Streams
+  const loadContent = useCallback(async () => {
     setLoading(true);
-    setCatalogError(null);
     try {
-      const data = await getJamendoTracks({ limit: 12 });
-      setSongs(data);
-    } catch (error) {
-      setSongs([]);
-      setCatalogError((error as Error)?.message || "Không thể tải catalog Jamendo lúc này.");
+      const [picks, lofi, focus, synth] = await Promise.all([
+        getJamendoTracks({ limit: 6, tags: "ambient chillout" }).catch(() => []),
+        getJamendoTracks({ limit: 10, tags: "lofi hiphop" }).catch(() => []),
+        getJamendoTracks({ limit: 10, tags: "piano classical focus" }).catch(() => []),
+        getJamendoTracks({ limit: 10, tags: "synthwave electronic night" }).catch(() => []),
+      ]);
+
+      setRecentPicks(picks);
+      setLofiCarousel(lofi);
+      setFocusCarousel(focus);
+      setNightCarousel(synth);
     } finally {
       setLoading(false);
-      setRetryCount(attempt);
     }
   }, []);
 
   useEffect(() => {
-    loadCatalog(0);
-  }, [loadCatalog]);
+    loadContent();
+  }, [loadContent]);
 
-  useEffect(() => {
-    if (authStatus !== "authenticated") {
-      setListenedIds([]);
-      return;
-    }
-
-    const userId = useAuthStore.getState().user?.id;
-    if (!userId) return;
-    let active = true;
-    const localHistory = (() => {
-      try {
-        const stored = JSON.parse(localStorage.getItem(`auraic-history-${userId}`) || "[]");
-        return Array.isArray(stored) ? stored : [];
-      } catch {
-        return [];
-      }
-    })();
-    const localIds = localHistory.map((item: { song?: { id?: string | number } }) => item.song?.id).filter((id): id is string | number => id !== undefined);
-    setListenedIds(localIds);
-
-    getListeningHistory()
-      .then((history) => {
-        if (active) setListenedIds(history.map((item) => item.song.id));
-      })
-      .catch(() => undefined);
-
-    return () => {
-      active = false;
-    };
-  }, [authStatus]);
-
-  const featured = songs[0];
-  const featuredArtist = typeof featured?.artist === "object" ? featured.artist?.name : featured?.artist;
-  const recommendedSongs = rankRecommendations(songs, likedIds, listenedIds, 5);
-  const vibes = [
-    { label: "Focus", note: "Deep work", tags: "ambient classical piano", className: "from-cyan-500/30 to-blue-600/10", icon: Waves, accent: "#06B6D4" },
-    { label: "Chill", note: "Slow motion", tags: "chillout lofi lounge", className: "from-violet-500/35 to-fuchsia-500/10", icon: Sparkles, accent: "#A855F7" },
-    { label: "Night drive", note: "After dark", tags: "electronic synthwave dance", className: "from-pink-500/30 to-rose-500/10", icon: Disc3, accent: "#EC4899" },
-    { label: "Dreamy", note: "Soft focus", tags: "ambient dreamy cinematic", className: "from-indigo-500/35 to-cyan-500/10", icon: Sparkles, accent: "#6366F1" },
-    { label: "Workout", note: "Move with it", tags: "energetic rock hiphop", className: "from-orange-500/30 to-rose-500/10", icon: Dumbbell, accent: "#F97316" },
-    { label: "Party", note: "Raise the room", tags: "dance pop house", className: "from-yellow-500/25 to-pink-500/15", icon: PartyPopper, accent: "#EAB308" },
-    { label: "Melancholy", note: "A softer place", tags: "acoustic piano sad", className: "from-sky-500/25 to-indigo-500/15", icon: CloudRain, accent: "#0EA5E9" },
-    { label: "Morning", note: "Start gently", tags: "acoustic folk jazz", className: "from-amber-400/30 to-cyan-500/10", icon: Sun, accent: "#F59E0B" },
-  ];
-
-  const handleExplore = () => {
-    if (songs.length === 0) return;
-    playMix(songs, "Auraic Mix");
-    window.setTimeout(() => {
-      vibeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 180);
-  };
-
-  const handleVibe = async (vibe: (typeof vibes)[number]) => {
-    if (vibeLoading === vibe.label) return;
-    setSelectedVibe(vibe.label);
-    setVibeLoading(vibe.label);
-    try {
-      const vibeTracks = await getJamendoTracks({ limit: 12, tags: vibe.tags });
-      const nextTracks = vibeTracks.length > 0 ? vibeTracks : songs;
-      if (nextTracks.length > 0) {
-        setSongs(nextTracks);
-        playMix(nextTracks, `${vibe.label} Aura`);
-      }
-    } catch (error) {
-      console.error("Lỗi tải vibe Auraic:", error);
-      if (songs.length > 0) playMix(songs, `${vibe.label} Aura`);
-    } finally {
-      setVibeLoading(null);
-    }
-  };
+  const TimeIcon = timeTheme.icon;
 
   return (
-    <motion.div suppressHydrationWarning className="min-h-full overflow-y-auto scrollbar-none px-5 pb-36 pt-3 text-white sm:px-8 lg:px-12" variants={container} initial="hidden" animate="show">
-      {catalogError && (
-        <motion.div suppressHydrationWarning className="mb-4 flex items-center justify-between rounded-2xl border border-rose-300/25 bg-rose-300/[0.08] px-5 py-3" variants={item} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex items-center gap-3">
-            <span className="h-2 w-2 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(251,113,133,0.8)]" />
-            <p className="text-sm text-rose-100">{catalogError}</p>
-          </div>
-          <motion.button type="button" onClick={() => loadCatalog(retryCount + 1)} className="shrink-0 rounded-xl border border-rose-200/30 px-3 py-1.5 text-xs font-semibold text-rose-100 hover:bg-rose-200/10" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            Retry
-          </motion.button>
-        </motion.div>
-      )}
-      {/* HERO SECTION */}
-      <motion.section suppressHydrationWarning style={{ opacity: heroOpacity, scale: heroScale }} className="relative isolate grid min-h-[470px] grid-cols-1 items-end overflow-hidden rounded-[32px] border border-auraic-border bg-auraic-surface p-6 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:p-14">
-        <div suppressHydrationWarning className="absolute -left-20 top-10 -z-10 h-72 w-72 rounded-full bg-fuchsia-600/25 blur-[110px]" />
-        <div suppressHydrationWarning className="absolute right-10 top-0 -z-10 h-80 w-80 rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div suppressHydrationWarning className="relative z-10 pb-2 lg:pb-8">
-          <motion.p className="mb-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-            <Sparkles className="h-4 w-4" /> The Auraic experience
-          </motion.p>
-          <motion.h1 className="max-w-xl text-5xl font-black leading-[0.96] tracking-[-0.06em] sm:text-7xl" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, type: "spring", damping: 20, stiffness: 100 }}>
-            Feel the <span className="bg-gradient-to-r from-fuchsia-300 via-violet-400 to-cyan-300 bg-clip-text text-transparent">Aura.</span><br />
-            <em className="font-semibold text-white/85">Live the music.</em>
-          </motion.h1>
-          <motion.p className="mt-6 max-w-sm text-sm leading-6 text-white/55" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-            A living soundtrack for your late nights, clear mornings, and everything in between.
-          </motion.p>
-          <motion.button
-            onClick={handleExplore}
-            disabled={songs.length === 0}
-            className="mt-8 inline-flex min-h-12 items-center gap-3 rounded-full bg-white px-5 text-sm font-bold text-[#0b0a14] shadow-[0_0_35px_rgba(196,120,255,0.4)] transition hover:-translate-y-0.5 hover:bg-fuchsia-100 disabled:opacity-50"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Play className="h-4 w-4 fill-current" /> Explore Auraic <ArrowUpRight className="h-4 w-4" />
-          </motion.button>
-        </div>
-        <div className="relative mx-auto mt-8 aspect-square w-full max-w-[370px] lg:mt-0 lg:max-w-[460px]">
-          <motion.div className="absolute inset-[-12%] rounded-full bg-gradient-to-br from-fuchsia-500/35 via-violet-500/25 to-cyan-400/30 blur-3xl" animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} />
-          <motion.div className="absolute inset-[3%] rounded-full border border-white/15 shadow-[0_0_70px_rgba(191,112,255,0.55)]" animate={{ scale: [1, 1.02, 1] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} />
-          <motion.div
-            className="relative h-full w-full rounded-[24%] object-cover shadow-2xl transition duration-700"
-            whileHover={{ scale: 1.025 }}
-          >
-            <Artwork
-              src={featured?.image || "https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=1200&auto=format&fit=crop"}
-              alt={featured?.title || "Auraic atmospheric artwork"}
-              priority
-              loading="eager"
-              className="h-full w-full rounded-[24%] object-cover shadow-2xl"
-            />
-          </motion.div>
-          <motion.div className="absolute bottom-5 left-5 right-5 flex items-end justify-between rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur-xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">Featured now</p>
-              <p className="mt-1 truncate text-sm font-bold">{featured?.title || "A new frequency"}</p>
-              <p className="truncate text-xs text-white/50">{featuredArtist || "Auraic radio"}</p>
+    <div className="min-h-full px-5 pb-36 pt-4 text-white sm:px-8 lg:px-12 space-y-12">
+      {/* ========================================================= */}
+      {/* 1. HEADER: REALTIME MESH GRADIENT BANNER                 */}
+      {/* ========================================================= */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className={`relative overflow-hidden rounded-[36px] border border-white/15 bg-gradient-to-br p-6 sm:p-10 lg:p-12 backdrop-blur-3xl transition-colors duration-1000 ${timeTheme.meshClasses}`}
+      >
+        {/* Animated Mesh Fluid Orbs */}
+        <motion.div
+          animate={{
+            x: [0, 50, -30, 0],
+            y: [0, -40, 20, 0],
+            scale: [1, 1.15, 0.95, 1],
+          }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-20 -left-20 h-80 w-80 rounded-full bg-violet-500/30 blur-[90px] pointer-events-none"
+        />
+        <motion.div
+          animate={{
+            x: [0, -60, 40, 0],
+            y: [0, 50, -30, 0],
+            scale: [1, 1.2, 0.9, 1],
+          }}
+          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -bottom-20 right-10 h-96 w-96 rounded-full bg-cyan-400/25 blur-[100px] pointer-events-none"
+        />
+        <motion.div
+          animate={{
+            opacity: [0.3, 0.6, 0.3],
+            scale: [0.9, 1.05, 0.9],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 h-64 w-64 rounded-full bg-fuchsia-500/20 blur-[80px] pointer-events-none"
+        />
+
+        <div className="relative z-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+          <div className="max-w-2xl space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1.5 text-xs font-semibold backdrop-blur-md">
+              <TimeIcon className="h-4 w-4 text-cyan-300 animate-pulse" />
+              <span className="text-white/90">{timeTheme.label}</span>
+              <span className="text-white/40">•</span>
+              <span className="font-mono text-cyan-300">
+                {String(new Date().getHours()).padStart(2, "0")}:
+                {String(new Date().getMinutes()).padStart(2, "0")}
+              </span>
             </div>
-            <motion.button aria-label="Phát bài hát nổi bật" onClick={() => featured && playTrack(featured, songs)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-105" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+
+            <h1 className="text-4xl font-black tracking-tight sm:text-6xl sm:leading-[1.08]">
+              Trải nghiệm âm thanh <br />
+              <span className="bg-gradient-to-r from-white via-violet-200 to-cyan-300 bg-clip-text text-transparent">
+                Audiophile Không Giới Hạn.
+              </span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-white/65 leading-relaxed">
+              {timeTheme.greeting}. Không gian tinh gọn, chất âm trung thực với
+              công nghệ mô phỏng trường âm độc bản.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => recentPicks.length > 0 && playMix(recentPicks, "Auraic Flow")}
+              className="flex items-center gap-2.5 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-black shadow-[0_0_35px_rgba(255,255,255,0.4)] transition hover:bg-neutral-100"
+            >
               <Play className="h-4 w-4 fill-current" />
+              <span>Khởi động luồng nhạc</span>
             </motion.button>
-          </motion.div>
-        </div>
-      </motion.section>
-
-      {/* VIBE BENTO GRID */}
-      <motion.section ref={vibeSectionRef} className="mt-10 scroll-mt-6" variants={container} initial="hidden" animate="show">
-        <motion.div className="mb-4 flex items-end justify-between" variants={item}>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300">Choose your atmosphere</p>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight">What are you feeling?</h2>
+            <a
+              href="/stations"
+              className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/[0.07] px-5 py-3.5 text-sm font-semibold text-white/90 backdrop-blur-md transition hover:bg-white/[0.14]"
+            >
+              <Radio className="h-4 w-4 text-cyan-300" />
+              <span>Ambient Studio</span>
+            </a>
           </div>
-          <span className="hidden text-xs text-white/35 sm:block">Curated for this moment</span>
-        </motion.div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {vibes.map((vibe, i) => {
-            const Icon = vibe.icon;
-            const isSelected = selectedVibe === vibe.label;
-            const isLoading = vibeLoading === vibe.label;
-            return (
-              <motion.button
-                key={vibe.label}
-                type="button"
-                aria-pressed={isSelected}
-                disabled={vibeLoading !== null}
-                onClick={() => void handleVibe(vibe)}
-                className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_rgba(109,78,255,0.18)] disabled:cursor-wait disabled:opacity-80 ${vibe.className}`}
-                variants={bentoVariants}
-                custom={i}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <motion.div
-                  className="absolute inset-0 bg-white/5 opacity-0 transition-opacity group-hover:opacity-100"
-                  initial={false}
-                  whileHover={{ opacity: 1 }}
-                />
-                <Icon className={`mb-8 h-5 w-5 text-white/80 transition group-hover:rotate-12 ${isLoading ? "animate-pulse" : ""}`} />
-                <p className="font-bold relative z-10">{isLoading ? "Tuning..." : vibe.label}</p>
-                <p className="mt-1 text-xs text-white/45 relative z-10">{isSelected && !isLoading ? "Now playing" : vibe.note}</p>
-                {isSelected && (
-                  <motion.div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-fuchsia-500 to-cyan-400" layoutId="vibe-indicator" transition={{ type: "spring", damping: 24, stiffness: 180 }} />
-                )}
-              </motion.button>
-            );
-          })}
         </div>
-      </motion.section>
+      </motion.header>
 
-      {/* TRENDING BENTO GRID */}
-      <motion.section className="mt-12 space-y-4" variants={container} initial="hidden" animate="show">
-        <motion.div className="flex items-end justify-between" variants={item}>
+      {/* ========================================================= */}
+      {/* 2. QUICK PICK GRID: 3D PARALLAX TILT + GLOW NEON          */}
+      {/* ========================================================= */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">On repeat</p>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight">Trending now</h2>
+            <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-violet-400">
+              Personalized Audio
+            </span>
+            <h2 className="text-2xl font-bold tracking-tight">Gợi ý dành cho bạn</h2>
           </div>
-          <motion.button type="button" onClick={() => router.push("/discover")} className="text-xs font-semibold text-white/45 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300" whileHover={{ x: 4 }}>
-            View all <ArrowUpRight className="ml-1 inline h-3.5 w-3.5" />
-          </motion.button>
-        </motion.div>
+          <span className="text-xs text-white/40 hidden sm:inline">
+            Tương tác 3D Parallax Tilt & Neon Glow
+          </span>
+        </div>
+
         {loading ? (
-          <motion.div className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45" variants={item}>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning your atmosphere...
-          </motion.div>
-        ) : songs.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {songs.slice(0, 5).map((song, index) => {
-              const artist = typeof song.artist === "object" ? song.artist?.name : song.artist;
-              const isCurrent = String(currentTrack?.id) === String(song.id);
-              const liked = likedIds.some((id: any) => String(id) === String(song.id));
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="h-28 animate-pulse rounded-2xl border border-white/5 bg-white/[0.03]"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {recentPicks.map((track) => {
+              const isCurrent = currentTrack?.id === track.id;
+              const isLiked = likedIds.includes(track.id);
+
               return (
-                <motion.div key={song.id} variants={bentoVariants} custom={index}>
-                  <motion.button
-                    onClick={() => playTrack(song, songs, "Trending now")}
-                    className="relative block aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left"
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    <Artwork src={song.image} alt={song.title} loading={index > 1 ? "lazy" : "eager"} className="h-full w-full object-cover transition duration-500 group-hover:scale-105 group-hover:opacity-70" />
-                    <span className="absolute bottom-3 right-3 flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-white text-black opacity-0 shadow-xl transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                      <Play className="h-4 w-4 fill-current" />
-                    </span>
-                    {isCurrent && isPlaying && (
-                      <span className="absolute left-3 top-3 rounded-full bg-fuchsia-500 px-2 py-1 text-[9px] font-bold uppercase tracking-wider">Playing</span>
-                    )}
-                  </motion.button>
-                  <div className="flex items-start justify-between gap-2 pt-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-semibold group-hover:text-fuchsia-200">{song.title}</h3>
-                      <p className="mt-1 truncate text-xs text-white/45">{artist}</p>
+                <TiltCard
+                  key={track.id}
+                  glowColor={timeTheme.glowColor}
+                  onClick={() => playTrack(track, recentPicks)}
+                  className="group p-3.5"
+                >
+                  <div className="flex items-center gap-3.5">
+                    {/* Artwork Container */}
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl shadow-lg border border-white/10">
+                      <Artwork
+                        src={track.image}
+                        alt={track.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      {/* Play overlay button */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                        {isCurrent && isPlaying ? (
+                          <div className="flex gap-0.5 items-end h-4">
+                            <span className="w-1 bg-cyan-300 animate-pulse h-4 rounded-full" />
+                            <span className="w-1 bg-violet-400 animate-pulse h-2.5 rounded-full" />
+                            <span className="w-1 bg-pink-400 animate-pulse h-3 rounded-full" />
+                          </div>
+                        ) : (
+                          <Play className="h-5 w-5 fill-white text-white drop-shadow-md" />
+                        )}
+                      </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <motion.button aria-label={liked ? "Bỏ thích" : "Yêu thích"} onClick={() => toggleLike(song)} className={`mt-0.5 ${liked ? "text-pink-400" : "text-white/25 hover:text-pink-300"}`} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
-                        <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
-                      </motion.button>
-                      <TrackActionMenu track={song} />
+
+                    {/* Track info */}
+                    <div className="min-w-0 flex-1">
+                      <h3
+                        className={`truncate text-sm font-bold transition-colors ${
+                          isCurrent ? "text-cyan-300" : "text-white group-hover:text-violet-200"
+                        }`}
+                      >
+                        {track.title}
+                      </h3>
+                      <p className="truncate text-xs text-white/50 mt-0.5">
+                        {typeof track.artist === "object" ? track.artist.name : track.artist}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-2 text-[10px] text-white/40">
+                        <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono">
+                          {Math.floor(track.duration / 60)}:
+                          {String(Math.floor(track.duration % 60)).padStart(2, "0")}
+                        </span>
+                        <span>•</span>
+                        <span className="truncate">
+                          {track.genres?.[0] || "Audiophile"}
+                        </span>
+                      </div>
                     </div>
+
+                    {/* Actions */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLike(track);
+                      }}
+                      className="rounded-full p-2 text-white/40 transition hover:scale-110 hover:text-rose-400"
+                    >
+                      <Heart
+                        className={`h-4 w-4 ${
+                          isLiked ? "fill-rose-500 text-rose-500" : ""
+                        }`}
+                      />
+                    </button>
                   </div>
-                </motion.div>
+                </TiltCard>
               );
             })}
           </div>
-        ) : catalogError ? (
-          <motion.div role="alert" className="rounded-2xl border border-rose-300/25 bg-rose-300/[0.08] px-5 py-10 text-center text-sm text-rose-100" variants={item}>
-            <p className="mb-2 font-semibold">Không thể tải bài hát lúc này</p>
-            <p className="text-xs text-rose-200/70">{catalogError}</p>
-            <motion.button type="button" onClick={() => loadCatalog(retryCount + 1)} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              Thử lại
-            </motion.button>
-          </motion.div>
-        ) : (
-          <motion.div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] py-12 text-center" variants={item}>
-            <p className="text-white/50 text-sm font-medium">Catalog đang trống</p>
-            <p className="mt-1 text-xs text-white/35">Hãy thử lại sau hoặc khám phá thể loại khác.</p>
-            <motion.button type="button" onClick={() => loadCatalog(retryCount + 1)} className="mt-4 min-h-11 rounded-xl border border-white/10 px-4 font-semibold text-white/70 hover:bg-white/5" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              Thử tải lại
-            </motion.button>
-          </motion.div>
         )}
-      </motion.section>
+      </section>
 
-      {/* FOR YOU - Track Rows */}
-      <motion.section className="mt-12 space-y-4" variants={container} initial="hidden" animate="show">
-        <motion.div variants={item}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-violet-300">Based on your likes</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight">For you</h2>
-        </motion.div>
+      {/* ========================================================= */}
+      {/* 3. CURATED CAROUSELS: JAMENDO API WITH QUICK PLAY SCALE   */}
+      {/* ========================================================= */}
+      {/* Carousel 1: Lofi & Chillout Beats */}
+      <CarouselRow
+        title="Lofi & Ambient Sanctuary"
+        subtitle="Âm sắc dịu êm giúp bạn xoa dịu tâm trí"
+        tracks={lofiCarousel}
+        onPlayTrack={(track) => playTrack(track, lofiCarousel)}
+      />
 
-        {loading ? (
-          <motion.div className="flex items-center justify-center py-12 text-white/50 gap-2" variants={item}>
-            <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
-            <span>Đang tải bài hát từ API...</span>
-          </motion.div>
-        ) : recommendedSongs.length > 0 ? (
-          <motion.div className="space-y-2" variants={container} initial="hidden" animate="show">
-            {recommendedSongs.map((song, index) => (
-              <TrackRow key={song.id} track={song} index={index} queue={recommendedSongs} contextTitle="For you" />
-            ))}
-          </motion.div>
-         ) : catalogError ? (
-           <motion.div role="alert" className="rounded-2xl border border-rose-300/25 bg-rose-300/[0.08] px-5 py-10 text-center text-sm text-rose-100" variants={item}>
-             <p className="mb-2 font-semibold">Không thể tải gợi ý lúc này</p>
-             <p className="text-xs text-rose-200/70">{catalogError}</p>
-             <motion.button type="button" onClick={() => loadCatalog(retryCount + 1)} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-               Thử lại
-             </motion.button>
-           </motion.div>
-         ) : (
-           <motion.div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] py-12 text-center" variants={item}>
-             <p className="text-white/50 text-sm font-medium">Chưa có gợi ý phù hợp</p>
-             <p className="mt-1 text-xs text-white/35">Hãy yêu thích vài bài hát để Auraic hiểu gu của bạn.</p>
-           </motion.div>
-         )}
-       </motion.section>
-     </motion.div>
-   );
- }
+      {/* Carousel 2: Deep Focus & Piano */}
+      <CarouselRow
+        title="Deep Focus & Piano Chamber"
+        subtitle="Không gian tập trung tuyệt đối cho công việc sáng tạo"
+        tracks={focusCarousel}
+        onPlayTrack={(track) => playTrack(track, focusCarousel)}
+      />
+
+      {/* Carousel 3: Nightfall Synthwave */}
+      <CarouselRow
+        title="Midnight Pulse & Synthwave"
+        subtitle="Dòng năng lượng điện tử lấp lánh trong màn đêm"
+        tracks={nightCarousel}
+        onPlayTrack={(track) => playTrack(track, nightCarousel)}
+      />
+    </div>
+  );
+}
+
+// =========================================================
+// REUSABLE HORIZONTAL CAROUSEL COMPONENT WITH QUICK PLAY
+// =========================================================
+interface CarouselRowProps {
+  title: string;
+  subtitle: string;
+  tracks: JamendoSong[];
+  onPlayTrack: (track: JamendoSong) => void;
+}
+
+function CarouselRow({ title, subtitle, tracks, onPlayTrack }: CarouselRowProps) {
+  const { currentTrack, isPlaying } = usePlayerStore();
+
+  if (!tracks || tracks.length === 0) return null;
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-end justify-between">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-white/95">{title}</h2>
+          <p className="text-xs text-white/50">{subtitle}</p>
+        </div>
+      </div>
+
+      <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none scroll-smooth">
+        {tracks.map((track) => {
+          const isCurrent = currentTrack?.id === track.id;
+
+          return (
+            <div
+              key={track.id}
+              onClick={() => onPlayTrack(track)}
+              className="group relative w-44 sm:w-48 shrink-0 cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-3 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-white/25 hover:bg-white/[0.07] hover:shadow-[0_15px_35px_rgba(0,0,0,0.5)]"
+            >
+              {/* Cover Art */}
+              <div className="relative aspect-square w-full overflow-hidden rounded-xl shadow-md">
+                <Artwork
+                  src={track.image}
+                  alt={track.title}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-108"
+                />
+
+                {/* Smooth Scale-Up Quick Play Button */}
+                <motion.button
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPlayTrack(track);
+                  }}
+                  className="absolute bottom-2.5 right-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.7)] opacity-0 translate-y-3 scale-75 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100"
+                  aria-label="Phát ngay"
+                >
+                  {isCurrent && isPlaying ? (
+                    <Pause className="h-4 w-4 fill-white" />
+                  ) : (
+                    <Play className="h-4 w-4 fill-white ml-0.5" />
+                  )}
+                </motion.button>
+              </div>
+
+              {/* Title & Artist */}
+              <div className="mt-3">
+                <h3
+                  className={`truncate text-sm font-semibold transition-colors ${
+                    isCurrent ? "text-cyan-300" : "text-white/90 group-hover:text-white"
+                  }`}
+                >
+                  {track.title}
+                </h3>
+                <p className="mt-0.5 truncate text-xs text-white/50">
+                  {typeof track.artist === "object" ? track.artist.name : track.artist}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}

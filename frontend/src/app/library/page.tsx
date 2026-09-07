@@ -26,6 +26,7 @@ import {
   ArrowDown,
   ArrowUp,
   Music2,
+  FileText,
 } from "lucide-react";
 import { usePlayerStore, Track as StoreTrack, type LocalListeningHistoryItem } from "@/store/usePlayerStore";
 import { usePlaylistStore } from "@/store/usePlaylistStore";
@@ -33,6 +34,8 @@ import TrackActionMenu from "@/components/TrackActionMenu";
 import { formatDuration, getListeningHistory, getSongs } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import Artwork from "@/components/Artwork";
+import CustomLyricsModal from "@/components/player/CustomLyricsModal";
+import Link from "next/link";
 
 export type Track = StoreTrack & {
   addedAt?: string;
@@ -105,6 +108,8 @@ export default function LibraryPage() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [listeningHistory, setListeningHistory] = useState<LocalListeningHistoryItem[]>([]);
+  const [lyricsModalTrack, setLyricsModalTrack] = useState<Track | null>(null);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddSongsModal, setShowAddSongsModal] = useState(false);
   const [playlistToDelete, setPlaylistToDelete] = useState<{ id: number | string; name: string } | null>(null);
@@ -664,6 +669,20 @@ export default function LibraryPage() {
                               aria-label="Đưa bài hát xuống"
                             >
                               <ArrowDown className="w-4 h-4" />
+                            </motion.button>
+
+                            <motion.button
+                              whileHover={{ scale: 1.15 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLyricsModalTrack(song);
+                              }}
+                              className="p-1.5 rounded-lg text-white/30 hover:text-cyan-300 hover:bg-white/5 transition-colors"
+                              title="Attach Lyrics (.lrc / text)"
+                              aria-label="Attach Lyrics"
+                            >
+                              <FileText className="w-4 h-4" />
                             </motion.button>
 
                             <motion.button
@@ -1506,6 +1525,11 @@ export default function LibraryPage() {
         </motion.div>,
         document.body
       )}
+      <CustomLyricsModal
+        isOpen={Boolean(lyricsModalTrack)}
+        onClose={() => setLyricsModalTrack(null)}
+        track={lyricsModalTrack}
+      />
     </div>
   );
 }
