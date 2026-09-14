@@ -38,15 +38,39 @@ export const getLyrics = async (trackName: string, artistName: string): Promise<
       signal: AbortSignal.timeout(6000),
     })
 
-    if (response.status === 404) {
+    let payload: LrclibResponse | null = null
+
+    if (response.ok) {
+      payload = (await response.json()) as LrclibResponse
+    } else if (response.status === 404) {
+      // 2. Fallback: Search with cleaned track name and artist name
+      const cleanTrack = normalizedTrack
+        .replace(/\s*[\(\[][^\)\]]*(?:feat|ft|remix|edit|version|remaster|live|official|audio)[^\)\]]*[\)\]]/gi, '')
+        .trim()
+      const searchParams = new URLSearchParams({
+        q: `${cleanTrack} ${normalizedArtist}`,
+      })
+
+      const searchRes = await fetch(`https://lrclib.net/api/search?${searchParams}`, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(6000),
+      })
+
+      if (searchRes.ok) {
+        const searchResults = (await searchRes.json()) as LrclibResponse[]
+        if (Array.isArray(searchResults) && searchResults.length > 0) {
+          const match = searchResults.find((item) => item.syncedLyrics || item.plainLyrics) || searchResults[0]
+          payload = match
+        }
+      }
+    }
+
+    if (!payload || (!payload.syncedLyrics && !payload.plainLyrics)) {
       const empty: LyricsResult = { syncedLyrics: null, plainLyrics: null }
       await cacheSet(cacheKey, empty, LYRICS_CACHE_TTL_SECONDS)
       return empty
     }
 
-    if (!response.ok) throw new Error(`LRCLIB request failed with ${response.status}`)
-
-    const payload = await response.json() as LrclibResponse
     const result: LyricsResult = {
       syncedLyrics: payload.syncedLyrics || null,
       plainLyrics: payload.plainLyrics || null,
