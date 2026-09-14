@@ -2,6 +2,7 @@
 
 import { motion, useAnimation, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { type ReactNode, useEffect, useRef } from "react";
+import { useAdaptiveGraphics } from "@/hooks/useAdaptiveGraphics";
 
 export const fadeIn = {
   hidden: { opacity: 0, y: 24 },
@@ -40,6 +41,8 @@ export const containerVariants = {
 
 export function TiltCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const { quality } = useAdaptiveGraphics();
+  const tiltEnabled = quality === "high";
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotateX = useTransform(y, [-100, 100], [8, -8]);
@@ -49,7 +52,7 @@ export function TiltCard({ children, className = "" }: { children: ReactNode; cl
   const springRotateY = useSpring(rotateY, springConfig);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
+    if (!tiltEnabled || !ref.current) return;
     const rect = ref.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
@@ -68,9 +71,13 @@ export function TiltCard({ children, className = "" }: { children: ReactNode; cl
     <motion.div
       ref={ref}
       className={className}
-      onMouseMove={handleMouseMove}
+      onMouseMove={tiltEnabled ? handleMouseMove : undefined}
       onMouseLeave={handleMouseLeave}
-      style={{ rotateX: springRotateX, rotateY: springRotateY, transformStyle: "preserve-3d" }}
+      style={{
+        rotateX: tiltEnabled ? springRotateX : 0,
+        rotateY: tiltEnabled ? springRotateY : 0,
+        transformStyle: "preserve-3d",
+      }}
       transition={{ type: "spring", damping: 20, stiffness: 200 }}
     >
       {children}
@@ -98,8 +105,8 @@ export function AnimatedEqualizer({ isActive, className = "" }: { isActive: bool
       {bars.map((bar) => (
         <motion.span
           key={bar}
-          className="w-[3px] rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
-          animate={isActive ? { height: ["35%", "90%", "45%", "100%", "60%"] } : { height: "15%" }}
+          className="h-full w-[3px] origin-bottom rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
+          animate={isActive ? { scaleY: [0.35, 0.9, 0.45, 1, 0.6] } : { scaleY: 0.15 }}
           transition={
             isActive
               ? { duration: 0.6 + bar * 0.15, repeat: Infinity, ease: "easeInOut", delay: bar * 0.08 }

@@ -40,6 +40,7 @@ interface PlayerState {
   crossfadeDuration: number;
   likedIds: (number | string)[];
   likedTracks: Track[];
+  isLyricsOpen: boolean;
 
   playTrack: (track: Track, contextQueue?: Track[], contextTitle?: string) => void;
   playMix: (tracks: Track[], contextTitle?: string) => void;
@@ -61,6 +62,8 @@ interface PlayerState {
   setPlaybackStatus: (status: PlaybackStatus, error?: string | null) => void;
   recordListening: (songId: number | string) => Promise<void>;
   switchUser: (userId: string | null) => void;
+  toggleLyrics: () => void;
+  closeLyrics: () => void;
 }
 
 export const removeDuplicateTracks = (tracks: Track[]): Track[] => {
@@ -134,6 +137,7 @@ export const usePlayerStore = create<PlayerState>()(
       crossfadeDuration: 3,
       likedIds: [],
       likedTracks: [],
+      isLyricsOpen: false,
 
       switchUser: (userId) => {
         saveLikes(activeUserId, get().likedIds);
@@ -333,6 +337,9 @@ export const usePlayerStore = create<PlayerState>()(
 
       setCrossfadeDuration: (duration: number) =>
         set({ crossfadeDuration: Math.min(10, Math.max(1, duration)) }),
+
+      toggleLyrics: () => set((state) => ({ isLyricsOpen: !state.isLyricsOpen })),
+      closeLyrics: () => set({ isLyricsOpen: false }),
 
       nextTrack: () => {
         const { userQueue, contextQueue, contextIndex, repeatMode, isShuffle, currentTrack } = get();
