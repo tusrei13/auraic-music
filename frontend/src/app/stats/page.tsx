@@ -6,18 +6,8 @@ import {
   Activity,
   Download,
   Sparkles,
-  Share2,
-  Headphones,
-  Flame,
-  Award,
-  Calendar,
-  Disc3,
-  Clock,
-  Radio,
-  Check,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { usePlayerStore } from "@/store/usePlayerStore";
 import { useToastStore } from "@/store/useToastStore";
 
 // =========================================================
@@ -266,7 +256,6 @@ function ListeningHeatmap() {
 // =========================================================
 export default function StatsPage() {
   const currentUser = useAuthStore((s) => s.user);
-  const currentTrack = usePlayerStore((s) => s.currentTrack);
   const { addToast } = useToastStore();
 
   const [exporting, setExporting] = useState(false);
@@ -285,7 +274,6 @@ export default function StatsPage() {
 
   const holoX = useTransform(mouseXSpring, [-0.5, 0.5], ["10%", "90%"]);
   const holoY = useTransform(mouseYSpring, [-0.5, 0.5], ["10%", "90%"]);
-  const holoRotate = useTransform(mouseXSpring, [-0.5, 0.5], [0, 360]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -399,7 +387,7 @@ export default function StatsPage() {
     <div className="min-h-full px-5 pb-36 pt-4 text-white sm:px-8 lg:px-12 space-y-12">
       {/* Header */}
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1 text-xs font-semibold backdrop-blur-md">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1 text-xs font-semibold ">
           <Activity className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
           <span>Audio Analytics & Taste DNA</span>
         </div>
@@ -416,7 +404,7 @@ export default function StatsPage() {
         {/* ========================================================= */}
         {/* 1. SOUND RADAR CHART                                      */}
         {/* ========================================================= */}
-        <section className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-6">
+        <section className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-8  shadow-xl space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold">Sound Radar Chart</h2>
@@ -480,7 +468,7 @@ export default function StatsPage() {
                 transformStyle: "preserve-3d",
               }}
               whileHover={{ scale: 1.04 }}
-              className="relative w-full max-w-md aspect-[1.58/1] rounded-3xl border-2 border-white/30 bg-gradient-to-br from-[#0c0d18] via-[#141026] to-[#08121f] p-6 shadow-[0_25px_65px_rgba(0,0,0,0.85),0_0_40px_rgba(168,85,247,0.4),inset_0_1px_0_0_rgba(255,255,255,0.4)] overflow-hidden cursor-pointer backdrop-blur-3xl group"
+              className="relative w-full max-w-md aspect-[1.58/1] rounded-3xl border-2 border-white/30 bg-gradient-to-br from-[#0c0d18] via-[#141026] to-[#08121f] p-6 shadow-[0_25px_65px_rgba(0,0,0,0.85),0_0_40px_rgba(168,85,247,0.4),inset_0_1px_0_0_rgba(255,255,255,0.4)] overflow-hidden cursor-pointer  group"
             >
               {/* Dynamic Conic-Gradient Rainbow Prism Foil */}
               <motion.div
@@ -579,9 +567,10 @@ export default function StatsPage() {
       {/* ========================================================= */}
       {/* 3. LISTENING HEATMAP SECTION                              */}
       {/* ========================================================= */}
-      <section className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-8 backdrop-blur-2xl shadow-xl">
+      <section className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-8  shadow-xl">
         <ListeningHeatmap />
       </section>
     </div>
   );
 }
+

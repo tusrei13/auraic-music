@@ -7,24 +7,20 @@ import {
   CloudRain,
   Disc,
   Waves,
-  Volume2,
-  VolumeX,
   Sparkles,
   Play,
   Pause,
   Sliders,
-  Check,
   Moon,
   Leaf,
   Compass,
   Search,
   RefreshCw,
-  Clock,
   Heart,
 } from "lucide-react";
 import { ambientEngine } from "@/lib/ambientEngine";
 import RainVisualizer from "@/components/visualizer/RainVisualizer";
-import { usePlayerStore, Track } from "@/store/usePlayerStore";
+import { usePlayerStore } from "@/store/usePlayerStore";
 import { getJamendoTracks, JamendoSong, formatDuration } from "@/lib/api";
 import Artwork from "@/components/Artwork";
 import TiltCard from "@/components/ui/TiltCard";
@@ -229,7 +225,7 @@ export default function StationsPage() {
         {/* ========================================================= */}
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-3.5 py-1 text-xs font-semibold backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-3.5 py-1 text-xs font-semibold ">
               <Radio className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
               <span>Auraic Studio Engine</span>
             </div>
@@ -248,7 +244,7 @@ export default function StationsPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleAmbient}
-              className={`flex items-center gap-2.5 rounded-2xl px-5 py-3 text-sm font-bold shadow-lg backdrop-blur-xl transition-all ${
+              className={`flex items-center gap-2.5 rounded-2xl px-5 py-3 text-sm font-bold shadow-lg  transition-all ${
                 isAmbientPlaying
                   ? "bg-cyan-500 text-black shadow-[0_0_30px_rgba(6,182,212,0.6)]"
                   : "border border-white/20 bg-white/10 text-white hover:bg-white/15"
@@ -342,7 +338,7 @@ export default function StationsPage() {
         {/* ========================================================= */}
         {/* 2. AMBIENT LAYERING ENGINE CONTROLS                       */}
         {/* ========================================================= */}
-        <section className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-8 backdrop-blur-2xl shadow-xl">
+        <section className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-8  shadow-xl">
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
             <div>
               <div className="flex items-center gap-2">
@@ -373,7 +369,7 @@ export default function StationsPage() {
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             {/* Channel 1: Rain */}
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-md">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4 ">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/20 text-blue-300">
@@ -397,7 +393,7 @@ export default function StationsPage() {
             </div>
 
             {/* Channel 2: Vinyl Crackle */}
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-md">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4 ">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/20 text-amber-300">
@@ -421,7 +417,7 @@ export default function StationsPage() {
             </div>
 
             {/* Channel 3: Ocean Waves */}
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-md">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4 ">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-500/20 text-teal-300">
@@ -600,3 +596,4 @@ export default function StationsPage() {
     </div>
   );
 }
+

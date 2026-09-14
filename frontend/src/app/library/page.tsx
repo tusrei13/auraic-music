@@ -35,7 +35,7 @@ import { formatDuration, getListeningHistory, getSongs } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import Artwork from "@/components/Artwork";
 import CustomLyricsModal from "@/components/player/CustomLyricsModal";
-import Link from "next/link";
+import VirtualList from "@/components/ui/VirtualList";
 
 export type Track = StoreTrack & {
   addedAt?: string;
@@ -317,7 +317,7 @@ export default function LibraryPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="relative overflow-hidden rounded-[32px] border border-white/20 bg-gradient-to-br from-violet-950/40 via-purple-950/20 to-black/60 p-6 sm:p-9 lg:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.65),inset_0_1px_0_0_rgba(255,255,255,0.22)] backdrop-blur-3xl"
+          className="relative overflow-hidden rounded-[32px] border border-white/20 bg-gradient-to-br from-violet-950/40 via-purple-950/20 to-black/60 p-6 sm:p-9 lg:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.65),inset_0_1px_0_0_rgba(255,255,255,0.22)] "
         >
           {/* Ambient Artwork Backdrop */}
           <div className="pointer-events-none absolute -right-10 -top-10 h-80 w-80 rounded-full bg-violet-600/25 blur-[90px]" />
@@ -331,7 +331,7 @@ export default function LibraryPage() {
 
           <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div className="space-y-3.5 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1 text-xs font-semibold backdrop-blur-md">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1 text-xs font-semibold ">
                 <Bookmark className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
                 <span className="text-white/90">Audiophile Collection & Vault</span>
               </div>
@@ -384,7 +384,7 @@ export default function LibraryPage() {
           transition={{ delay: 0.1 }}
           className="flex flex-col sm:flex-row sm:items-center gap-3"
         >
-          <div className="relative flex items-center bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-md">
+          <div className="relative flex items-center bg-white/5 p-1 rounded-2xl border border-white/10 ">
             <AnimatePresence mode="popLayout">
               {FILTER_TABS.map((tab) => (
                 <motion.button
@@ -470,7 +470,7 @@ export default function LibraryPage() {
                   setSelectedPlaylistId(null);
                   setIsShuffleActive(false);
                 }}
-                className="flex items-center gap-2 text-xs font-bold bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2.5 rounded-full text-white border border-white/10 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                className="flex items-center gap-2 text-xs font-bold bg-white/10 hover:bg-white/20  px-4 py-2.5 rounded-full text-white border border-white/10 transition-all hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" /> Quay lại Thư viện
               </motion.button>
@@ -524,7 +524,7 @@ export default function LibraryPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/[0.03] p-4 sm:p-5 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/[0.03] p-4 sm:p-5 rounded-2xl border border-white/10  shadow-2xl"
               >
                 <div className="flex items-center gap-3 flex-wrap">
                   <motion.button
@@ -595,7 +595,7 @@ export default function LibraryPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="bg-white/[0.02] border border-white/10 rounded-3xl backdrop-blur-xl shadow-2xl relative overflow-hidden"
+                  className="bg-white/[0.02] border border-white/10 rounded-3xl shadow-2xl relative overflow-hidden"
                 >
                   <div className="grid grid-cols-12 text-xs font-black text-white/40 px-6 py-4 border-b border-white/10 uppercase tracking-wider">
                     <div className="col-span-1">#</div>
@@ -607,19 +607,21 @@ export default function LibraryPage() {
                     </div>
                   </div>
 
-                  <div className="divide-y divide-white/[0.03]">
-                    {activePlaylistSongs.map((song: Track, index: number) => {
+                  <VirtualList
+                    items={activePlaylistSongs}
+                    estimateSize={64}
+                    overscan={6}
+                    maxHeight="min(72vh, 680px)"
+                    className="divide-y divide-white/[0.03]"
+                  >
+                    {(song: Track, index: number) => {
                       const isCurrent = String(currentTrack?.id) === String(song.id);
                       const liked = isLiked(song.id);
                       const songImage = getStringValue(song.image) || getStringValue(song.coverUrl) || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
                       return (
-                        <motion.div
+                        <div
                           key={song.id}
-                          style={{ zIndex: activePlaylistSongs.length - index }}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.03 }}
                           onClick={() => handlePlaySong(song, activePlaylistSongs, activePlaylistTitle)}
                           className={`grid grid-cols-12 items-center px-6 py-3.5 transition-all duration-200 cursor-pointer group relative zebra-glass-row border-b border-white/[0.04] ${
                             index === activePlaylistSongs.length - 1 ? "rounded-b-3xl" : ""
@@ -635,8 +637,8 @@ export default function LibraryPage() {
                                 {[0, 1, 2].map((i) => (
                                   <motion.span
                                     key={i}
-                                    className="w-[3px] rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
-                                    animate={{ height: ["30%", "100%", "40%", "90%", "50%"] }}
+                                    className="h-full w-[3px] origin-bottom rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
+                                    animate={{ scaleY: [0.3, 1, 0.4, 0.9, 0.5] }}
                                     transition={{ duration: 0.6 + i * 0.15, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
                                   />
                                 ))}
@@ -761,16 +763,16 @@ export default function LibraryPage() {
                               {formatDuration(song.duration)}
                             </span>
                           </div>
-                        </motion.div>
+                        </div>
                       );
-                    })}
-                  </div>
+                    }}
+                  </VirtualList>
                 </motion.div>
               ) : (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-20 border border-dashed border-white/10 rounded-3xl bg-white/[0.01] backdrop-blur-xl space-y-4"
+                  className="text-center py-20 border border-dashed border-white/10 rounded-3xl bg-white/[0.01]  space-y-4"
                 >
                   <Disc className="w-12 h-12 text-white/20 mx-auto" />
                   <div className="space-y-1">
@@ -814,17 +816,22 @@ export default function LibraryPage() {
                     <p className="text-xs text-indigo-400 mt-1">Playlist: {activePlaylistTitle}</p>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-none divide-y divide-white/5">
-                    {sourceTracks.map((song) => {
+                  <VirtualList
+                    items={sourceTracks}
+                    estimateSize={64}
+                    overscan={8}
+                    maxHeight="52vh"
+                    className="flex-1 pr-1 divide-y divide-white/5"
+                  >
+                    {(song: Track) => {
                       const isAdded = activePlaylistSongIds.some((id) => String(id) === String(song.id));
                       const songImage = getStringValue(song.image) || getStringValue(song.coverUrl) || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
                       return (
-                        <motion.div
+                        <div
                           key={song.id}
-                          whileHover={{ x: 4 }}
                           onClick={() => handleToggleSongInPlaylist(activePlaylist.id, song)}
-                          className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                          className={`flex h-full items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
                             isAdded ? "bg-indigo-600/15 border border-indigo-500/30" : "hover:bg-white/5 border border-transparent"
                           }`}
                         >
@@ -856,10 +863,10 @@ export default function LibraryPage() {
                               </>
                             )}
                           </motion.button>
-                        </motion.div>
+                        </div>
                       );
-                    })}
-                  </div>
+                    }}
+                  </VirtualList>
 
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -953,7 +960,7 @@ export default function LibraryPage() {
 
                 <div className="flex-1 text-center sm:text-left space-y-3">
                   <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest bg-pink-500/20 text-pink-400 border border-pink-500/30 px-3 py-1 rounded-full backdrop-blur-md">
+                    <span className="text-[10px] font-black uppercase tracking-widest bg-pink-500/20 text-pink-400 border border-pink-500/30 px-3 py-1 rounded-full ">
                       Đã thích
                     </span>
                     <Sparkles className="w-3.5 h-3.5 text-pink-400" />
@@ -1061,7 +1068,7 @@ export default function LibraryPage() {
                     <motion.div
                       initial={{ scale: 0.8, opacity: 0 }}
                       whileHover={{ scale: 1.1 }}
-                      className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center shadow-2xl"
+                      className="w-14 h-14 rounded-full bg-white/20  border border-white/30 flex items-center justify-center shadow-2xl"
                     >
                       <Play className="w-6 h-6 fill-white text-white ml-0.5" />
                     </motion.div>
@@ -1156,7 +1163,7 @@ export default function LibraryPage() {
                     <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-[#09090b]" />
                   </div>
 
-                  <div className="relative bg-white/[0.04] border border-white/10 rounded-[2rem] p-5 sm:p-7 backdrop-blur-xl overflow-hidden">
+                  <div className="relative bg-white/[0.04] border border-white/10 rounded-[2rem] p-5 sm:p-7  overflow-hidden">
                     {/* Shimmer overlay */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[2s] ease-in-out" />
 
@@ -1177,8 +1184,8 @@ export default function LibraryPage() {
                                 {[0, 1, 2].map((i) => (
                                   <motion.span
                                     key={i}
-                                    className="w-[3px] rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
-                                    animate={{ height: ["30%", "100%", "40%", "90%", "50%"] }}
+                                    className="h-full w-[3px] origin-bottom rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
+                                    animate={{ scaleY: [0.3, 1, 0.4, 0.9, 0.5] }}
                                     transition={{ duration: 0.6 + i * 0.15, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
                                   />
                                 ))}
@@ -1261,8 +1268,8 @@ export default function LibraryPage() {
                             {[0, 1, 2].map((i) => (
                               <motion.span
                                 key={i}
-                                className="w-[3px] rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
-                                animate={{ height: ["30%", "100%", "40%", "90%", "50%"] }}
+                                className="h-full w-[3px] origin-bottom rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
+                                animate={{ scaleY: [0.3, 1, 0.4, 0.9, 0.5] }}
                                 transition={{ duration: 0.6 + i * 0.15, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
                               />
                             ))}
@@ -1328,7 +1335,7 @@ export default function LibraryPage() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-16 border border-dashed border-white/10 rounded-3xl bg-white/[0.01] backdrop-blur-xl">
+            <div className="text-center py-16 border border-dashed border-white/10 rounded-3xl bg-white/[0.01] ">
               <Clock className="mx-auto mb-3 h-10 w-10 text-white/20" />
               <p className="text-white/40 text-sm">Chưa có lịch sử nghe nhạc</p>
               <p className="mt-1 text-xs text-white/30">Các bài hát bạn nghe sẽ xuất hiện ở đây.</p>
@@ -1360,26 +1367,29 @@ export default function LibraryPage() {
           </div>
 
           {likedSongsList.length > 0 ? (
-            <div className="bg-white/[0.02] border border-white/10 rounded-3xl backdrop-blur-xl relative overflow-hidden">
+            <div className="bg-white/[0.02] border border-white/10 rounded-3xl relative overflow-hidden">
               <div className="grid grid-cols-12 text-xs font-semibold text-white/40 px-6 py-3.5 border-b border-white/5 uppercase tracking-wider rounded-t-3xl">
                 <div className="col-span-1">#</div>
                 <div className="col-span-8">Bài hát</div>
                 <div className="col-span-3 text-right">Tùy chọn</div>
               </div>
 
-              <div className="divide-y divide-white/[0.03]">
-                {likedSongsList.map((song: Track, index: number) => {
+              <VirtualList
+                items={likedSongsList}
+                estimateSize={60}
+                overscan={6}
+                maxHeight="min(72vh, 680px)"
+                className="divide-y divide-white/[0.03]"
+              >
+                {(song: Track, index: number) => {
                   const isCurrent = String(currentTrack?.id) === String(song.id);
                   const songImage = getStringValue(song.image) || getStringValue(song.coverUrl) || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
 
                   return (
-                    <motion.div
+                    <div
                       key={song.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.03 }}
                       onClick={() => handlePlaySong(song, likedSongsList, "Bài hát đã thích")}
-                      className={`grid grid-cols-12 items-center px-6 py-3.5 transition-all duration-200 cursor-pointer group relative zebra-glass-row border-b border-white/[0.04] ${
+                      className={`grid grid-cols-12 items-center px-6 py-3.5 transition-all duration-200 cursor-pointer group relative zebra-glass-row border-b border-white/[0.04] will-change-transform ${
                         index === likedSongsList.length - 1 ? "rounded-b-3xl" : ""
                       } ${
                         isCurrent
@@ -1393,8 +1403,8 @@ export default function LibraryPage() {
                             {[0, 1, 2].map((i) => (
                               <motion.span
                                 key={i}
-                                className="w-[3px] rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
-                                animate={{ height: ["30%", "100%", "40%", "90%", "50%"] }}
+                                className="h-full w-[3px] origin-bottom rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
+                                animate={{ scaleY: [0.3, 1, 0.4, 0.9, 0.5] }}
                                 transition={{ duration: 0.6 + i * 0.15, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
                               />
                             ))}
@@ -1446,13 +1456,13 @@ export default function LibraryPage() {
 
                         <span className="text-xs font-mono text-white/40 ml-1">{formatDuration(song.duration)}</span>
                       </div>
-                    </motion.div>
+                    </div>
                   );
-                })}
-              </div>
+                }}
+              </VirtualList>
             </div>
           ) : (
-            <div className="text-center py-16 border border-dashed border-white/10 rounded-3xl bg-white/[0.01] backdrop-blur-xl">
+            <div className="text-center py-16 border border-dashed border-white/10 rounded-3xl bg-white/[0.01] ">
               <Heart className="mx-auto mb-3 h-10 w-10 text-white/20" />
               <p className="text-white/40 text-sm">Chưa có bài hát nào trong danh sách yêu thích</p>
               <p className="mt-1 text-xs text-white/30">Nhấn vào trái tim bên cạnh bài hát để thêm vào đây.</p>

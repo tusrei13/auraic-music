@@ -34,7 +34,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-full flex items-center justify-center p-6">
-      <section className="w-full max-w-md rounded-3xl border border-white/10 bg-black/30 p-8 shadow-2xl backdrop-blur-2xl">
+      <section className="w-full max-w-md rounded-3xl border border-white/10 bg-black/30 p-8 shadow-2xl ">
         <div className="mb-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-indigo-300">AURAIC</p>
           <h1 className="text-3xl font-black">{isRegistering ? "Tạo tài khoản" : "Chào mừng trở lại"}</h1>
@@ -92,3 +92,4 @@ export default function LoginPage() {
     </main>
   );
 }
+

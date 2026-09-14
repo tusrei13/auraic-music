@@ -151,7 +151,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
           <Music className="w-5 h-5 text-indigo-400" /> Bài hát phổ biến
         </h2>
 
-        <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-visible backdrop-blur-xl">
+        <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-visible">
           {artistSongs.length > 0 ? (
             visibleSongs.map((song: any, index: number) => {
               const isCurrent = String(currentTrack?.id) === String(song.id);

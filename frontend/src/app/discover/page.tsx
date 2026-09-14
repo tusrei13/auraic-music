@@ -314,7 +314,7 @@ export default function DiscoverPage() {
                   <motion.button
                     type="button"
                     onClick={() => toggleLike(track)}
-                    className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/20 backdrop-blur-md ${
+                    className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/20  ${
                       isLikedHero(track.id)
                         ? "bg-pink-500/20 text-pink-400 border-pink-400/40"
                         : "bg-white/10 text-white hover:bg-white/20"
@@ -344,7 +344,7 @@ export default function DiscoverPage() {
                   prev === 0 ? heroTracks.length - 1 : prev - 1
                 )
               }
-              className="absolute left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white/80 hover:bg-black/60 hover:text-white"
+              className="absolute left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/40  border border-white/10 text-white/80 hover:bg-black/60 hover:text-white"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
@@ -355,7 +355,7 @@ export default function DiscoverPage() {
               onClick={() =>
                 setHeroIndex((prev) => (prev + 1) % heroTracks.length)
               }
-              className="absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white/80 hover:bg-black/60 hover:text-white"
+              className="absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/40  border border-white/10 text-white/80 hover:bg-black/60 hover:text-white"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
@@ -395,7 +395,7 @@ export default function DiscoverPage() {
             key={filter}
             type="button"
             onClick={() => setActiveVibe(filter)}
-            className={`shrink-0 rounded-full px-5 py-2.5 text-xs font-bold transition-all backdrop-blur-md border ${
+            className={`shrink-0 rounded-full px-5 py-2.5 text-xs font-bold transition-all  border ${
               activeVibe === filter
                 ? "bg-white/15 border-white/25 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]"
                 : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white"
@@ -425,7 +425,7 @@ export default function DiscoverPage() {
         {moodBentoItems.map((mood, idx) => (
           <TiltCard key={mood.title}>
             <motion.div
-              className={`group relative overflow-hidden rounded-3xl border border-auraic-border bg-gradient-to-br ${mood.gradient} p-5 backdrop-blur-2xl cursor-pointer`}
+              className={`group relative overflow-hidden rounded-3xl border border-auraic-border bg-gradient-to-br ${mood.gradient} p-5 cursor-pointer`}
               variants={scaleIn}
               custom={idx}
               onMouseEnter={() => setHoveredBento(mood.title)}
@@ -456,7 +456,7 @@ export default function DiscoverPage() {
                   void playMood(mood);
                 }}
                 disabled={playingMood === mood.title}
-                className="relative mt-4 flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white/80 backdrop-blur-md transition hover:bg-white/15 disabled:opacity-60"
+                className="relative mt-4 flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white/80  transition hover:bg-white/15 disabled:opacity-60"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -514,7 +514,7 @@ export default function DiscoverPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             whileHover={{ opacity: 1, scale: 1 }}
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-xl border border-white/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20  border border-white/30">
               <Play className="h-5 w-5 fill-white text-white ml-0.5" />
             </div>
           </motion.div>
@@ -550,7 +550,7 @@ export default function DiscoverPage() {
               </h3>
               <p className="truncate text-xs text-white/60 mt-1">{artistName}</p>
             </div>
-            <span className="shrink-0 rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[10px] font-bold text-white/80 backdrop-blur-md">
+            <span className="shrink-0 rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[10px] font-bold text-white/80 ">
               #
               {String(index + 1).padStart(2, "0")}
             </span>
@@ -979,3 +979,4 @@ export default function DiscoverPage() {
     </motion.div>
   );
 }
+

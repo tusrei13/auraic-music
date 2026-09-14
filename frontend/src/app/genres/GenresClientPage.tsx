@@ -206,7 +206,7 @@ export default function GenresClientPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-auraic-bg/60 to-auraic-bg" />
       </div>
 
-      <motion.header className="relative mt-2 overflow-hidden rounded-[28px] border border-auraic-border bg-auraic-surface/80 p-5 backdrop-blur-2xl sm:p-8" style={{ opacity: headerOpacity }} variants={fadeIn}>
+      <motion.header className="relative mt-2 overflow-hidden rounded-[28px] border border-auraic-border bg-auraic-surface/80 p-5  sm:p-8" style={{ opacity: headerOpacity }} variants={fadeIn}>
         <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-[100px]" />
         <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-cyan-500/10 blur-[80px]" />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -234,7 +234,7 @@ export default function GenresClientPage() {
                   onMouseEnter={() => setHoveredGenre(genre.tag)}
                   onMouseLeave={() => setHoveredGenre(null)}
                   disabled={isRequestLocked}
-                  className={`group relative flex h-full w-full flex-col overflow-hidden rounded-3xl border text-left backdrop-blur-2xl transition-all duration-150 aspect-[4/3] ${
+                  className={`group relative flex h-full w-full flex-col overflow-hidden rounded-3xl border bg-white/[0.03] text-left transition-all duration-150 aspect-[4/3] hover:bg-white/[0.06] ${
                     isActive ? "border-white/25 shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-4" : "border-white/10 hover:border-white/20 p-4"
                   } ${selectedGenre && !isActive ? 'opacity-70' : ''} ${isRequestLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                   variants={scaleIn}
@@ -271,7 +271,7 @@ export default function GenresClientPage() {
                   />
 
                   <div className={`absolute inset-0 bg-gradient-to-br ${genre.gradient} opacity-80`} />
-                  <div className="absolute inset-0 bg-white/[0.04] backdrop-blur-xl" />
+                  <div className="absolute inset-0 bg-white/[0.04]" />
 
                   <div className="relative flex h-full flex-col justify-between">
                     <div>
@@ -358,3 +358,4 @@ export default function GenresClientPage() {
     </motion.div>
   );
 }
+

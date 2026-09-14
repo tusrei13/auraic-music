@@ -19,13 +19,9 @@ import {
   Check,
   X,
   Sparkles,
-  Zap,
   Activity,
-  Music2,
-  Compass,
   Plus,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import TiltCard from "@/components/ui/TiltCard";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePlaylistStore, Playlist as StorePlaylist } from "@/store/usePlaylistStore";
@@ -140,7 +136,7 @@ export default function ProfilePage() {
           <ArrowLeft className="h-4 w-4" /> Trang chủ
         </Link>
         {user.role === "ADMIN" && (
-          <Link href="/admin" className="flex items-center gap-2 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-xs font-bold text-cyan-200 backdrop-blur-xl transition hover:bg-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
+          <Link href="/admin" className="flex items-center gap-2 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
             <ShieldCheck className="h-4 w-4" /> Bảng quản trị (Admin Portal)
           </Link>
         )}
@@ -149,7 +145,7 @@ export default function ProfilePage() {
       {/* 2-Column Spatial Hero Bento */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* Left: Holographic 3D Audiophile Persona Card */}
-        <div className="lg:col-span-7 relative overflow-hidden rounded-[32px] border border-white/18 bg-gradient-to-br from-violet-950/40 via-purple-950/25 to-slate-950/70 p-6 sm:p-8 backdrop-blur-3xl shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.22)] flex flex-col justify-between space-y-6">
+        <div className="lg:col-span-7 relative overflow-hidden rounded-[32px] border border-white/18 bg-gradient-to-br from-violet-950/40 via-purple-950/25 to-slate-950/70 p-6 sm:p-8  shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.22)] flex flex-col justify-between space-y-6">
           <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-[100px]" />
           
           <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -248,7 +244,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Right: Audio DNA & Sonic Archetype */}
-        <div className="lg:col-span-5 relative overflow-hidden rounded-[32px] border border-white/18 bg-gradient-to-br from-slate-900/60 via-purple-950/30 to-black/80 p-6 sm:p-7 backdrop-blur-3xl shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.22)] flex flex-col justify-between space-y-4">
+        <div className="lg:col-span-5 relative overflow-hidden rounded-[32px] border border-white/18 bg-gradient-to-br from-slate-900/60 via-purple-950/30 to-black/80 p-6 sm:p-7  shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.22)] flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-fuchsia-300">
               <Activity className="h-4 w-4" /> Sonic Persona & DNA
@@ -301,7 +297,7 @@ export default function ProfilePage() {
       {/* Tabs & Content Section */}
       <section className="space-y-6">
         {/* Glass Pill Tab Selector */}
-        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/[0.04] border border-white/12 backdrop-blur-2xl w-fit">
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/[0.04] border border-white/12  w-fit">
           <button
             type="button"
             onClick={() => setActiveTab("playlists")}
@@ -357,7 +353,7 @@ export default function ProfilePage() {
               {/* "+ Tạo Playlist Mới" 3D Glass Action Card */}
               <Link
                 href="/library"
-                className="group flex min-h-[260px] flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-white/15 bg-white/[0.02] p-6 text-center transition hover:border-cyan-400/60 hover:bg-cyan-500/[0.04] backdrop-blur-2xl shadow-lg"
+                className="group flex min-h-[260px] flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-white/15 bg-white/[0.02] p-6 text-center transition hover:border-cyan-400/60 hover:bg-white/[0.04] shadow-lg"
               >
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400/15 border border-cyan-400/30 text-cyan-300 group-hover:scale-110 transition duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
                   <Plus className="h-7 w-7" />
@@ -371,7 +367,7 @@ export default function ProfilePage() {
                 <TiltCard key={pl.id} depthZ={12} className="h-full">
                   <Link
                     href="/library"
-                    className="group block h-full rounded-[28px] border border-white/15 bg-white/[0.035] p-5 backdrop-blur-2xl shadow-[0_15px_35px_rgba(0,0,0,0.5)] transition hover:border-cyan-400/50 hover:shadow-[0_0_30px_rgba(6,182,212,0.25)]"
+                    className="group block h-full rounded-[28px] border border-white/15 bg-white/[0.035] p-5 shadow-[0_15px_35px_rgba(0,0,0,0.5)] transition hover:border-cyan-400/50 hover:bg-white/[0.07] hover:shadow-[0_0_30px_rgba(6,182,212,0.25)]"
                   >
                     <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900/50 via-purple-900/40 to-black/60 shadow-inner">
                       {pl.coverImage ? (
@@ -415,7 +411,7 @@ export default function ProfilePage() {
                   <Link
                     key={idx}
                     href="/stations"
-                    className="group rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl hover:border-violet-400/40 hover:bg-white/[0.06] transition flex items-center gap-4"
+                    className="group rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-violet-400/40 hover:bg-white/[0.06] transition flex items-center gap-4"
                   >
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-white/10">
                       <Artwork src={item.cover} alt={item.title} className="h-full w-full object-cover group-hover:scale-105 transition" />
@@ -433,7 +429,7 @@ export default function ProfilePage() {
         ) : activeTab === "likes" ? (
           <div>
             {likedSongs.length === 0 ? (
-              <div className="rounded-[28px] border border-white/12 bg-white/[0.02] p-12 text-center backdrop-blur-2xl">
+              <div className="rounded-[28px] border border-white/12 bg-white/[0.02] p-12 text-center">
                 <Heart className="mx-auto h-12 w-12 text-white/30" />
                 <p className="mt-4 text-base font-bold text-white">Bạn chưa thả tim bài hát nào.</p>
                 <p className="mt-1 text-xs text-white/50">Khám phá các trạm âm thanh và nhấn icon trái tim để lưu bài hát yêu thích.</p>
@@ -447,7 +443,7 @@ export default function ProfilePage() {
                   <div
                     key={song.id}
                     onClick={() => playSongList(likedSongs, index)}
-                    className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 backdrop-blur-xl transition hover:border-rose-400/40 hover:bg-white/[0.07] cursor-pointer"
+                    className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 transition hover:border-rose-400/40 hover:bg-white/[0.07] cursor-pointer"
                   >
                     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10">
                       <Artwork src={song.image} alt="" className="h-full w-full object-cover group-hover:scale-105 transition" />
@@ -468,7 +464,7 @@ export default function ProfilePage() {
         ) : (
           <div>
             {historySongs.length === 0 ? (
-              <div className="rounded-[28px] border border-white/12 bg-white/[0.02] p-12 text-center backdrop-blur-2xl">
+              <div className="rounded-[28px] border border-white/12 bg-white/[0.02] p-12 text-center">
                 <Clock className="mx-auto h-12 w-12 text-white/30" />
                 <p className="mt-4 text-base font-bold text-white">Chưa có lịch sử nghe nhạc gần đây.</p>
                 <Link href="/stations" className="mt-5 inline-block rounded-2xl bg-cyan-400 px-6 py-2.5 text-xs font-bold text-slate-950 shadow-lg transition hover:bg-cyan-300">
@@ -481,7 +477,7 @@ export default function ProfilePage() {
                   <div
                     key={item.id}
                     onClick={() => playSongList(historySongs.map((h) => h.song).filter(Boolean), index)}
-                    className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 backdrop-blur-xl transition hover:border-cyan-400/40 hover:bg-white/[0.07] cursor-pointer"
+                    className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 transition hover:border-cyan-400/40 hover:bg-white/[0.07] cursor-pointer"
                   >
                     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10">
                       <Artwork src={item.song?.image} alt="" className="h-full w-full object-cover group-hover:scale-105 transition" />

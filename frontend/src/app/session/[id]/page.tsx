@@ -6,17 +6,10 @@ import {
   Users,
   Play,
   Pause,
-  SkipForward,
-  Headphones,
-  Flame,
-  Heart,
-  Sparkles,
   Crown,
   Search,
   Plus,
   ArrowLeft,
-  Volume2,
-  Check,
   Disc3,
 } from "lucide-react";
 import Link from "next/link";
@@ -35,12 +28,24 @@ interface ReactionItem {
   id: string;
   icon: string;
   x: number; // percentage across screen 10-90%
+  jitter: number; // randomized drift (vw) applied on the way up
 }
 
 interface RequesterInfo {
   name: string;
   avatar: string;
 }
+
+function makeReaction(icon: string): ReactionItem {
+  return {
+    id: `rx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    icon,
+    x: 20 + Math.random() * 60,
+    jitter: (Math.random() - 0.5) * 8,
+  };
+}
+
+const randomSeed = () => `seed-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 export default function RealtimeSessionPage({ params }: PageProps) {
   const resolvedParams = use(params);
@@ -116,11 +121,7 @@ export default function RealtimeSessionPage({ params }: PageProps) {
       })
       .on("broadcast", { event: "NEW_REACTION" }, ({ payload }) => {
         if (payload?.icon) {
-          const newReaction: ReactionItem = {
-            id: `rx-${Date.now()}-${Math.random()}`,
-            icon: payload.icon,
-            x: 20 + Math.random() * 60,
-          };
+          const newReaction = makeReaction(payload.icon);
           setReactions((prev) => [...prev.slice(-15), newReaction]);
         }
       })
@@ -172,11 +173,7 @@ export default function RealtimeSessionPage({ params }: PageProps) {
 
   // Floating Reaction Trigger
   const triggerReaction = (icon: string) => {
-    const newReaction: ReactionItem = {
-      id: `rx-${Date.now()}-${Math.random()}`,
-      icon,
-      x: 20 + Math.random() * 60,
-    };
+    const newReaction = makeReaction(icon);
     setReactions((prev) => [...prev.slice(-15), newReaction]);
 
     if (channelRef.current) {
@@ -217,7 +214,7 @@ export default function RealtimeSessionPage({ params }: PageProps) {
       name: currentUser?.name || currentUser?.email?.split("@")[0] || "Bạn nghe nhạc",
       avatar:
         currentUser?.avatar ||
-        `https://api.dicebear.com/7.x/bottts/svg?seed=${Date.now()}`,
+        `https://api.dicebear.com/7.x/bottts/svg?seed=${randomSeed()}`,
     };
 
     setCurrentRequester(requester);
@@ -252,7 +249,7 @@ export default function RealtimeSessionPage({ params }: PageProps) {
                 opacity: [0, 1, 1, 0],
                 y: "-10vh",
                 scale: [0.8, 1.4, 1.1, 1.6],
-                x: `${rx.x + (Math.random() - 0.5) * 8}vw`,
+                x: `${rx.x + rx.jitter}vw`,
               }}
               exit={{ opacity: 0 }}
               transition={{ duration: 4.5, ease: "easeOut" }}
@@ -274,7 +271,7 @@ export default function RealtimeSessionPage({ params }: PageProps) {
         </Link>
 
         {/* Room badge & presence */}
-        <div className="flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 backdrop-blur-xl">
+        <div className="flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 ">
           <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
           <span className="font-mono text-xs font-bold uppercase tracking-wider text-cyan-300">
             {sessionId}
@@ -360,7 +357,7 @@ export default function RealtimeSessionPage({ params }: PageProps) {
       {/* ========================================================= */}
       {/* 3. FLOATING REACTIONS BAR                                 */}
       {/* ========================================================= */}
-      <div className="fixed bottom-24 z-30 flex items-center gap-3 rounded-full border border-white/20 bg-black/60 px-5 py-2.5 backdrop-blur-2xl shadow-2xl">
+      <div className="fixed bottom-24 z-30 flex items-center gap-3 rounded-full border border-white/20 bg-black/60 px-5 py-2.5  shadow-2xl">
         <span className="text-xs font-semibold text-white/50 mr-1 hidden sm:inline">
           Thả cảm xúc:
         </span>
@@ -393,7 +390,7 @@ export default function RealtimeSessionPage({ params }: PageProps) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg rounded-3xl border border-white/15 bg-neutral-950/90 p-6 shadow-2xl backdrop-blur-2xl text-white space-y-4"
+              className="w-full max-w-lg rounded-3xl border border-white/15 bg-neutral-950/90 p-6 shadow-2xl  text-white space-y-4"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold">Request bài hát vào đĩa than</h3>

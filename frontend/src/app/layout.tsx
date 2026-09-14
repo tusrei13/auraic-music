@@ -67,14 +67,20 @@ export default function RootLayout({
           {/* Spatial Floating Stage Shell */}
           <div className="flex flex-1 gap-3.5 overflow-hidden p-3 pb-2 sm:gap-4 sm:p-4 lg:p-5">
             <Sidebar />
-            <main className="relative flex-1 overflow-y-auto rounded-[32px] border border-white/15 bg-slate-950/35 shadow-[0_30px_70px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.22)] backdrop-blur-2xl scroll-smooth">
+            {/* Main vault: solid-ish surface (NO backdrop-blur — only the
+                Sidebar, Header and Player Bar keep real glassmorphism so the
+                GPU never composites dozens of live blur regions). */}
+            <main className="relative flex-1 overflow-y-auto rounded-[32px] border border-white/15 bg-[#0a0c16]/90 shadow-[0_30px_70px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.22)] scroll-smooth">
               <GlobalSearchBar />
-              {children}
+              {/* Content sits on its own compositor layer so scrolling stays GPU-composited. */}
+              <div className="transform-gpu will-change-transform">
+                {children}
+              </div>
             </main>
           </div>
 
           {/* Floating Island Player Bar */}
-          <div className="px-3 pb-3 sm:px-5 sm:pb-4 w-full z-50 pointer-events-auto">
+          <div className="w-full px-3 pb-3 sm:px-5 sm:pb-4 z-50 pointer-events-auto">
             <Player />
           </div>
 

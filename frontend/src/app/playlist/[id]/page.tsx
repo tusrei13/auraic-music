@@ -4,14 +4,10 @@ import React, { useState, useEffect, use } from "react";
 import { motion, Reorder } from "framer-motion";
 import {
   Play,
-  Pause,
   Shuffle,
   GripVertical,
   Heart,
   FileText,
-  Clock,
-  Music2,
-  Trash2,
   ArrowLeft,
   Sparkles,
 } from "lucide-react";
@@ -148,7 +144,7 @@ export default function PlaylistDetailPage({ params }: PageProps) {
       {/* ========================================================= */}
       {/* 1. DYNAMIC COLOR EXTRACTION HEADER AURA GLOW              */}
       {/* ========================================================= */}
-      <div className="relative overflow-hidden rounded-[36px] border border-white/15 bg-white/[0.03] p-6 sm:p-10 backdrop-blur-3xl">
+      <div className="relative overflow-hidden rounded-[36px] border border-white/15 bg-white/[0.03] p-6 sm:p-10">
         {/* Dynamic Glow Banner Canvas Reflection */}
         {headerColor && (
           <motion.div
@@ -202,7 +198,7 @@ export default function PlaylistDetailPage({ params }: PageProps) {
                   const shuffled = [...tracks].sort(() => Math.random() - 0.5);
                   playMix(shuffled, `${playlistTitle} (Trộn)`);
                 }}
-                className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/[0.06] px-5 py-3 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/[0.12]"
+                className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/[0.06] px-5 py-3 text-xs font-semibold text-white  transition hover:bg-white/[0.12]"
               >
                 <Shuffle className="h-4 w-4" /> Trộn bài
               </button>
@@ -250,7 +246,7 @@ export default function PlaylistDetailPage({ params }: PageProps) {
                     scale: 1.02,
                     boxShadow: "0 15px 35px rgba(0,0,0,0.6)",
                   }}
-                  className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 backdrop-blur-xl transition hover:border-white/25 hover:bg-white/[0.06]"
+                  className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-white/25 hover:bg-white/[0.06]"
                 >
                   {/* Drag Handle */}
                   <div className="cursor-grab active:cursor-grabbing p-1 text-white/30 group-hover:text-white/70 transition">

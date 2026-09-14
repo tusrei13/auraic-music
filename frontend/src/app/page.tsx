@@ -5,18 +5,13 @@ import { motion } from "framer-motion";
 import {
   Play,
   Pause,
-  Sparkles,
   Heart,
   Radio,
-  ChevronRight,
   Sun,
   Sunset,
   Moon,
-  Headphones,
-  Disc3,
-  SlidersHorizontal,
 } from "lucide-react";
-import { usePlayerStore, Track } from "@/store/usePlayerStore";
+import { usePlayerStore } from "@/store/usePlayerStore";
 import { getJamendoTracks, JamendoSong } from "@/lib/api";
 import Artwork from "@/components/Artwork";
 import TiltCard from "@/components/ui/TiltCard";
@@ -118,7 +113,7 @@ export default function HomePage() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className={`relative overflow-hidden rounded-[36px] border border-white/20 bg-gradient-to-br p-6 sm:p-10 lg:p-12 shadow-[0_25px_60px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.25)] backdrop-blur-3xl transition-colors duration-1000 ${timeTheme.meshClasses}`}
+        className={`relative overflow-hidden rounded-[36px] border border-white/20 bg-gradient-to-br p-6 sm:p-10 lg:p-12 shadow-[0_25px_60px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.25)]  transition-colors duration-1000 ${timeTheme.meshClasses}`}
       >
         {/* Floating 3D Glowing Spheres */}
         <motion.div
@@ -150,7 +145,7 @@ export default function HomePage() {
 
         <div className="relative z-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div className="max-w-2xl space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/[0.08] px-4 py-1.5 text-xs font-semibold shadow-[0_4px_20px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/[0.08] px-4 py-1.5 text-xs font-semibold shadow-[0_4px_20px_rgba(0,0,0,0.3)] ">
               <TimeIcon className="h-4 w-4 text-cyan-300 animate-pulse" />
               <span className="text-white/95 font-medium">{timeTheme.label}</span>
               <span className="text-white/30">•</span>
@@ -186,7 +181,7 @@ export default function HomePage() {
             </motion.button>
             <a
               href="/stations"
-              className="flex items-center gap-2.5 rounded-2xl border border-white/20 bg-white/[0.08] px-5 py-3.5 text-sm font-semibold text-white backdrop-blur-xl shadow-[0_8px_25px_rgba(0,0,0,0.3)] transition hover:bg-white/[0.15] hover:border-white/30"
+              className="flex items-center gap-2.5 rounded-2xl border border-white/20 bg-white/[0.08] px-5 py-3.5 text-sm font-semibold text-white  shadow-[0_8px_25px_rgba(0,0,0,0.3)] transition hover:bg-white/[0.15] hover:border-white/30"
             >
               <Radio className="h-4 w-4 text-cyan-300" />
               <span>Ambient Studio</span>
@@ -419,3 +414,4 @@ function CarouselRow({ title, subtitle, tracks, onPlayTrack }: CarouselRowProps)
     </section>
   );
 }
+
