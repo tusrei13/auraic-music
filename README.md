@@ -397,6 +397,5 @@ This project is currently distributed under a proprietary license. Jamendo conte
 
 ## Additional Documentation
 
-- `AURAIC.md` — product and engineering specification
 - `docs/runbooks/` — operational playbooks for production incidents
 - `monitoring/` — Prometheus and Grafana configuration
