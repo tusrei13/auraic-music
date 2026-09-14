@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useAdaptiveGraphics } from "@/hooks/useAdaptiveGraphics";
 
 export interface Card3DProps {
   children: React.ReactNode;
@@ -24,6 +25,10 @@ export default function Card3D({
 }: Card3DProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  // Adaptive graphics: on low-spec / low-FPS tier the 3D tilt is switched off
+  // so the GPU only pays for compositing, never per-frame perspective work.
+  const { quality } = useAdaptiveGraphics();
+  const tiltEnabled = quality === "high";
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -35,12 +40,12 @@ export default function Card3D({
   const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [maxTilt, -maxTilt]);
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-maxTilt, maxTilt]);
 
-  // Glare position
+  // Glare position (paint-only overlay, never layout).
   const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["0%", "100%"]);
   const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["0%", "100%"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
+    if (!tiltEnabled || !ref.current) return;
     const rect = ref.current.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
@@ -68,32 +73,41 @@ export default function Card3D({
   return (
     <motion.div
       ref={ref}
-      onMouseMove={handleMouseMove}
+      onMouseMove={tiltEnabled ? handleMouseMove : undefined}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
       style={{
-        rotateX,
-        rotateY,
+        rotateX: tiltEnabled ? rotateX : 0,
+        rotateY: tiltEnabled ? rotateY : 0,
         transformStyle: "preserve-3d",
       }}
-      whileHover={{
-        scale: 1.03,
-        boxShadow: `0 24px 50px -10px rgba(0, 0, 0, 0.65), 0 0 30px -4px ${glowColor}, inset 0 1px 0 0 rgba(255, 255, 255, 0.25)`,
-      }}
+      whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 350, damping: 25 }}
-      className={`relative cursor-pointer rounded-2xl border border-white/12 bg-white/[0.035] backdrop-blur-2xl transition-all duration-300 ${
-        isHovered && neonBorder ? "border-white/30" : "border-white/12"
+      className={`relative cursor-pointer overflow-hidden rounded-2xl border bg-white/[0.03] will-change-transform transform-gpu transition-[background-color,border-color] duration-300 hover:bg-white/[0.08] ${
+        isHovered && neonBorder && tiltEnabled
+          ? "border-white/30"
+          : "border-white/10 hover:border-white/20"
       } ${className}`}
     >
-      {/* Dynamic Specular Glare Overlay */}
+      {/* Pre-rendered ambient glow layer — cheaper than per-frame box-shadow. */}
       <motion.div
-        className="pointer-events-none absolute inset-0 z-20 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          background: `radial-gradient(circle at ${glareX} ${glareY}, rgba(255, 255, 255, 0.18) 0%, transparent 60%)`,
-        }}
+        className="pointer-events-none absolute inset-0 z-0 rounded-2xl opacity-0 transition-opacity duration-300 will-change-transform"
+        style={{ boxShadow: `0 24px 50px -10px rgba(0, 0, 0, 0.65), 0 0 30px -4px ${glowColor}, inset 0 1px 0 0 rgba(255, 255, 255, 0.25)` }}
+        animate={{ opacity: isHovered ? 1 : 0 }}
       />
+
+      {/* Dynamic Specular Glare Overlay */}
+      {tiltEnabled && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-20 rounded-2xl opacity-0 transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(circle at ${glareX} ${glareY}, rgba(255, 255, 255, 0.18) 0%, transparent 60%)`,
+          }}
+          animate={{ opacity: isHovered ? 1 : 0 }}
+        />
+      )}
 
       {/* 3D Elevated Children Container */}
       <div
@@ -101,7 +115,7 @@ export default function Card3D({
           transform: `translateZ(${depthZ}px)`,
           transformStyle: "preserve-3d",
         }}
-        className="relative z-10 h-full w-full"
+        className="relative z-10 h-full w-full will-change-transform"
       >
         {children}
       </div>

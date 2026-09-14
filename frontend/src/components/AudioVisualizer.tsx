@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+const MAX_DPR = 1.5;
+
 interface AudioVisualizerProps {
   audioRef: React.RefObject<HTMLAudioElement | null>;
   isPlaying: boolean;
@@ -11,6 +13,13 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
+  const isPlayingRef = useRef(isPlaying);
+  const startLoopRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+    if (isPlaying) startLoopRef.current?.();
+  }, [isPlaying]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -25,12 +34,73 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
     }
 
     let animationFrame = 0;
+    let running = false;
+    let visible = false;
     let source: MediaElementAudioSourceNode | null = null;
     let context: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+
+    const renderLoop = () => {
+      if (!visible || !isPlayingRef.current) {
+        running = false;
+        return;
+      }
+      const currentCanvas = canvasRef.current;
+      if (!currentCanvas || !analyser) return;
+
+      const rect = currentCanvas.getBoundingClientRect();
+      // Resolution capping keeps the tiny equalizer cheap on Retina/4K.
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      const width = Math.max(1, Math.floor(rect.width * pixelRatio));
+      const height = Math.max(1, Math.floor(rect.height * pixelRatio));
+      if (currentCanvas.width !== width || currentCanvas.height !== height) {
+        currentCanvas.width = width;
+        currentCanvas.height = height;
+      }
+
+      const context2d = currentCanvas.getContext("2d");
+      if (!context2d) return;
+      context2d.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      context2d.clearRect(0, 0, rect.width, rect.height);
+
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
+      const barWidth = rect.width / data.length;
+      const center = rect.height / 2;
+
+      data.forEach((value, index) => {
+        const amplitude = (value / 255) * rect.height * 0.8;
+        const x = index * barWidth;
+        const gradient = context2d.createLinearGradient(0, center - amplitude, 0, center + amplitude);
+        gradient.addColorStop(0, "rgba(129, 140, 248, 0.08)");
+        gradient.addColorStop(0.5, "rgba(236, 72, 153, 0.7)");
+        gradient.addColorStop(1, "rgba(129, 140, 248, 0.08)");
+        context2d.fillStyle = gradient;
+        context2d.fillRect(x, center - amplitude / 2, Math.max(1, barWidth - pixelRatio), amplitude);
+      });
+
+      running = true;
+      animationFrame = window.requestAnimationFrame(renderLoop);
+    };
+
+    const startLoop = () => {
+      if (running || !visible) return;
+      animationFrame = window.requestAnimationFrame(renderLoop);
+    };
+    startLoopRef.current = startLoop;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        visible = entries[0]?.isIntersecting !== false;
+        if (visible) startLoop();
+      },
+      { rootMargin: "50px" }
+    );
+    observer.observe(canvas);
 
     try {
       context = new AudioContext();
-      const analyser = context.createAnalyser();
+      analyser = context.createAnalyser();
       analyser.fftSize = 64;
       analyser.smoothingTimeConstant = 0.82;
       source = context.createMediaElementSource(audio);
@@ -38,53 +108,24 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
       analyser.connect(context.destination);
       contextRef.current = context;
       analyserRef.current = analyser;
-      const draw = () => {
-        const currentCanvas = canvasRef.current;
-        const currentAnalyser = analyserRef.current;
-        if (!currentCanvas || !currentAnalyser) return;
-
-        const rect = currentCanvas.getBoundingClientRect();
-        const pixelRatio = window.devicePixelRatio || 1;
-        const width = Math.max(1, Math.floor(rect.width * pixelRatio));
-        const height = Math.max(1, Math.floor(rect.height * pixelRatio));
-        if (currentCanvas.width !== width || currentCanvas.height !== height) {
-          currentCanvas.width = width;
-          currentCanvas.height = height;
-        }
-
-        const context2d = currentCanvas.getContext("2d");
-        if (!context2d) return;
-        context2d.clearRect(0, 0, width, height);
-
-        const data = new Uint8Array(currentAnalyser.frequencyBinCount);
-        currentAnalyser.getByteFrequencyData(data);
-        const barWidth = width / data.length;
-        const center = height / 2;
-
-        data.forEach((value, index) => {
-          const amplitude = (value / 255) * height * 0.8;
-          const x = index * barWidth;
-          const gradient = context2d.createLinearGradient(0, center - amplitude, 0, center + amplitude);
-          gradient.addColorStop(0, "rgba(129, 140, 248, 0.08)");
-          gradient.addColorStop(0.5, "rgba(236, 72, 153, 0.7)");
-          gradient.addColorStop(1, "rgba(129, 140, 248, 0.08)");
-          context2d.fillStyle = gradient;
-          context2d.fillRect(x, center - amplitude / 2, Math.max(1, barWidth - pixelRatio), amplitude);
-        });
-
-        animationFrame = window.requestAnimationFrame(draw);
-      };
-
-      draw();
+      if (typeof window !== "undefined") {
+        (window as unknown as { __auraic_analyser__?: AnalyserNode | null }).__auraic_analyser__ = analyser;
+      }
     } catch {
-      // Some remote audio hosts disallow Web Audio analysis through CORS.
+      analyser = null;
     }
 
     return () => {
+      observer.disconnect();
       window.cancelAnimationFrame(animationFrame);
+      running = false;
+      startLoopRef.current = null;
       source?.disconnect();
       analyserRef.current?.disconnect();
       if (context && context.state !== "closed") void context.close();
+      if (typeof window !== "undefined" && (window as unknown as { __auraic_analyser__?: AnalyserNode | null }).__auraic_analyser__ === analyser) {
+        (window as unknown as { __auraic_analyser__?: AnalyserNode | null }).__auraic_analyser__ = null;
+      }
       analyserRef.current = null;
       contextRef.current = null;
     };

@@ -57,8 +57,8 @@ export default function TrackRow({ track, index, queue, contextTitle, onPlay }: 
             {[0, 1, 2].map((i) => (
               <motion.span
                 key={i}
-                className="w-[3px] rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
-                animate={{ height: ["30%", "100%", "40%", "90%", "50%"] }}
+                className="h-full w-[3px] origin-bottom rounded-full bg-gradient-to-t from-cyan-400 to-fuchsia-400"
+                animate={{ scaleY: [0.3, 1, 0.4, 0.9, 0.5] }}
                 transition={{ duration: 0.6 + i * 0.15, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
               />
             ))}

@@ -17,7 +17,6 @@ import {
   Repeat1,
   Mic2,
   Music,
-  X,
   Heart,
   ListMusic,
   Radio,
@@ -26,12 +25,12 @@ import { usePlayerStore } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { isJamendoTrackId } from "@/lib/api";
 import TrackActionMenu from "@/components/TrackActionMenu";
-import QueuePanel from "@/components/QueuePanel";
+import QueueDrawer from "@/components/player/QueueDrawer";
 import AudioVisualizer from "@/components/AudioVisualizer";
-import { normalizeLyrics, type LyricLine } from "@/lib/lyrics";
 import Hls from "hls.js";
 import { recordAnalyticsEvent, recordJamendoListening, resolveMediaUrl } from "@/lib/api";
-import { getLyrics } from "@/lib/api";
+import { useAdaptiveGraphics } from "@/hooks/useAdaptiveGraphics";
+import LyricsViewModal from "@/components/player/LyricsViewModal";
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.98 },
@@ -45,19 +44,17 @@ const containerVariants = {
 };
 
 const pulseGlow = {
-  initial: { boxShadow: "0 0 20px rgba(168, 85, 247, 0.15)" },
+  initial: { opacity: 0.4 },
   animate: {
-    boxShadow: [
-      "0 0 20px rgba(168, 85, 247, 0.15)",
-      "0 0 40px rgba(168, 85, 247, 0.35)",
-      "0 0 20px rgba(168, 85, 247, 0.15)",
-    ],
+    opacity: [0.4, 1, 0.4],
     transition: { duration: 3, repeat: Infinity, ease: "easeInOut" as const },
   },
 };
 
 export default function Player() {
   const pathname = usePathname();
+  const { quality } = useAdaptiveGraphics();
+  const isLowPower = quality === "low";
 
   const {
     currentTrack,
@@ -86,13 +83,9 @@ export default function Player() {
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState<number | null>(null);
   const isSeekingRef = useRef(false);
-  const [showLyrics, setShowLyrics] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
-  const [fetchedLyrics, setFetchedLyrics] = useState<string | LyricLine[] | null>(null);
-  const [fetchedPlainLyrics, setFetchedPlainLyrics] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement>(null);
-  const activeLyricRef = useRef<HTMLDivElement>(null);
   const recordedTrackIdRef = useRef<string | number | null>(null);
   const startedTrackIdRef = useRef<string | number | null>(null);
   const completedTrackIdRef = useRef<string | number | null>(null);
@@ -108,7 +101,6 @@ export default function Player() {
 
   useEffect(() => {
     setShowQueue(false);
-    setShowLyrics(false);
   }, [pathname]);
 
   const liked = currentTrack
@@ -139,37 +131,6 @@ export default function Player() {
     if (direction === "next") nextTrack();
     else prevTrack();
   }, [currentTrack, nextTrack, prevTrack, recordPlaybackEvent]);
-
-  useEffect(() => {
-    let active = true;
-    setFetchedLyrics(null);
-    setFetchedPlainLyrics(null);
-    if (!currentTrack) return;
-
-    const existingLyrics = normalizeLyrics(currentTrack.lyrics);
-    if (existingLyrics.length > 0) {
-      setFetchedLyrics(currentTrack.lyrics ?? null);
-      return;
-    }
-    if (typeof currentTrack.lyrics === "string" && currentTrack.lyrics.trim()) {
-      setFetchedPlainLyrics(currentTrack.lyrics.trim());
-      return;
-    }
-
-    void getLyrics(currentTrack.title, artistName)
-      .then((response) => {
-        if (!active) return;
-        setFetchedLyrics(response.syncedLyrics);
-        setFetchedPlainLyrics(response.plainLyrics);
-      })
-      .catch(() => {
-        if (active) setFetchedLyrics(null);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [currentTrack, artistName]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -283,28 +244,6 @@ export default function Player() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [togglePlay]);
 
-  const LYRIC_OFFSET = 0.5;
-  const lyricsSource = fetchedLyrics || fetchedPlainLyrics;
-  const lyrics = normalizeLyrics(lyricsSource, duration || 200);
-
-  const adjustedTime = currentTime + LYRIC_OFFSET;
-  let activeIndex = -1;
-  for (let i = lyrics.length - 1; i >= 0; i--) {
-    if (lyrics[i].time <= adjustedTime) {
-      activeIndex = i;
-      break;
-    }
-  }
-
-  useEffect(() => {
-    if (showLyrics && activeLyricRef.current) {
-      activeLyricRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  }, [activeIndex, showLyrics]);
-
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -314,7 +253,10 @@ export default function Player() {
     const updateRealtime = () => {
       if (!audio.paused && !audio.ended) {
         if (!isSeekingRef.current) {
-          setCurrentTime(audio.currentTime);
+          const now = audio.currentTime;
+          // Functional update bails out unless time moved ~1/12s, avoiding a
+          // full 60fps re-render of the player tree.
+          setCurrentTime((prev) => (Math.abs(prev - now) >= 0.08 ? now : prev));
         }
         animationFrameId = requestAnimationFrame(updateRealtime);
       }
@@ -491,14 +433,6 @@ export default function Player() {
   const displayTime = isSeeking && seekValue !== null ? seekValue : currentTime;
   const progressPercent = duration > 0 ? (displayTime / duration) * 100 : 0;
 
-  const handleLyricClick = (time: number) => {
-    if (audioRef.current && Number.isFinite(time)) {
-      audioRef.current.currentTime = Math.max(0, time);
-      setCurrentTime(time);
-      if (!isPlaying) togglePlay();
-    }
-  };
-
   if (!currentTrack) {
     return (
       <motion.div
@@ -507,7 +441,7 @@ export default function Player() {
         initial="hidden"
         animate="visible"
       >
-        <div className="relative flex h-20 items-center justify-center px-6 w-full rounded-[30px] border border-white/15 bg-white/[0.035] shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.18)] backdrop-blur-3xl overflow-hidden">
+        <div className="relative flex h-20 items-center justify-center px-6 w-full rounded-[30px] border border-white/15 bg-white/[0.06] shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.18)] backdrop-blur-xl overflow-hidden">
           <motion.div
             className="absolute -inset-1 bg-gradient-to-r from-fuchsia-500/15 via-cyan-400/10 to-violet-500/15 opacity-60 blur-xl pointer-events-none"
             animate={{ x: ["-40%", "40%", "-40%"] }}
@@ -526,190 +460,37 @@ export default function Player() {
 
   return (
     <>
-      <QueuePanel isOpen={showQueue} onClose={() => setShowQueue(false)} />
-
-      {showLyrics && (
-        <motion.div
-          className="fixed inset-0 bottom-28 z-40 flex flex-col items-center justify-center overflow-hidden rounded-t-[32px] border-t border-auraic-border bg-[#080810]/95 p-6 shadow-2xl backdrop-blur-3xl transition-all duration-500 sm:p-10"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 40 }}
-          transition={{ type: "spring", damping: 24, stiffness: 180 }}
-        >
-          <Artwork
-            src={currentTrack.image}
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover opacity-20 blur-3xl transition-all duration-1000"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black" />
-
-          <motion.button
-            onClick={() => setShowLyrics(false)}
-            className="absolute top-6 right-6 z-50 flex items-center gap-2 rounded-full border border-auraic-border bg-white/10 px-4 py-2 text-xs font-bold text-white/70 shadow-lg backdrop-blur-md transition-all hover:border-auraic-border-strong hover:bg-white/20 hover:text-white cursor-pointer"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <X className="w-4 h-4" /> Đóng Karaoke
-          </motion.button>
-
-          {lyrics.length > 0 ? (
-            <div className="relative z-10 grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 text-left lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-16">
-              <div className="hidden self-center lg:block">
-                <div className="relative group">
-                  <motion.div
-                    className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-purple-600 to-indigo-600 opacity-30 blur-2xl"
-                    animate={{ opacity: [0.3, 0.5, 0.3] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <Artwork
-                    src={currentTrack.image}
-                    alt={currentTrack.title}
-                    className="relative aspect-square w-full rounded-3xl object-cover shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-auraic-border"
-                  />
-                </div>
-                <div className="mt-6">
-                  <h2 className="truncate text-2xl font-black tracking-tight text-white">{currentTrack.title}</h2>
-                  <p className="mt-1 truncate text-base font-medium text-white/60">{artistName}</p>
-                </div>
-              </div>
-
-              <div className="relative max-h-[68vh] overflow-y-auto px-4 py-16 text-left scrollbar-none [mask-image:linear-gradient(to_bottom,transparent_0%,black_15%,black_85%,transparent_100%)]">
-                <div className="space-y-6 sm:space-y-7">
-                  {lyrics.map((line, index) => {
-                    const isCurrent = index === activeIndex;
-                    const isPassed = index < activeIndex;
-
-                    return (
-                      <motion.div
-                        key={index}
-                        ref={(node) => {
-                          if (isCurrent) {
-                            activeLyricRef.current = node;
-                          }
-                        }}
-                        onClick={() => handleLyricClick(line.time)}
-                        className={`cursor-pointer select-none transition-all duration-300 py-1 ${isCurrent
-                          ? "opacity-100 text-white"
-                          : isPassed
-                            ? "opacity-35 text-white hover:opacity-75 hover:translate-x-1"
-                            : "opacity-20 text-white hover:opacity-65 hover:translate-x-1"
-                          }`}
-                        whileHover={{ x: 4 }}
-                      >
-                        <h2
-                          className={`text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-[34px] transition-colors duration-300 ${isCurrent
-                            ? "font-extrabold text-white drop-shadow-[0_2px_20px_rgba(255,255,255,0.45)]"
-                            : ""
-                            }`}
-                        >
-                          {line.text}
-                        </h2>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="relative flex h-[min(78vh,720px)] w-full max-w-[1400px] items-center justify-center overflow-hidden rounded-[32px] border border-auraic-border bg-[#080810] p-7 shadow-[0_0_120px_rgba(168,85,247,0.3)] sm:p-12">
-              <Artwork src={currentTrack.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-3xl" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.22),transparent_42%),linear-gradient(180deg,rgba(5,5,12,0.35),rgba(5,5,12,0.96))]" />
-              <div className="relative grid w-full max-w-[1240px] grid-cols-1 items-center gap-10 lg:grid-cols-[280px_minmax(320px,1fr)_300px] lg:gap-16">
-                <div className="hidden self-start lg:block">
-                  <motion.div
-                    className="relative group"
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <motion.div
-                      className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-fuchsia-600 to-indigo-600 opacity-30 blur-2xl"
-                      animate={{ opacity: [0.3, 0.5, 0.3] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                    <Artwork src={currentTrack.image} alt={currentTrack.title} className="aspect-square w-full rounded-2xl object-cover shadow-[0_0_55px_rgba(217,140,255,0.28)]" />
-                  </motion.div>
-                  <h2 className="mt-5 truncate text-xl font-bold text-white">{currentTrack.title}</h2>
-                  <p className="mt-1 truncate text-sm text-white/50">{artistName}</p>
-                  <div className="mt-5 flex gap-2 text-white/50">
-                    <motion.button type="button" onClick={() => toggleLike(currentTrack)} aria-label={liked ? "Bỏ thích" : "Yêu thích"} className="flex h-10 w-10 items-center justify-center rounded-xl border border-auraic-border bg-white/[0.04] transition hover:border-fuchsia-300/50 hover:text-fuchsia-200" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                      <Heart className={`h-4 w-4 ${liked ? "fill-pink-400 text-pink-400" : ""}`} />
-                    </motion.button>
-                    <TrackActionMenu track={currentTrack} placement="up" />
-                  </div>
-                </div>
-                <div className="relative flex flex-col items-center text-center">
-                  <p className="mb-7 text-[10px] font-bold uppercase tracking-[0.28em] text-fuchsia-200/75">Instrumental atmosphere</p>
-                  <div className="relative aspect-square w-[min(58vw,300px)]">
-                    <motion.div
-                      className="absolute inset-[-12%] rounded-full bg-fuchsia-500/25 blur-3xl"
-                      animate={{ scale: [1, 1.1, 1], opacity: [0.25, 0.4, 0.25] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                    <motion.div
-                      className="absolute inset-0 rounded-full border border-white/20 bg-[radial-gradient(circle_at_35%_25%,#34304f_0,#11111d_42%,#030308_72%)] shadow-[0_0_60px_rgba(217,140,255,0.45)]"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    />
-                    <motion.div
-                      className="absolute inset-[8%] h-[84%] w-[84%] rounded-full object-cover"
-                      animate={{ rotate: isPlaying ? 360 : 0 }}
-                      transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                    >
-                      <Artwork src={currentTrack.image} alt={currentTrack.title} className="h-full w-full rounded-full object-cover" />
-                    </motion.div>
-                    <motion.div
-                      className="absolute inset-[43%] rounded-full border-4 border-[#11111d] bg-gradient-to-br from-fuchsia-300 to-cyan-300 shadow-[0_0_18px_rgba(217,140,255,0.8)]"
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  </div>
-                  <div className="mt-9 flex h-20 items-center gap-1.5" aria-label="Audio visualizer">
-                    {[24, 44, 68, 36, 58, 76, 46, 64, 32, 54, 72, 40, 60, 28].map((height, index) => (
-                      <motion.span
-                        key={index}
-                        className="w-1.5 rounded-full bg-gradient-to-t from-cyan-300 to-fuchsia-400 shadow-[0_0_12px_rgba(217,140,255,0.7)]"
-                        style={{ height: `${height}%` }}
-                        animate={isPlaying ? { scaleY: [0.4, 1, 0.6, 1, 0.8] } : { scaleY: 0.3 }}
-                        transition={
-                          isPlaying
-                            ? { duration: 0.7 + (index % 4) * 0.12, repeat: Infinity, ease: "easeInOut", delay: index * 0.05 }
-                            : { duration: 0.3 }
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 text-fuchsia-200 shadow-[0_0_30px_rgba(217,140,255,0.25)] lg:mx-0">
-                    <Music className="h-7 w-7" />
-                  </div>
-                  <h2 className="text-2xl font-bold leading-tight text-white sm:text-3xl">This track is instrumental</h2>
-                  <p className="mt-4 text-base leading-7 text-white/55">No lyrics available for this song.<br />Feel the vibe and let the music speak for itself.</p>
-                </div>
-                <div className="text-center lg:hidden">
-                  <h2 className="truncate text-xl font-bold text-white">{currentTrack.title}</h2>
-                  <p className="mt-1 text-sm text-white/50">{artistName}</p>
-                </div>
-                <span className="sr-only">No synced lyrics available</span>
-              </div>
-            </div>
-          )}
-        </motion.div>
-      )}
+      <QueueDrawer isOpen={showQueue} onClose={() => setShowQueue(false)} />
+      <LyricsViewModal
+        currentTime={currentTime}
+        onSeek={(time) => {
+          if (audioRef.current && Number.isFinite(time)) {
+            audioRef.current.currentTime = time;
+            setCurrentTime(time);
+          }
+        }}
+      />
 
       <motion.div
-        className="relative z-50 w-full"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         exit="exit"
+        className="relative z-50"
       >
         <motion.div
-          className="relative flex min-h-24 w-full flex-col items-center justify-between overflow-visible rounded-[30px] border border-white/15 bg-[#0f111c]/85 px-4 py-3 shadow-[0_25px_65px_-8px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.22)] backdrop-blur-3xl md:min-h-20 md:flex-row md:px-6 md:py-2.5"
+          className="relative flex min-h-24 w-full flex-col items-center justify-between overflow-visible rounded-[30px] border border-white/15 bg-[#0f111c]/92 px-4 py-3 shadow-[0_25px_65px_-8px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.22)] backdrop-blur-lg md:min-h-20 md:flex-row md:px-6 md:py-2.5 transform-gpu will-change-transform"
           {...pulseGlow}
           animate={isPlaying ? "animate" : "initial"}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
+          {/* Pulse aura — static box-shadow composited once; only opacity animates. */}
+          <motion.span
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-2 -z-10 rounded-[36px] will-change-transform"
+            style={{ boxShadow: "0 0 20px rgba(168, 85, 247, 0.18), 0 0 42px rgba(168, 85, 247, 0.35)" }}
+          />
+
           {/* Subtle Ambient Bleed Overlay */}
           <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-gradient-to-r from-fuchsia-500/10 via-transparent to-cyan-400/10 opacity-70 mix-blend-screen" />
 
@@ -732,7 +513,7 @@ export default function Player() {
           <div className="relative z-10 mb-2 flex min-w-0 w-full items-center gap-3.5 md:mb-0 md:w-1/3">
             {/* Vinyl Record & Concentric Equalizer Aura Rings */}
             <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
-              {isPlaying && (
+              {isPlaying && !isLowPower && (
                 <>
                   <span className="pointer-events-none absolute h-14 w-14 rounded-full border border-fuchsia-400/50 equalizer-aura-pulse" />
                   <span className="pointer-events-none absolute h-18 w-18 rounded-full border border-cyan-400/35 equalizer-aura-pulse [animation-delay:0.8s]" />
@@ -753,9 +534,9 @@ export default function Player() {
               {/* Rotating Vinyl Record */}
               <motion.div
                 className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white/30 bg-black shadow-[0_0_24px_rgba(168,85,247,0.45)] transition-transform duration-500 ${
-                  isPlaying ? "scale-105" : ""
+                  isPlaying && !isLowPower ? "scale-105" : ""
                 }`}
-                animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
+                animate={isPlaying && !isLowPower ? { rotate: 360 } : { rotate: 0 }}
                 transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
               >
                 {/* Vinyl Grooves Texture */}
@@ -904,15 +685,15 @@ export default function Player() {
                 />
                 {/* Neon Tube Grooved Track */}
                 <div className="h-2 w-full bg-black/60 rounded-full overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)] border border-white/10">
-                  {/* Neon Radiant Progress */}
-                  <motion.div
-                    className="relative h-full rounded-full bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 shadow-[0_0_14px_rgba(168,85,247,0.9),0_0_24px_rgba(6,182,212,0.6)]"
-                    style={{ width: `${progressPercent}%` }}
+                  {/* Neon Radiant Progress — scaleX on a full-width layer avoids reflow. */}
+                  <div
+                    className="relative h-full origin-left rounded-full bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 shadow-[0_0_14px_rgba(168,85,247,0.9),0_0_24px_rgba(6,182,212,0.6)] will-change-transform"
+                    style={{ transform: `translate3d(0, 0, 0) scaleX(${progressPercent / 100})` }}
                   />
                 </div>
                 {/* Neon Tube Glowing Bead */}
-                <motion.div
-                  className="w-4 h-4 bg-white rounded-full absolute top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-[0_0_14px_rgba(255,255,255,1),0_0_22px_rgba(168,85,247,0.9)] ring-2 ring-violet-400"
+                <div
+                  className="w-4 h-4 bg-white rounded-full absolute top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-[0_0_14px_rgba(255,255,255,1),0_0_22px_rgba(168,85,247,0.9)] ring-2 ring-violet-400 will-change-transform"
                   style={{ left: `${progressPercent}%` }}
                 />
               </div>
@@ -928,9 +709,9 @@ export default function Player() {
           {/* RIGHT: Shortcuts & Volume */}
           <div className="relative z-10 hidden w-1/3 items-center justify-end gap-3 text-white/50 md:flex">
             <motion.button
-              onClick={() => setShowLyrics(!showLyrics)}
+              onClick={() => usePlayerStore.getState().toggleLyrics()}
               className={`transition-all p-2 rounded-full cursor-pointer ${
-                showLyrics
+                usePlayerStore.getState().isLyricsOpen
                   ? "text-indigo-400 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400/30"
                   : "hover:text-white hover:bg-white/5"
               }`}
@@ -954,6 +735,11 @@ export default function Player() {
             >
               <ListMusic className="w-4 h-4" />
             </motion.button>
+
+            {/* Bitrate Badge as shown in reference */}
+            <span className="hidden xl:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider text-white/70 bg-white/5 border border-white/10 select-none">
+              {isJamendoTrackId(currentTrack.id) ? "320 kbps" : "128 kbps"}
+            </span>
 
             <div className="flex items-center gap-2.5 group">
               <motion.button
@@ -979,9 +765,9 @@ export default function Player() {
                   className="absolute w-full h-2 opacity-0 z-10 cursor-pointer"
                 />
                 <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden shadow-inner border border-white/5">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-violet-400 to-cyan-300 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.6)] transition-all"
-                    style={{ width: `${volume * 100}%` }}
+                  <div
+                    className="h-full origin-left bg-gradient-to-r from-violet-400 to-cyan-300 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.6)] will-change-transform"
+                    style={{ transform: `translate3d(0, 0, 0) scaleX(${volume})` }}
                   />
                 </div>
               </div>

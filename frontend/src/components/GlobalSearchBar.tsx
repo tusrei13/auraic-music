@@ -174,7 +174,7 @@ export default function GlobalSearchBar() {
     .join("") || "A";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#090910]/80 px-4 py-3 backdrop-blur-md sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#090910]/80 px-4 py-3 backdrop-blur-xl sm:px-6">
       <div className="flex min-h-12 items-center gap-3">
         <div ref={containerRef} className="relative min-w-0 flex-1 sm:w-[min(480px,52vw)] sm:flex-none">
         <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
@@ -240,7 +240,7 @@ export default function GlobalSearchBar() {
         )}
 
         {open && query.trim() && (
-          <div id="global-search-results" role="listbox" aria-label="Kết quả tìm kiếm" className="absolute left-0 right-0 top-[calc(100%+8px)] max-h-[min(32rem,calc(100vh-8rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#15151d]/95 p-3 shadow-2xl backdrop-blur-2xl">
+          <div id="global-search-results" role="listbox" aria-label="Kết quả tìm kiếm" className="absolute left-0 right-0 top-[calc(100%+8px)] max-h-[min(32rem,calc(100vh-8rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#15151d]/95 p-3 shadow-2xl">
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-6 text-sm text-white/50">
                 <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
@@ -289,7 +289,7 @@ export default function GlobalSearchBar() {
                   <ChevronDown className={`hidden h-3.5 w-3.5 text-white/45 transition sm:block ${accountMenuOpen ? "rotate-180" : ""}`} />
                 </button>
                 {accountMenuOpen && (
-                  <div role="menu" className="absolute right-0 top-[calc(100%+10px)] w-52 rounded-xl border border-white/10 bg-[#171720]/95 p-2 shadow-2xl backdrop-blur-xl">
+                  <div role="menu" className="absolute right-0 top-[calc(100%+10px)] w-52 rounded-xl border border-white/10 bg-[#171720]/95 p-2 shadow-2xl">
                     <div className="border-b border-white/10 px-3 pb-2 pt-1">
                       <p className="truncate text-sm font-semibold text-white">{accountLabel}</p>
                       <p className="truncate text-xs text-white/40">{user.email}</p>

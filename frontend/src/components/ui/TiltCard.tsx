@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useAdaptiveGraphics } from "@/hooks/useAdaptiveGraphics";
 
 export interface TiltCardProps {
   children: React.ReactNode;
@@ -22,6 +23,8 @@ export default function TiltCard({
 }: TiltCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const { quality } = useAdaptiveGraphics();
+  const tiltEnabled = quality === "high";
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -38,7 +41,7 @@ export default function TiltCard({
   const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["0%", "100%"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
+    if (!tiltEnabled || !ref.current) return;
     const rect = ref.current.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
@@ -66,31 +69,36 @@ export default function TiltCard({
   return (
     <motion.div
       ref={ref}
-      onMouseMove={handleMouseMove}
+      onMouseMove={tiltEnabled ? handleMouseMove : undefined}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
       style={{
-        rotateX,
-        rotateY,
+        rotateX: tiltEnabled ? rotateX : 0,
+        rotateY: tiltEnabled ? rotateY : 0,
         transformStyle: "preserve-3d",
       }}
-      whileHover={{
-        scale: 1.035,
-        boxShadow: `0 24px 55px -10px rgba(0, 0, 0, 0.7), 0 0 32px -4px ${glowColor}, inset 0 1px 0 0 rgba(255, 255, 255, 0.25)`,
-      }}
+      whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 350, damping: 25 }}
-      className={`relative cursor-pointer rounded-2xl border border-white/12 bg-white/[0.035] backdrop-blur-2xl transition-all duration-300 ${
-        isHovered ? "border-white/35" : "border-white/12"
+      className={`relative cursor-pointer overflow-hidden rounded-2xl border bg-white/[0.03] will-change-transform transform-gpu transition-[background-color,border-color] duration-300 hover:bg-white/[0.08] ${
+        isHovered && tiltEnabled ? "border-white/35" : "border-white/10 hover:border-white/20"
       } ${className}`}
     >
+      {/* Pre-rendered ambient glow layer — cheaper than per-frame box-shadow. */}
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-0 rounded-2xl opacity-0 transition-opacity duration-300 will-change-transform"
+        style={{ boxShadow: `0 24px 55px -10px rgba(0, 0, 0, 0.7), 0 0 32px -4px ${glowColor}, inset 0 1px 0 0 rgba(255, 255, 255, 0.25)` }}
+        animate={{ opacity: isHovered ? 1 : 0 }}
+      />
+
       {/* Dynamic Specular Glare Overlay */}
       <motion.div
-        className="pointer-events-none absolute inset-0 z-20 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="pointer-events-none absolute inset-0 z-20 rounded-2xl opacity-0 transition-opacity duration-300"
         style={{
           background: `radial-gradient(circle at ${glareX} ${glareY}, rgba(255, 255, 255, 0.18) 0%, transparent 60%)`,
         }}
+        animate={{ opacity: isHovered ? 1 : 0 }}
       />
 
       <div
@@ -98,7 +106,7 @@ export default function TiltCard({
           transform: `translateZ(${depthZ}px)`,
           transformStyle: "preserve-3d",
         }}
-        className="relative z-10 h-full w-full"
+        className="relative z-10 h-full w-full will-change-transform"
       >
         {children}
       </div>

@@ -95,7 +95,7 @@ export default function SpinningVinyl({
             />
             {/* Requester tag badge */}
             {requesterName && (
-              <div className="absolute inset-x-0 bottom-0 bg-black/70 py-0.5 text-center text-[9px] font-bold text-cyan-300 backdrop-blur-xs truncate px-1">
+              <div className="absolute inset-x-0 bottom-0 bg-black/70 py-0.5 text-center text-[9px] font-bold text-cyan-300  truncate px-1">
                 {requesterName}
               </div>
             )}
@@ -108,3 +108,4 @@ export default function SpinningVinyl({
     </div>
   );
 }
+

@@ -2,6 +2,11 @@
 
 import React, { useEffect, useRef } from "react";
 import { usePlayerStore } from "@/store/usePlayerStore";
+import { useAdaptiveGraphics } from "@/hooks/useAdaptiveGraphics";
+
+const MAX_DPR = 2;
+const HIGH_PARTICLE_COUNT = 200;
+const LOW_PARTICLE_COUNT = 30;
 
 interface Particle {
   x: number;
@@ -16,10 +21,28 @@ interface Particle {
   hueOffset: number;
 }
 
+const buildGlowSprite = (): HTMLCanvasElement | null => {
+  const sprite = document.createElement("canvas");
+  sprite.width = 64;
+  sprite.height = 64;
+  const sctx = sprite.getContext("2d");
+  if (!sctx) return null;
+  const grad = sctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, "rgba(216, 180, 254, 1)");
+  grad.addColorStop(0.4, "rgba(147, 197, 253, 0.5)");
+  grad.addColorStop(1, "rgba(99, 102, 241, 0)");
+  sctx.fillStyle = grad;
+  sctx.beginPath();
+  sctx.arc(32, 32, 32, 0, Math.PI * 2);
+  sctx.fill();
+  return sprite;
+};
+
 export default function SpatialStarfieldCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const isPlayingRef = useRef(isPlaying);
+  const { quality } = useAdaptiveGraphics();
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
@@ -31,42 +54,57 @@ export default function SpatialStarfieldCanvas() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let animationFrameId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-
-    // Check reduced motion preference
+    // Respect user's reduced-motion preference -> freeze the scene entirely.
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (mediaQuery.matches) return;
 
-    const handleResize = () => {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    };
-    window.addEventListener("resize", handleResize);
+    let animationFrameId = 0;
+    let running = false;
+    let visible = true;
 
-    // Create celestial floating dust particles with dynamic density
-    const particleCount = Math.min(Math.floor((width * height) / 10000), 150);
-    const particles: Particle[] = [];
-
-    for (let i = 0; i < particleCount; i++) {
-      const baseAlpha = 0.25 + Math.random() * 0.55;
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        size: 1.2 + Math.random() * 2.6,
-        alpha: baseAlpha,
-        baseAlpha,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.28 - 0.12, // Subtle upward floating draft
-        pulseSpeed: 0.02 + Math.random() * 0.03,
-        pulsePhase: Math.random() * Math.PI * 2,
-        hueOffset: Math.random() * 50 - 25,
-      });
-    }
-
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let particles: Particle[] = [];
+    let glowSprite: HTMLCanvasElement | null = null;
     let time = 0;
+
+    const lowQuality = quality === "low";
+
+    const spawnParticles = (count: number) => {
+      particles = [];
+      for (let i = 0; i < count; i++) {
+        const baseAlpha = 0.25 + Math.random() * 0.55;
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: 1.2 + Math.random() * 2.6,
+          alpha: baseAlpha,
+          baseAlpha,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.28 - 0.12, // Subtle upward floating draft
+          pulseSpeed: 0.02 + Math.random() * 0.03,
+          pulsePhase: Math.random() * Math.PI * 2,
+          hueOffset: Math.random() * 50 - 25,
+        });
+      }
+    };
+
+    const handleResize = () => {
+      // Resolution capping: never render above 2x device pixels.
+      dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.max(1, Math.floor(width * dpr));
+      canvas.height = Math.max(1, Math.floor(height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const count = lowQuality
+        ? LOW_PARTICLE_COUNT
+        : Math.min(Math.floor((width * height) / 10000), HIGH_PARTICLE_COUNT);
+      spawnParticles(count);
+      glowSprite = buildGlowSprite();
+    };
 
     const render = () => {
       time += 0.02;
@@ -74,74 +112,100 @@ export default function SpatialStarfieldCanvas() {
 
       const playing = isPlayingRef.current;
       const speedMultiplier = playing ? 1.4 : 0.85;
+      const sprite = glowSprite;
 
-      // Draw subtle ambient connection filaments
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+      // Ambient connection filaments: O(n^2) — only on capable hardware.
+      if (!lowQuality && sprite) {
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const pi = particles[i];
+            const pj = particles[j];
+            const dx = pi.x - pj.x;
+            const dy = pi.y - pj.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 85) {
-            const filamentAlpha = (1 - dist / 85) * 0.07 * (playing ? 1.3 : 0.8);
-            ctx.strokeStyle = `rgba(168, 85, 247, ${filamentAlpha})`;
-            ctx.lineWidth = 0.6;
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
+            if (dist < 85) {
+              const filamentAlpha = (1 - dist / 85) * 0.07 * (playing ? 1.3 : 0.8);
+              ctx.strokeStyle = `rgba(168, 85, 247, ${filamentAlpha})`;
+              ctx.lineWidth = 0.6;
+              ctx.beginPath();
+              ctx.moveTo(pi.x, pi.y);
+              ctx.lineTo(pj.x, pj.y);
+              ctx.stroke();
+            }
           }
         }
       }
 
-      // Draw each particle with soft glowing aura
+      // Each particle: physics + pre-rendered glow sprite blit (no per-frame
+      // gradient allocations) + compact white-hot core.
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // Motion physics with gentle sway
         p.x += p.vx * speedMultiplier + Math.sin(time + p.pulsePhase) * 0.12;
         p.y += p.vy * speedMultiplier;
 
-        // Wrap around viewport edges seamlessly
         if (p.x < -10) p.x = width + 10;
         if (p.x > width + 10) p.x = -10;
         if (p.y < -10) p.y = height + 10;
         if (p.y > height + 10) p.y = -10;
 
-        // Luminance breathing
         p.pulsePhase += p.pulseSpeed * (playing ? 1.6 : 1);
         const breath = Math.sin(p.pulsePhase) * 0.25;
         p.alpha = Math.max(0.08, Math.min(0.85, p.baseAlpha + breath));
 
-        // Draw soft glow ring
-        const glowRad = p.size * (playing ? 3.5 : 2.5);
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowRad);
-        grad.addColorStop(0, `rgba(216, 180, 254, ${p.alpha * 0.9})`);
-        grad.addColorStop(0.4, `rgba(147, 197, 253, ${p.alpha * 0.45})`);
-        grad.addColorStop(1, "rgba(99, 102, 241, 0)");
+        if (sprite) {
+          const glowRad = p.size * (playing ? 3.5 : 2.5);
+          ctx.globalAlpha = p.alpha;
+          ctx.drawImage(sprite, p.x - glowRad, p.y - glowRad, glowRad * 2, glowRad * 2);
+          ctx.globalAlpha = 1;
+        }
 
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, glowRad, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Core star point
         ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, p.alpha * 1.3)})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2);
         ctx.fill();
       }
-
-      animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    const loop = () => {
+      if (!visible) {
+        running = false;
+        return;
+      }
+      render();
+      running = true;
+      animationFrameId = requestAnimationFrame(loop);
+    };
+
+    const handleResizeEntry = () => handleResize();
+
+    handleResize();
+    window.addEventListener("resize", handleResizeEntry);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        visible = entries[0]?.isIntersecting !== false;
+        if (visible && !running) {
+          animationFrameId = requestAnimationFrame(loop);
+        }
+      },
+      { rootMargin: "100px" }
+    );
+    observer.observe(canvas);
+
+    animationFrameId = requestAnimationFrame(loop);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", handleResizeEntry);
+      observer.disconnect();
       cancelAnimationFrame(animationFrameId);
+      running = false;
     };
-  }, []);
+  }, [quality]);
+
+  const dim = quality === "low";
+  const blur = dim ? "blur-[80px]" : "blur-[140px]";
 
   return (
     <div
@@ -150,28 +214,36 @@ export default function SpatialStarfieldCanvas() {
     >
       {/* Deep Cosmic Nebula Mesh Gradients - Multi-layered & Vibrant */}
       <div
-        className="absolute -top-40 -left-40 h-[750px] w-[750px] rounded-full opacity-55 blur-[140px] animate-pulse transition-all duration-1000"
+        className={`absolute -top-40 -left-40 h-[750px] w-[750px] rounded-full opacity-55 ${blur} transition-all duration-1000 ${
+          dim ? "" : "animate-pulse"
+        }`}
         style={{
           background: "radial-gradient(circle, var(--auraic-accent, #9333ea) 0%, rgba(99,102,241,0.5) 45%, transparent 75%)",
           animationDuration: "8s",
         }}
       />
       <div
-        className="absolute top-1/4 -right-40 h-[850px] w-[850px] rounded-full opacity-45 blur-[160px] animate-pulse transition-all duration-1000"
+        className={`absolute top-1/4 -right-40 h-[850px] w-[850px] rounded-full opacity-45 ${blur} transition-all duration-1000 ${
+          dim ? "" : "animate-pulse"
+        }`}
         style={{
           background: "radial-gradient(circle, #06b6d4 0%, rgba(139,92,246,0.4) 40%, transparent 75%)",
           animationDuration: "11s",
         }}
       />
       <div
-        className="absolute -bottom-48 left-1/3 h-[800px] w-[800px] rounded-full opacity-40 blur-[150px] animate-pulse transition-all duration-1000"
+        className={`absolute -bottom-48 left-1/3 h-[800px] w-[800px] rounded-full opacity-40 ${blur} transition-all duration-1000 ${
+          dim ? "" : "animate-pulse"
+        }`}
         style={{
           background: "radial-gradient(circle, #ec4899 0%, rgba(124,58,237,0.35) 45%, transparent 70%)",
           animationDuration: "9s",
         }}
       />
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[900px] w-[900px] rounded-full opacity-25 blur-[180px]"
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[900px] w-[900px] rounded-full opacity-25 ${
+          dim ? "blur-[110px]" : "blur-[180px]"
+        }`}
         style={{
           background: "radial-gradient(circle, rgba(147,51,234,0.3) 0%, rgba(6,182,212,0.2) 50%, transparent 75%)",
         }}

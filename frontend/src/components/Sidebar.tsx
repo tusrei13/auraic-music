@@ -19,7 +19,7 @@ export default function Sidebar() {
   const { status, openAuthModal } = useAuthStore();
 
   return (
-    <aside className="group/sidebar flex h-full w-[68px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.035] p-3 transition-[width] duration-300 hover:w-60 sm:w-[76px] sm:p-4 shadow-[0_8px_32px_rgba(0,0,0,0.37)] backdrop-blur-2xl">
+    <aside className="group/sidebar flex h-full w-[68px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.035] p-3 transition-[width] duration-300 hover:w-64 sm:w-[76px] sm:p-4 shadow-[0_8px_32px_rgba(0,0,0,0.37)] backdrop-blur-xl">
       <div className="space-y-8">
         {/* LOGO */}
         <Link href="/" className="flex items-center gap-3 px-1">

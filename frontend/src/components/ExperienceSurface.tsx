@@ -104,7 +104,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
         {/* Top Hero Spatial Bento: 2-Column Responsive */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           {/* Hero Left: System Preferences & Audio Engine Status */}
-          <header className="lg:col-span-7 relative overflow-hidden rounded-[32px] border border-white/18 bg-gradient-to-br from-violet-950/40 via-slate-900/40 to-slate-950/70 p-6 sm:p-8 backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.2)] flex flex-col justify-between space-y-6">
+          <header className="lg:col-span-7 relative overflow-hidden rounded-[32px] border border-white/18 bg-gradient-to-br from-violet-950/40 via-slate-900/40 to-slate-950/70 p-6 sm:p-8  shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.2)] flex flex-col justify-between space-y-6">
             <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-violet-500/25 blur-[90px]" />
             <div className="relative z-10 space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3.5 py-1 text-xs font-mono font-bold tracking-wider text-cyan-300">
@@ -136,7 +136,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
           </header>
 
           {/* Hero Right: Live Interactive Audio Acoustics Monitor */}
-          <div className="lg:col-span-5 relative overflow-hidden rounded-[32px] border border-white/18 bg-gradient-to-br from-slate-900/60 via-purple-950/30 to-black/80 p-6 sm:p-7 backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.2)] flex flex-col justify-between">
+          <div className="lg:col-span-5 relative overflow-hidden rounded-[32px] border border-white/18 bg-gradient-to-br from-slate-900/60 via-purple-950/30 to-black/80 p-6 sm:p-7  shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.2)] flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
@@ -169,7 +169,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
         {/* Floating Bento Grid 3-Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {/* Card 1: Giao diện & Không gian (Spatial Appearance) */}
-          <div className="rounded-[28px] border border-white/15 bg-white/[0.035] p-6 backdrop-blur-2xl shadow-[0_15px_35px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col justify-between space-y-5">
+          <div className="rounded-[28px] border border-white/15 bg-white/[0.035] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col justify-between space-y-5">
             <div className="flex items-center gap-3.5">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-fuchsia-500/15 border border-fuchsia-400/30 text-fuchsia-300 shadow-[0_0_15px_rgba(217,140,255,0.25)]">
                 <Sparkles className="h-5 w-5" />
@@ -208,7 +208,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
           </div>
 
           {/* Card 2: Chất lượng & Độ phân giải DAC (Audio Quality) */}
-          <div className="rounded-[28px] border border-white/15 bg-white/[0.035] p-6 backdrop-blur-2xl shadow-[0_15px_35px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col justify-between space-y-5">
+          <div className="rounded-[28px] border border-white/15 bg-white/[0.035] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col justify-between space-y-5">
             <div className="flex items-center gap-3.5">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
                 <SlidersHorizontal className="h-5 w-5" />
@@ -246,7 +246,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
           </div>
 
           {/* Card 3: Bộ nhớ tạm & Cache (Storage & Engine) */}
-          <div className="rounded-[28px] border border-white/15 bg-white/[0.035] p-6 backdrop-blur-2xl shadow-[0_15px_35px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col justify-between space-y-5">
+          <div className="rounded-[28px] border border-white/15 bg-white/[0.035] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col justify-between space-y-5">
             <div className="flex items-center gap-3.5">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/15 border border-indigo-400/30 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.25)]">
                 <Heart className="h-5 w-5" />
@@ -277,7 +277,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
           </div>
 
           {/* Card 4: Bảo mật & Dữ liệu Nghe (Privacy - Spanning Full 3 Columns) */}
-          <div className="md:col-span-2 xl:col-span-3 rounded-[28px] border border-white/15 bg-white/[0.035] p-6 sm:p-8 backdrop-blur-2xl shadow-[0_15px_35px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)] space-y-6">
+          <div className="md:col-span-2 xl:col-span-3 rounded-[28px] border border-white/15 bg-white/[0.035] p-6 sm:p-8 shadow-[0_15px_35px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)] space-y-6">
             <div className="flex items-center gap-3.5 border-b border-white/10 pb-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15 border border-violet-400/30 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.25)]">
                 <Shield className="h-5 w-5" />
@@ -377,7 +377,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
       <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_1.2fr] lg:items-center">
         <div className="relative aspect-square max-w-[440px] overflow-hidden rounded-[32px] border border-white/15 shadow-2xl shadow-fuchsia-950/30">
           <Artwork src={track.image} alt={track.title} className="h-full w-full object-cover" />
-          <div className="absolute inset-x-5 bottom-5 flex items-center justify-between rounded-2xl border border-white/15 bg-black/60 p-3.5 backdrop-blur-xl">
+          <div className="absolute inset-x-5 bottom-5 flex items-center justify-between rounded-2xl border border-white/15 bg-black/60 p-3.5 ">
             <div className="min-w-0">
               <p className="truncate text-sm font-bold text-white">{track.title}</p>
               <p className="truncate text-xs text-white/50">{artist}</p>
@@ -394,7 +394,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
         </div>
 
         <div className="max-w-xl space-y-6">
-          <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.05] p-6 sm:p-7 backdrop-blur-xl">
+          <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.05] p-6 sm:p-7 ">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200">Usage information</p>
             <h2 className="mt-2 text-xl font-bold">Original source terms</h2>
             <p className="mt-4 text-sm leading-6 text-white/60">
@@ -419,3 +419,4 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
     </div>
   );
 }
+
