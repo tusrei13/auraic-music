@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test('home exposes the listening shell and empty player state', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Feel the Aura/i })).toBeVisible();
-  await expect(page.getByText('Vui lòng chọn một bài hát để bắt đầu')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Thế Giới Âm Nhạc/i })).toBeVisible();
+  await expect(page.getByText(/chọn bài hát từ thư viện/i)).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Tìm kiếm nhạc' })).toBeVisible();
 });
 
@@ -74,7 +74,7 @@ test('search keeps a visible keyboard focus indicator', async ({ page }) => {
 test('home remains usable on a narrow mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Feel the Aura/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Thế Giới Âm Nhạc/i })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Tìm kiếm nhạc' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
