@@ -1,122 +1,195 @@
 # Auraic
 
-![Node](https://img.shields.io/badge/Node-%3E%3D22-brightgreen)
-![Next.js](https://img.shields.io/badge/Next.js-16.x-black)
-![Express](https://img.shields.io/badge/Express-4.x-black)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
-![Redis](https://img.shields.io/badge/Redis-7-red)
-![Terraform](https://img.shields.io/badge/Terraform-1.x-purple)
+![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=node.js&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16.x-000000?logo=next.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-Proprietary-red)
 
-Auraic is an independent music streaming and discovery platform with clear licensing, explainable AI recommendations, and production-grade observability. Built for a solo-developer context but architected to scale.
+Auraic is a full-stack music streaming and discovery platform built around a modular monolith backend and a modern Next.js frontend. The project is designed to support a polished listening experience, transparent licensing, explainable recommendations, and production-oriented observability for real-world deployment.
+
+## Overview
+
+Auraic combines:
+
+- A music catalog experience powered by Jamendo metadata and audio sources
+- A modern web application for browsing, searching, playing, and organizing music
+- A strong backend foundation with Prisma, PostgreSQL, Redis, and structured observability
+- Security, rate limiting, health checks, and infrastructure tooling for deployment readiness
+
+This repository is organized as a monorepo with separate frontend, backend, infrastructure, monitoring, and operational documentation.
 
 ## Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **Home** | Featured track, mood mixes, resume listening |
-| **Discover** | Jamendo catalog browsing by genre, artist, album |
-| **Search** | Full-text and semantic search (Vietnamese + English) |
-| **Player** | Persistent player with queue, shuffle, repeat, lyrics |
-| **Library** | Likes, playlists, listening history |
-| **AI Recommendations** | Hybrid explainable recommendations with confidence scores |
-| **Mood Mixes** | Rule-based mood/tag mixing (6 moods: chill, focus, energetic, melancholic, night, workout) |
-| **License Transparency** | Per-track license, attribution and source metadata |
-| **Observability** | Prometheus metrics, OpenTelemetry traces, Grafana SLO dashboard |
-| **CI/CD** | Automated typecheck, lint, unit tests, E2E smoke, Docker security scan |
-
-## Tech Stack
-
-### Frontend (`frontend/`)
-- **Framework**: Next.js 16 (App Router), React 19
-- **State**: Zustand (player + session UI), TanStack Query (server state)
-- **Styling**: Tailwind CSS v4, Radix UI primitives
-- **Audio**: Web Audio API, HLS.js (conditional)
-- **Testing**: Vitest + Testing Library, Playwright (E2E smoke)
-
-### Backend (`backend/`)
-- **Runtime**: Node.js 22, Express 4.x, TypeScript 5.x
-- **ORM**: Prisma 6.x (PostgreSQL 16)
-- **Auth**: Supabase Auth (JWT + server-side authorization)
-- **Cache**: Redis 7 (events, future cache layer)
-- **Validation**: Zod
-- **Observability**: Structured JSON logs, `prom-client` metrics, graceful shutdown
-
-### Infrastructure (`infra/`)
-- **IaC**: Terraform (PostgreSQL RDS, Cloudflare R2/S3 storage, CDN/WAF, compute runner)
-- **Containers**: Multi-stage Dockerfiles, non-root users, health checks
-- **Orchestration**: Docker Compose (prod + dev)
-- **Monitoring**: Prometheus 2.51 + Grafana 10.4
-- **CI/CD**: GitHub Actions
+- Personalized music discovery and recommendations
+- Full-text and semantic catalog search
+- Player experience with queue, likes, playlists, and listening history
+- Mood-based discovery and curated mixes
+- Track and artist details with license transparency
+- Admin tools for moderation and operational management
+- Health checks, Prometheus metrics, and Grafana dashboards
+- Docker-based local development and production-like orchestration
 
 ## Architecture
 
-```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Frontend   │────▶│   Backend    │────▶│  PostgreSQL  │
-│ Next.js:3001 │     │ Express:5000 │     │     :5432    │
-└──────────────┘     └──────┬───────┘     └──────────────┘
-                            │
-              ┌─────────────┼─────────────┐
-              ▼             ▼             ▼
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │   Redis  │ │  Jamendo │ │ Prometheus│
-        │   :6379  │ │  Proxy   │ │  :9090    │
-        └──────────┘ └──────────┘ └────┬─────┘
-                                         ▼
-                                   ┌──────────┐
-                                   │  Grafana │
-                                   │  :3030   │
-                                   └──────────┘
+```text
+┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
+│                     │      │                     │      │                     │
+│ Frontend            │────▶ │ Backend API         │────▶ │ PostgreSQL          │
+│ Next.js 16          │      │ Express + TypeScript│      │ Prisma + Postgres    │
+│ Port: 3001          │      │ Port: 5000          │      │ Port: 5432          │
+│                     │      │                     │      │                     │
+└─────────────────────┘      └──────────┬──────────┘      └─────────────────────┘
+                                          │
+                                          │
+                                  ┌───────▼────────┐
+                                  │ Redis          │
+                                  │ Port: 6379     │
+                                  └────────────────┘
+
+                                          │
+                                          ▼
+                                ┌─────────────────────┐
+                                │ Jamendo Catalog API │
+                                └─────────────────────┘
+
+                                          │
+                                          ▼
+                                ┌─────────────────────┐
+                                │ Prometheus / Grafana│
+                                │ Monitoring stack    │
+                                └─────────────────────┘
 ```
 
-- **Modular monolith** backend with domain modules: `auth`, `catalog`, `library`, `search`, `recommendation`, `mood`, `analytics`, `admin`, `observability`.
-- API versioning: `/api/v1` (modern contract) + `/api` (legacy/unversioned).
-- Standardized error envelope with `requestId`, error code, message and safe details.
+## Tech Stack
+
+### Frontend
+
+- Next.js 16
+- React 19
+- TypeScript 5
+- Tailwind CSS
+- Zustand for client-side state
+- TanStack Query for server state
+- Playwright + Vitest for testing
+
+### Backend
+
+- Node.js 22
+- Express 4
+- TypeScript 5
+- Prisma ORM
+- PostgreSQL 16
+- Redis 7
+- Supabase Auth integration
+- Zod validation
+- OpenTelemetry tracing and Prometheus metrics
+
+### Infrastructure and Operations
+
+- Docker Compose for development and production-like stacks
+- Terraform for infrastructure definitions
+- Prometheus and Grafana for monitoring
+- Health checks and graceful shutdown handling
+- Structured logging and request correlation
+
+## Repository Structure
+
+```text
+.
+├── backend/
+│   ├── prisma/
+│   ├── src/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── tsconfig.json
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── next.config.ts
+│   └── playwright.config.ts
+├── infra/
+│   └── terraform/
+├── monitoring/
+│   ├── prometheus/
+│   └── grafana/
+├── docs/
+│   └── runbooks/
+├── docker-compose.yml
+├── docker-compose.dev.yml
+├── README.md
+├── AGENTS.md
+├── CLAUDE.md
+└── scripts/
+```
+
+## Core Domain Modules
+
+The backend is organized around a modular architecture with routes and services covering:
+
+- Auth
+- Songs / catalog
+- Artists / genres
+- Playlists and likes
+- Search
+- Recommendations
+- Lyrics
+- Analytics
+- Admin
+- User data management
+- Charts and moods
+
+The server exposes both legacy unversioned APIs and versioned APIs under `/api/v1`.
 
 ## Prerequisites
 
-- Node.js >= 22.x
-- npm >= 10.x
-- PostgreSQL 16 (local or via Docker)
-- Redis 7 (optional for local; required for production event pipeline)
-- Supabase project (for Auth)
-- Jamendo Developer account (for catalog)
+Before starting development, make sure you have:
 
-## Quick Start (Local Development)
+- Node.js 22+
+- npm 10+
+- PostgreSQL 16
+- Redis 7
+- Docker and Docker Compose
+- A Supabase project for authentication
+- A Jamendo developer account if you want to use the full catalog flow
 
-### 1. Clone and install
+## Getting Started
+
+### 1) Clone the repository
 
 ```bash
-git clone https://github.com/your-org/auraic.git
+git clone <https://github.com/tusrei13/auraic-music.git>
 cd auraic
-
-# Backend
-cd backend
-npm install
-
-# Frontend
-cd ../frontend
-npm install
 ```
 
-### 2. Configure environment
+### 2) Install dependencies
 
-**Backend** — create `backend/.env`:
+```bash
+cd backend && npm install
+cd ../frontend && npm install
+```
+
+### 3) Configure environment variables
+
+Create a `backend/.env` file with the following variables:
 
 ```env
+PORT=5000
 DATABASE_URL=postgresql://auraic:auraic_secret@localhost:5432/auraic_db?schema=public
 DIRECT_URL=postgresql://auraic:auraic_secret@localhost:5432/auraic_db
+REDIS_URL=redis://localhost:6379
+FRONTEND_URL=http://localhost:3001
 SUPABASE_URL=https://<your-project>.supabase.co
 SUPABASE_ANON_KEY=<your-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
-PORT=5000
-REDIS_URL=redis://localhost:6379
-FRONTEND_URL=http://localhost:3001
-JAMENDO_CLIENT_ID=<your-jamendo-client-id>
 ```
 
-**Frontend** — create `frontend/.env.local`:
+Create a `frontend/.env.local` file:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
@@ -125,271 +198,205 @@ NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 ```
 
-> Use `backend/.env.example` and `frontend/.env.example` as templates. Never commit secrets.
+> Keep secrets out of source control. Use local environment files only.
 
-### 3. Database setup
+### 4) Initialize the database
 
 ```bash
 cd backend
 npm run prisma:generate
-npm run prisma:push   # apply schema to local DB
-# npm run prisma:seed # optional seed data
+npm run prisma:push
 ```
 
-### 4. Run services
+Optional seed data:
 
-**Terminal 1 — Backend:**
+```bash
+npm run prisma:seed
+```
+
+### 5) Run the application
+
+Terminal 1 — Backend
 
 ```bash
 cd backend
 npm run dev
-# Server: http://localhost:5000
-# Health:  http://localhost:5000/healthz
-# Metrics: http://localhost:5000/metrics
 ```
 
-**Terminal 2 — Frontend:**
+Terminal 2 — Frontend
 
 ```bash
 cd frontend
 npm run dev
-# App: http://localhost:3001
 ```
+
+The application will be available at:
+
+- Frontend: [http://localhost:3001](http://localhost:3001)
+- Backend: [http://localhost:5000](http://localhost:5000)
+- Health check: [http://localhost:5000/healthz](http://localhost:5000/healthz)
+- Metrics: [http://localhost:5000/metrics](http://localhost:5000/metrics)
 
 ## Running with Docker
 
-### Production stack (PostgreSQL, Redis, Backend, Frontend, Prometheus, Grafana)
+### Full stack
 
 ```bash
-cp .env.example .env   # configure secrets
 docker compose -f docker-compose.yml up --build
 ```
 
-| Service | Port | URL |
-|---------|------|-----|
-| Frontend | 3001 | http://localhost:3001 |
-| Backend API | 5000 | http://localhost:5000 |
-| PostgreSQL | 5432 | localhost:5432 |
-| Redis | 6379 | localhost:6379 |
-| Prometheus | 9090 | http://localhost:9090 |
-| Grafana | 3030 | http://localhost:3030 |
+This stack includes:
 
-### Development stack
+- Frontend
+- Backend
+- PostgreSQL
+- Redis
+- Prometheus
+- Grafana
+
+### Development infrastructure only
 
 ```bash
 docker compose -f docker-compose.dev.yml up
 ```
 
+This development stack includes shared infrastructure services such as PostgreSQL, Redis, Prometheus, and Grafana without building the application containers.
+
 ## Testing
 
-```bash
-# Backend unit tests
-cd backend && npm test
-
-# Frontend unit tests
-cd frontend && npm test
-
-# Frontend E2E smoke
-cd frontend && npm run test:e2e
-
-# Full CI locally (requires Docker)
-docker compose -f docker-compose.dev.yml up --build
-```
-
-### Test Coverage
-
-- **Backend**: 32/32 unit tests (controller contracts, services, Zod validation)
-- **Frontend**: 14/14 unit tests (stores, API client validation)
-- **E2E**: Playwright smoke flows (login, search, play, seek, like, playlist, mobile 390px)
-
-## API Reference
-
-### Base URLs
-
-| Environment | Base URL |
-|-------------|----------|
-| Local dev | `http://localhost:5000/api` |
-| Local dev (v1) | `http://localhost:5000/api/v1` |
-| Docker prod | `http://localhost:5000/api` |
-
-### Key Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/v1/songs` | No | Catalog songs (cursor pagination) |
-| GET | `/api/v1/artists` | No | Artist listing |
-| GET | `/api/v1/genres` | No | Genre listing |
-| GET | `/api/v1/search?q=...` | No | Full-text + semantic search |
-| GET | `/api/v1/moods` | No | Mood taxonomy |
-| GET | `/api/v1/recommendations/personalized` | Yes | Hybrid recommendations |
-| GET | `/api/v1/likes/my-likes` | Yes | User liked tracks |
-| POST | `/api/v1/likes/toggle` | Yes | Toggle like `{ songId }` |
-| GET | `/api/v1/playlists` | Yes | User playlists |
-| POST | `/api/v1/playlists` | Yes | Create playlist |
-| GET | `/api/v1/analytics/insights` | Yes | Personal listening insights |
-| GET | `/healthz` | No | Liveness probe |
-| GET | `/readyz` | No | Readiness probe |
-| GET | `/metrics` | No | Prometheus metrics |
-
-All authenticated endpoints require:
-
-```
-Authorization: Bearer <supabase-access-token>
-```
-
-### Error Envelope
-
-```json
-{
-  "error": {
-    "code": "ENDPOINT_NOT_FOUND",
-    "message": "Không tìm thấy endpoint",
-    "requestId": "abc-123",
-    "details": {}
-  }
-}
-```
-
-## Observability
-
-### Health Checks
-
-```
-GET /healthz   # Liveness
-GET /readyz    # Readiness (DB pool, memory)
-GET /livez     # Alias for liveness
-```
-
-### Metrics (Prometheus)
-
-| Metric | Description |
-|--------|-------------|
-| `http_requests_total` | Request count by method, route, status |
-| `http_request_duration_seconds` | Histogram (p50/p95/p99) |
-| `http_active_requests` | Current in-flight requests |
-| `db_query_duration_seconds` | Prisma query latency |
-| `jamendo_api_duration_seconds` | Upstream Jamendo proxy latency |
-
-### Grafana Dashboard
-
-Provisioned at `monitoring/grafana/`. Targets:
-- Availability: 99.9%
-- p95 API latency: < 200ms
-- Error budget tracking
-
-### Alerting
-
-Configured in `monitoring/prometheus/alert_rules.yml`:
-- SLO latency breach
-- High error rate
-- Database connection pool exhaustion
-
-## Security
-
-- **Auth**: Supabase Auth + server-side authorization. Frontend role checks are not security boundaries.
-- **Headers**: Helmet (XSS, HSTS, CORP)
-- **Rate limiting**: Auth (30 req/min), search/catalog (60 req/min)
-- **CORS**: Allowlist via `FRONTEND_URL`
-- **Validation**: Zod on all API boundaries
-- **SSRF Protection**: External URL proxy validation
-- **Secrets**: Never committed. Rotate via environment secret manager.
-- **Audit**: Admin actions logged with request context.
-
-## Database
-
-### Migrations
+### Backend test suite
 
 ```bash
 cd backend
-
-# Generate Prisma client after schema changes
-npm run prisma:generate
-
-# Push schema (dev)
-npm run prisma:push
-
-# Studio
-npm run prisma:studio
+npm test
 ```
 
-### Backup & Restore
+### Frontend test suite
 
 ```bash
-# Backup
-npm run db:backup
-
-# Restore
-npm run db:restore
-```
-
-Backups include gzip compression and SHA-256 checksum verification.
-
-## CI/CD Pipeline
-
-GitHub Actions (`.github/workflows/ci.yml`):
-
-1. **Backend**: Install → Prisma generate → Build → Test
-2. **Frontend**: Install → Typecheck → Lint → Build → Test → Playwright E2E
-3. **Containers**: Docker build + security scan (needs both jobs)
-
-Runs on every push to `main` and on pull requests.
-
-## Contributing
-
-### Branch Strategy
-
-- `main` — production-ready, deployed
-- Feature branches from `main`, PR required
-
-### Definition of Done
-
-A feature is complete when it has:
-- [ ] Real UI, not a placeholder
-- [ ] Real API with persistence
-- [ ] Loading, error, and empty states
-- [ ] Authorization checks
-- [ ] Unit tests
-- [ ] Structured logging
-- [ ] Basic metrics
-- [ ] Operational documentation (if applicable)
-
-### Code Quality
-
-```bash
-# Backend
-cd backend
-npm run build      # TypeScript compile
-npm run lint       # ESLint
-
-# Frontend
 cd frontend
-npx tsc --noEmit   # TypeScript typecheck
-npm run lint       # ESLint
-npm run build      # Next.js build
+npm test
+npm run test:e2e
 ```
+
+### Quality checks
+
+```bash
+cd frontend
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+## API Overview
+
+The backend exposes the following major route groups:
+
+- `/api/auth`
+- `/api/songs`
+- `/api/artists`
+- `/api/genres`
+- `/api/playlists`
+- `/api/likes`
+- `/api/search`
+- `/api/catalog`
+- `/api/lyrics`
+- `/api/admin`
+- `/api/analytics`
+- `/api/moods`
+- `/api/recommendations`
+- `/api/charts`
+- `/api/user`
+
+Versioned APIs are also exposed under `/api/v1` for modern clients.
+
+Common health and monitoring endpoints:
+
+- `GET /healthz`
+- `GET /readyz`
+- `GET /livez`
+- `GET /metrics`
+
+## Observability and Monitoring
+
+The platform includes:
+
+- Structured logging with request correlation
+- Prometheus metrics exposure
+- Grafana dashboards for visualization
+- OpenTelemetry tracing setup
+- Health checks for liveness and readiness
+
+Monitoring assets are located in:
+
+- `monitoring/prometheus/`
+- `monitoring/grafana/`
+- `docs/runbooks/`
+
+## Security Notes
+
+The implementation includes several production-oriented safeguards:
+
+- Helmet-based security headers
+- CORS configuration based on allowed frontend origins
+- Request rate limiting for sensitive and high-traffic endpoints
+- Input validation via Zod
+- Auth checks on protected routes
+- Audit logging for admin operations
+
+## Database and Backup
+
+Database migrations are managed through Prisma.
+
+Generate client and apply schema changes:
+
+```bash
+cd backend
+npm run prisma:generate
+npm run prisma:push
+```
+
+Operational scripts included in the backend package:
+
+- `npm run db:backup`
+- `npm run db:restore`
+- `npm run admin:grant`
+- `npm run songs:purge-local`
+- `npm run analytics:daily`
+
+## Infrastructure
+
+Terraform definitions live in:
+
+- `infra/terraform/`
+
+These files provide a scalable foundation for infrastructure provisioning, environment configuration, and reusable modules.
 
 ## Roadmap
 
-| Phase | Status | Focus |
-|-------|--------|-------|
-| Phase 0: Foundation | ✅ Complete | Canonical catalog model, CI, standardized API |
-| Phase 1: Listening MVP | ✅ Complete | Home, Discover, Search, Player, Library, likes, history |
-| Phase 2: Production Platform | ✅ Complete | Docker, IaC, observability, SLO, runbooks, backup/restore |
-| Phase 3: Data & Intelligence | ✅ Complete | Event pipeline, mood mixes, semantic search, hybrid recommendations |
-| Phase 4: Scale Experiments | 🔲 Not Started | BullMQ/Redis workers, Redis cache, HLS/transcoding, service split |
+The current project direction includes:
 
-## Operational Runbooks
+- Completed MVP listening and catalog experience
+- Production-ready deployment support with Docker and monitoring
+- Recommendation, mood, search, and analytics capabilities
+- Further scale, cache, and service-splitting experiments as usage grows
 
-Located in `docs/runbooks/`:
+## Contributing
 
-1. `database-outage.md` — Connection pool exhaustion, failover, restore
-2. `jamendo-api-outage.md` — Upstream degradation, degraded cache fallback
-3. `high-latency-slo-breach.md` — p95 > 200ms, slow query analysis via `pg_stat_statements`
-4. `security-incident.md` — Secret rotation, admin revocation, audit review
-5. `disaster-recovery.md` — Full RTO < 30m, RPO < 1h recovery plan
+Contributions are welcome. To keep the codebase maintainable:
+
+1. Create a feature branch from `main`
+2. Keep changes scoped and well-documented
+3. Add or update tests for behavior changes
+4. Validate typechecking, linting, and relevant tests
+5. Open a pull request with a clear summary and verification notes
 
 ## License
 
-Proprietary. All rights reserved.
+This project is currently distributed under a proprietary license. Jamendo content remains subject to the original licensing terms and attribution requirements.
 
-Auraic's public catalog is sourced from Jamendo. All tracks retain their original license and attribution. See individual track pages for license details.
+## Additional Documentation
+
+- `AURAIC.md` — product and engineering specification
+- `docs/runbooks/` — operational playbooks for production incidents
+- `monitoring/` — Prometheus and Grafana configuration
