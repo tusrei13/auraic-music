@@ -9,7 +9,7 @@ groups:
           tier: api
         annotations:
           summary: "Auraic API p95 latency exceeded SLO budget (200ms)"
-          description: "p95 latency is currently {{ $value | humanizeDuration }} over the last 5 minutes. Check database queries and external Jamendo latency."
+          description: "p95 latency is currently {{ $value | humanizeDuration }} over the last 5 minutes. Check database queries and external service latency."
 
       - alert: High5xxErrorRate
         expr: (sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) * 100 > 0.1

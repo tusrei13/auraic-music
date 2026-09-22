@@ -15,7 +15,7 @@ Auraic is a full-stack music streaming and discovery platform built around a mod
 
 Auraic combines:
 
-- A music catalog experience powered by Jamendo metadata and audio sources
+- A music catalog experience with local and external audio sources
 - A modern web application for browsing, searching, playing, and organizing music
 - A strong backend foundation with Prisma, PostgreSQL, Redis, and structured observability
 - Security, rate limiting, health checks, and infrastructure tooling for deployment readiness
@@ -49,12 +49,6 @@ This repository is organized as a monorepo with separate frontend, backend, infr
                                   │ Redis          │
                                   │ Port: 6379     │
                                   └────────────────┘
-
-                                          │
-                                          ▼
-                                ┌─────────────────────┐
-                                │ Jamendo Catalog API │
-                                └─────────────────────┘
 
                                           │
                                           ▼
@@ -156,7 +150,6 @@ Before starting development, make sure you have:
 - Redis 7
 - Docker and Docker Compose
 - A Supabase project for authentication
-- A Jamendo developer account if you want to use the full catalog flow
 
 ## Getting Started
 
@@ -393,7 +386,7 @@ Contributions are welcome. To keep the codebase maintainable:
 
 ## License
 
-This project is currently distributed under a proprietary license. Jamendo content remains subject to the original licensing terms and attribution requirements.
+This project is currently distributed under a proprietary license.
 
 ## Additional Documentation
 
