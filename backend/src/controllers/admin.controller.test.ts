@@ -2,9 +2,6 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { updateAdminUserRole, deleteAdminPlaylist, updateSystemSettings, runIngestion, updateSongLyrics } from './admin.controller'
 import { prisma } from '../lib/prisma'
 
-vi.mock('../services/jamendo.service', () => ({
-  getJamendoTracks: vi.fn().mockResolvedValue([{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }, { id: '5' }, { id: '6' }, { id: '7' }, { id: '8' }, { id: '9' }, { id: '10' }]),
-}))
 
 describe('admin.controller audit logging', () => {
   beforeEach(() => {

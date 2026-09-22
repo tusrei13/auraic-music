@@ -19,7 +19,7 @@ export const assessAnalyticsQuality = (events: AnalyticsEventForSummary[]) => {
   for (const event of events) {
     if (!event.title.trim()) invalidTitle += 1
     if ((event.position !== null && event.position !== undefined && event.position < 0) || (event.duration !== null && event.duration !== undefined && event.duration < 0) || (event.position !== null && event.position !== undefined && event.duration !== null && event.duration !== undefined && event.position > event.duration)) invalidTiming += 1
-    if (event.source !== 'jamendo' && event.source !== 'local') unknownSource += 1
+    if (event.source !== 'local') unknownSource += 1
     if (event.eventType === 'TRACK_STARTED') {
       const key = `${event.userId || 'unknown'}:${event.trackId}`
       const previous = recentStarts.get(key)

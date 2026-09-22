@@ -14,29 +14,7 @@ describe('API request schemas', () => {
     expect(songIdBodySchema.safeParse({ body: { songId: 0 } }).success).toBe(false)
   })
 
-  it('accepts Jamendo track IDs for playlist operations', () => {
-    expect(playlistSongSchema.safeParse({
-      body: { songId: 'jamendo:12345', trackId: 'jamendo:12345' },
-      params: { id: '00000000-0000-0000-0000-000000000000' },
-    }).success).toBe(true)
-    expect(playlistSongParamsSchema.safeParse({
-      params: { id: '00000000-0000-0000-0000-000000000000', songId: 'jamendo:12345' },
-    }).success).toBe(true)
-  })
 
-  it('validates analytics playback events', () => {
-    expect(analyticsEventSchema.safeParse({
-      body: { eventType: 'TRACK_STARTED', trackId: 'jamendo:123', title: 'Track' },
-    }).success).toBe(true)
-    expect(analyticsEventSchema.safeParse({
-      body: { eventType: 'TRACK_UNKNOWN', trackId: 'jamendo:123', title: 'Track' },
-    }).success).toBe(false)
-  })
-
-  it('accepts complete Jamendo like metadata', () => {
-    expect(likeToggleSchema.safeParse({ body: { songId: 'jamendo:123', title: 'Track', artistName: 'Artist', image: 'https://example.com/cover.jpg', audioUrl: 'https://example.com/audio.mp3' } }).success).toBe(true)
-    expect(likeToggleSchema.safeParse({ body: { songId: 'invalid-source' } }).success).toBe(false)
-  })
 
   it('restricts admin settings to known, bounded values', () => {
     expect(adminSettingsSchema.safeParse({ body: { siteName: 'Auraic', defaultLanguage: 'vi', maintenanceMode: 'off' } }).success).toBe(true)

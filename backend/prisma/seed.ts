@@ -25,7 +25,6 @@ async function main() {
     },
   });
 
-  console.log("Bỏ qua catalog mẫu: nội dung được lấy trực tiếp từ Jamendo.");
   console.log("Đã nạp dữ liệu tài khoản mẫu thành công!");
 }
 

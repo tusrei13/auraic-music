@@ -1,5 +1,4 @@
 import { cacheZIncrBy, cacheZRevRangeWithScores, cacheGet, cacheSet } from '../lib/redis'
-import { getJamendoTracks, JamendoSong } from './jamendo.service'
 import { logger } from '../lib/logger'
 
 export interface ChartTrackItem {
@@ -69,25 +68,13 @@ export async function getPublicChart(
 
   const topScored = await cacheZRevRangeWithScores(chartKey, 0, limit - 1)
 
-  // If chart is empty (e.g. fresh environment), fallback to Jamendo trending tracks
+  // If chart is empty (e.g. fresh environment), return empty tracks
   if (topScored.length === 0) {
-    const trendingTracks = await getJamendoTracks({ limit, order: 'popularity_week' })
-    const tracks: ChartTrackItem[] = trendingTracks.map((t, idx) => ({
-      rank: idx + 1,
-      trackId: t.id,
-      title: t.title,
-      artistName: t.artist.name,
-      image: t.image,
-      audioUrl: t.audioUrl,
-      duration: t.duration,
-      score: Math.max(10, 100 - idx * 4)
-    }))
-
     return {
       period,
       chartKey,
-      totalTracks: tracks.length,
-      tracks
+      totalTracks: 0,
+      tracks: []
     }
   }
 

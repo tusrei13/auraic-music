@@ -35,10 +35,8 @@ model User {
   role      UserRole           @default(USER)
   follows   Follow[]
   likes     Like[]
-  jamendoLikes JamendoLike[]
   histories ListeningHistory[]
   playlists Playlist[]
-  jamendoHistory JamendoListening[]
   analyticsEvents AnalyticsEvent[]
   ingestionJobs IngestionJob[]
 }
@@ -46,7 +44,7 @@ model User {
 model IngestionJob {
   id String @id @default(uuid())
   status IngestionStatus
-  source String @default("jamendo")
+  source String @default("unknown")
   startedAt DateTime @default(now())
   finishedAt DateTime?
   imported Int @default(0)
@@ -155,7 +153,6 @@ model Playlist {
   userId       String
   user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   songs        PlaylistSong[]
-  jamendoSongs JamendoPlaylistSong[]
 }
 
 model PlaylistSong {
@@ -168,21 +165,6 @@ model PlaylistSong {
   @@id([playlistId, songId])
 }
 
-model JamendoPlaylistSong {
-  id         String   @id @default(uuid())
-  playlistId String
-  trackId    String
-  title      String
-  artistName String
-  image      String
-  audioUrl   String
-  duration   Int?
-  addedAt    DateTime @default(now())
-  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-
-  @@unique([playlistId, trackId])
-}
-
 model Like {
   userId    String
   songId    Int
@@ -191,22 +173,6 @@ model Like {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, songId])
-}
-
-model JamendoLike {
-  userId     String
-  trackId    String
-  title      String
-  artistName String
-  image      String
-  audioUrl   String
-  duration   Int?
-  licenseUrl String?
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([userId, trackId])
-  @@index([userId, createdAt])
 }
 
 model ListeningHistory {
@@ -219,22 +185,6 @@ model ListeningHistory {
 
   @@index([userId, listenedAt])
   @@index([songId, listenedAt])
-}
-
-model JamendoListening {
-  id         String   @id @default(uuid())
-  userId     String
-  trackId    String
-  title      String
-  artistName String
-  image      String
-  audioUrl   String
-  duration   Int?
-  listenedAt DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, listenedAt])
-  @@index([trackId, listenedAt])
 }
 
 model AnalyticsEvent {

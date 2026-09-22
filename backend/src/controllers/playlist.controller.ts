@@ -12,7 +12,6 @@ export const getPlaylists = async (req: AuthRequest, res: Response) => {
       include: {
         user: { select: { name: true, avatar: true } },
         songs: { include: { song: { include: { artist: true } } } },
-        jamendoSongs: true,
       },
     })
     res.json(playlists)
@@ -34,7 +33,6 @@ export const getPlaylistById = async (req: AuthRequest, res: Response) => {
             song: { include: { artist: true, genre: true } },
           },
         },
-        jamendoSongs: true,
       },
     })
     if (!playlist) return sendError(res, 404, 'PLAYLIST_NOT_FOUND', 'Không tìm thấy playlist')
@@ -66,12 +64,12 @@ export const createPlaylist = async (req: AuthRequest, res: Response) => {
   }
 }
 
-// Thêm bài hát vào Playlist (Hỗ trợ cả Jamendo trackId và DB Song ID)
+// Thêm bài hát vào Playlist
 export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
     const { id: playlistId } = req.params
-    const { songId, trackId, title, artistName, image, audioUrl, duration } = req.body
+    const { songId } = req.body
 
     if (!userId) return sendError(res, 401, 'UNAUTHENTICATED', 'Yêu cầu đăng nhập')
 
@@ -80,40 +78,7 @@ export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
       return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền chỉnh sửa playlist này')
     }
 
-    const rawId = String(trackId || songId || '')
-
-    if (rawId.startsWith('jamendo:') || isNaN(Number(rawId))) {
-      const actualTrackId = rawId.startsWith('jamendo:') ? rawId : `jamendo:${rawId}`
-      const jamendoSong = await prisma.jamendoPlaylistSong.upsert({
-        where: { playlistId_trackId: { playlistId, trackId: actualTrackId } },
-        update: {
-          title: title || 'Jamendo Track',
-          artistName: artistName || 'Artist',
-          image: image || '',
-          audioUrl: audioUrl || '',
-          duration: typeof duration === 'number' ? duration : null,
-        },
-        create: {
-          playlistId,
-          trackId: actualTrackId,
-          title: title || 'Jamendo Track',
-          artistName: artistName || 'Artist',
-          image: image || '',
-          audioUrl: audioUrl || '',
-          duration: typeof duration === 'number' ? duration : null,
-        },
-      })
-
-      if (!playlist.coverImage && jamendoSong.image) {
-        await prisma.playlist.update({ where: { id: playlistId }, data: { coverImage: jamendoSong.image } })
-      } else {
-        await prisma.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })
-      }
-
-      return res.status(201).json(jamendoSong)
-    }
-
-    const numericSongId = parsePositiveInteger(rawId)
+    const numericSongId = parsePositiveInteger(songId)
     if (numericSongId === null) {
       return sendError(res, 400, 'INVALID_SONG_ID', 'songId không hợp lệ')
     }
@@ -150,29 +115,19 @@ export const removeSongFromPlaylist = async (req: AuthRequest, res: Response) =>
       return sendError(res, 403, 'PLAYLIST_FORBIDDEN', 'Bạn không có quyền chỉnh sửa playlist này')
     }
 
-    const rawId = String(songId)
-    if (rawId.startsWith('jamendo:') || isNaN(Number(rawId))) {
-      const actualTrackId = rawId.startsWith('jamendo:') ? rawId : `jamendo:${rawId}`
-      await prisma.jamendoPlaylistSong.deleteMany({
-        where: { playlistId, trackId: actualTrackId },
-      })
-    } else {
+    const numericSongId = parsePositiveInteger(songId)
+    if (numericSongId !== null) {
       await prisma.playlistSong.deleteMany({
-        where: { playlistId, songId: Number(rawId) },
+        where: { playlistId, songId: numericSongId },
       })
     }
 
     if (!playlist.coverImage) {
-      const [firstDbSong, firstJamendo] = await Promise.all([
-        prisma.playlistSong.findFirst({ where: { playlistId }, include: { song: true }, orderBy: { addedAt: 'asc' } }),
-        prisma.jamendoPlaylistSong.findFirst({ where: { playlistId }, orderBy: { addedAt: 'asc' } }),
-      ])
+      const firstDbSong = await prisma.playlistSong.findFirst({ where: { playlistId }, include: { song: true }, orderBy: { addedAt: 'asc' } })
 
       let coverImage: string | null = null
       if (firstDbSong?.song?.image) {
         coverImage = firstDbSong.song.image
-      } else if (firstJamendo?.image) {
-        coverImage = firstJamendo.image
       }
 
       await prisma.playlist.update({ where: { id: playlistId }, data: { coverImage, updatedAt: new Date() } })
@@ -200,15 +155,10 @@ export const reorderPlaylistSongs = async (req: AuthRequest, res: Response) => {
 
     await prisma.$transaction(async (transaction) => {
       for (const [index, rawTrackId] of trackIds.entries()) {
-        const trackId = String(rawTrackId)
-        const addedAt = new Date(Date.now() + index)
-        if (trackId.startsWith('jamendo:') || Number.isNaN(Number(trackId))) {
-          await transaction.jamendoPlaylistSong.updateMany({ where: { playlistId, trackId }, data: { addedAt } })
-        } else {
-          const numericSongId = parsePositiveInteger(trackId)
-          if (numericSongId !== null) {
-            await transaction.playlistSong.updateMany({ where: { playlistId, songId: numericSongId }, data: { addedAt } })
-          }
+        const numericSongId = parsePositiveInteger(rawTrackId)
+        if (numericSongId !== null) {
+          const addedAt = new Date(Date.now() + index)
+          await transaction.playlistSong.updateMany({ where: { playlistId, songId: numericSongId }, data: { addedAt } })
         }
       }
       await transaction.playlist.update({ where: { id: playlistId }, data: { updatedAt: new Date() } })

@@ -117,7 +117,7 @@ export async function processListeningEventsBatch(
         userId,
         eventType: prismaEventType,
         trackId: String(ev.trackId),
-        source: ev.source || 'jamendo',
+        source: ev.source || 'local',
         title: ev.title.slice(0, 300),
         position: ev.position !== undefined && ev.position !== null ? Math.max(0, ev.position) : null,
         duration: ev.duration !== undefined && ev.duration !== null ? Math.max(0, ev.duration) : null,
@@ -139,7 +139,7 @@ export async function processListeningEventsBatch(
             recordTrackPlayInChart({
               id: item.trackId,
               title: item.title,
-              artistName: 'Jamendo Artist',
+              artistName: 'Unknown Artist',
               duration: item.duration
             }).catch(err => logger.warn('Failed to update chart in Redis', undefined, { error: err }))
           }

@@ -143,7 +143,6 @@ export const getMe = async (req: AuthRequest, res: Response) => {
                 song: { include: { artist: true, genre: true } },
               },
             },
-            jamendoSongs: true,
           },
         },
         likes: { include: { song: { include: { artist: true } } } },

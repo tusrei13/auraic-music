@@ -79,19 +79,6 @@ export const songIdParamsSchema = z.object({
   query: z.record(z.string(), z.unknown()).optional(),
 })
 
-export const jamendoListeningSchema = z.object({
-  body: z.object({
-      trackId: z.string().trim().regex(/^jamendo:.+$/),
-    title: z.string().trim().min(1).max(300),
-    artistName: z.string().trim().min(1).max(200),
-      image: z.string().trim().min(1).max(2000),
-      audioUrl: z.string().trim().min(1).max(2000),
-    duration: z.coerce.number().int().nonnegative().nullable().optional(),
-  }),
-  params: z.record(z.string(), z.unknown()).optional(),
-  query: z.record(z.string(), z.unknown()).optional(),
-})
-
 export const analyticsEventSchema = z.object({
   body: z.object({
     eventType: z.enum(['TRACK_STARTED', 'TRACK_COMPLETED', 'TRACK_SKIPPED']),
@@ -113,7 +100,7 @@ export const adminUserRoleSchema = z.object({
 
 export const likeToggleSchema = z.object({
   body: z.object({
-    songId: z.union([z.coerce.number().int().positive(), z.string().trim().regex(/^jamendo:.+$/)]),
+    songId: z.union([z.coerce.number().int().positive(), z.string().trim().min(1)]),
     title: z.string().trim().min(1).max(300).optional(),
     artistName: z.string().trim().min(1).max(200).optional(),
     image: z.string().trim().min(1).max(2000).optional(),

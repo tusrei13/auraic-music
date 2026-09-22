@@ -1,24 +1,19 @@
 import { Request, Response } from 'express'
-import { getAllMoods, getTracksForMood } from '../services/mood-mix.service'
-import { sendError, sendInternalError } from '../lib/api-error'
+import { sendError } from '../lib/api-error'
+
+const PLACEHOLDER_MOODS = [
+  { id: 'happy', name: 'Vui vẻ', description: 'Nhạc vui tươi, tràn đầy năng lượng', color: '#fbbf24', icon: 'sun' },
+  { id: 'sad', name: 'Buồn', description: 'Nhạc trầm lắng, sâu lắng', color: '#60a5fa', icon: 'cloud-rain' },
+  { id: 'energetic', name: 'Năng lượng', description: 'Nhạc sôi động, tập trung', color: '#f87171', icon: 'zap' },
+  { id: 'chill', name: 'Thư giãn', description: 'Nhạc nhẹ nhàng, thư giãn', color: '#34d399', icon: 'coffee' },
+  { id: 'romantic', name: 'Lãng mạn', description: 'Nhạc ngọt ngào, lãng mạn', color: '#f472b6', icon: 'heart' },
+  { id: 'focus', name: 'Tập trung', description: 'Nhạc giúp tập trung làm việc', color: '#a78bfa', icon: 'target' },
+]
 
 export const listMoods = (_req: Request, res: Response) => {
-  const moods = getAllMoods()
-  return res.json({ data: moods })
+  return res.json({ data: PLACEHOLDER_MOODS })
 }
 
-export const getMoodTracks = async (req: Request, res: Response) => {
-  const { moodId } = req.params
-  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 24
-  const offset = req.query.offset ? parseInt(String(req.query.offset), 10) : 0
-
-  try {
-    const result = await getTracksForMood(moodId, { limit, offset })
-    return res.json(result)
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('not recognized')) {
-      return sendError(res, 404, 'MOOD_NOT_FOUND', `Không tìm thấy thể loại tâm trạng: ${moodId}`)
-    }
-    return sendInternalError(res, 'MOOD_FETCH_FAILED', 'Không thể tải danh sách bài hát theo tâm trạng')
-  }
+export const getMoodTracks = async (_req: Request, res: Response) => {
+  return sendError(res, 501, 'NOT_IMPLEMENTED', 'Tính năng lọc theo tâm trạng chưa được triển khai')
 }

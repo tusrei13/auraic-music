@@ -45,15 +45,6 @@ export const dbQueryDurationSeconds = new client.Histogram({
   registers: [register]
 })
 
-// External Jamendo API Request Latency & Status
-export const jamendoApiDurationSeconds = new client.Histogram({
-  name: 'jamendo_api_duration_seconds',
-  help: 'Duration of external Jamendo API calls in seconds',
-  labelNames: ['endpoint', 'status'],
-  buckets: [0.05, 0.1, 0.2, 0.5, 1, 2, 5],
-  registers: [register]
-})
-
 // Audio Streaming Latency & Time to First Audio
 export const streamTimeToFirstAudioSeconds = new client.Histogram({
   name: 'stream_time_to_first_audio_seconds',
