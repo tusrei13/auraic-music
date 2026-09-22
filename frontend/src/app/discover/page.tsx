@@ -15,7 +15,8 @@ import {
   Radio,
 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { getJamendoTracks, getSongs, getArtists } from "@/lib/api";
+import { getArtists, proxyImageUrl } from "@/lib/api";
+import { StreamEngineService, AuraicAudioAdapter } from "@/lib/sound-engine/client";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import Artwork from "@/components/Artwork";
 import {
@@ -146,7 +147,7 @@ export default function DiscoverPage() {
   const toggleLike = store.toggleLike || (() => {});
   const playTrack = store.playTrack || (() => {});
 
-  const currentImage = currentTrack?.image || "";
+  const currentImage = proxyImageUrl(currentTrack?.image || "");
   const heroRef = useRef<HTMLDivElement>(null);
   const freshRef = useRef<HTMLDivElement>(null);
   const trendingRef = useRef<HTMLDivElement>(null);
@@ -165,12 +166,23 @@ export default function DiscoverPage() {
     setLoading(true);
     setCatalogError(null);
     try {
-      const [songsData, artistsData] = await Promise.all([
-        getSongs(),
-        getArtists().catch(() => []),
+      const [engineTracks] = await Promise.all([
+        StreamEngineService.fetchTrendingTracks(48, "All", "week"),
       ]);
-      setSongs(Array.isArray(songsData) ? songsData : []);
-      setArtists(Array.isArray(artistsData) ? artistsData : []);
+      const playerTracks = engineTracks.map((t) => AuraicAudioAdapter.toPlayerTrack(t));
+      setSongs(playerTracks);
+      const artistMap = new Map<string, any>();
+      for (const t of engineTracks) {
+        if (!artistMap.has(t.user.id)) {
+          artistMap.set(t.user.id, {
+            id: t.user.id,
+            name: t.user.name || t.user.handle,
+            avatar: t.user.profile_picture?.["480x480"] || t.user.profile_picture?.["150x150"] || "",
+            image: t.user.profile_picture?.["480x480"] || t.user.profile_picture?.["150x150"] || "",
+          });
+        }
+      }
+      setArtists(Array.from(artistMap.values()));
     } catch {
       setSongs([]);
       setArtists([]);
@@ -187,7 +199,8 @@ export default function DiscoverPage() {
   const playMood = async (mood: { title: string; tags: string }) => {
     setPlayingMood(mood.title);
     try {
-      const tracks = await getJamendoTracks({ limit: 24, tags: mood.tags });
+      const engineTracks = await StreamEngineService.fetchTracksByTag(mood.tags, 24);
+      const tracks = engineTracks.map((t) => AuraicAudioAdapter.toPlayerTrack(t));
       if (tracks.length > 0) {
         playTrack(tracks[0], tracks, mood.title);
       }
@@ -602,7 +615,7 @@ export default function DiscoverPage() {
         {loading ? (
           <motion.div className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]" variants={fadeIn}>
             <Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" />{" "}
-            Tuning the catalog...
+            Đang tải catalog...
           </motion.div>
         ) : catalogError ? (
           <motion.div
@@ -979,4 +992,3 @@ export default function DiscoverPage() {
     </motion.div>
   );
 }
-

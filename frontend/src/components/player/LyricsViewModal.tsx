@@ -1,18 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useMemo, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useToastStore } from "@/store/useToastStore";
 import { normalizeLyrics, type LyricLine } from "@/lib/lyrics";
 import { getLyrics } from "@/lib/api";
-import {
-  ChevronDown,
-  Heart,
-  Share2,
-  Disc3,
-  Mic2,
-} from "lucide-react";
+import { ChevronDown, Heart, Share2, Disc3, Mic2 } from "lucide-react";
 import Artwork from "@/components/Artwork";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
@@ -70,20 +65,6 @@ function extractPaletteFromHash(str: string): Palette {
   return DEFAULT_PALETTES[idx];
 }
 
-const slideUpVariants = {
-  initial: { opacity: 0, y: 30 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring" as const, damping: 28, stiffness: 200 },
-  },
-  exit: {
-    opacity: 0,
-    y: 30,
-    transition: { duration: 0.25, ease: "easeIn" as const },
-  },
-};
-
 export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModalProps) {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isLyricsOpen = usePlayerStore((state) => state.isLyricsOpen);
@@ -95,9 +76,15 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
   const [fetchedPlainLyrics, setFetchedPlainLyrics] = useState<string | null>(null);
   const [lyricsLoaded, setLyricsLoaded] = useState(false);
   const [palette, setPalette] = useState<Palette>(DEFAULT_PALETTES[0]);
+  const [isMounted, setIsMounted] = useState(false);
 
+  const modalRef = useRef<HTMLDivElement>(null);
   const lyricsRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
+  const blob1Ref = useRef<HTMLDivElement>(null);
+  const blob2Ref = useRef<HTMLDivElement>(null);
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const minimizeBtnRef = useRef<HTMLButtonElement>(null);
 
   const artistName = useMemo(() => {
     if (!currentTrack?.artist) return "Ca sĩ chưa xác định";
@@ -164,8 +151,14 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
         ctx.drawImage(img, 0, 0, 64, 64);
         const data = ctx.getImageData(0, 0, 64, 64).data;
 
-        let rSum = 0, gSum = 0, bSum = 0, count = 0;
-        let rAlt = 0, gAlt = 0, bAlt = 0, countAlt = 0;
+        let rSum = 0,
+          gSum = 0,
+          bSum = 0,
+          count = 0;
+        let rAlt = 0,
+          gAlt = 0,
+          bAlt = 0,
+          countAlt = 0;
 
         for (let i = 0; i < data.length; i += 16) {
           const r = data[i];
@@ -175,9 +168,15 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
 
           if (brightness > 40 && brightness < 220) {
             if (r > g && r > b) {
-              rSum += r; gSum += g; bSum += b; count++;
+              rSum += r;
+              gSum += g;
+              bSum += b;
+              count++;
             } else {
-              rAlt += r; gAlt += g; bAlt += b; countAlt++;
+              rAlt += r;
+              gAlt += g;
+              bAlt += b;
+              countAlt++;
             }
           }
         }
@@ -230,52 +229,6 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
     setLyricsLoaded(false);
     const artist = (typeof currentTrack.artist === "object" ? currentTrack.artist.name : currentTrack.artist) || "";
 
-    const fetchFromDirectLrclib = async () => {
-      try {
-        const params = new URLSearchParams({
-          track_name: currentTrack.title,
-          artist_name: artist,
-        });
-        const res = await fetch(`https://lrclib.net/api/get?${params}`);
-        if (res.ok) {
-          const lrcData = await res.json();
-          const lrcRaw = lrcData?.syncedLyrics || lrcData?.plainLyrics;
-          const durationNum = currentTrack.duration ? Number(currentTrack.duration) : undefined;
-          if (lrcRaw && !isCancelled) {
-            const normalized = normalizeLyrics(lrcRaw, durationNum);
-            setFetchedLyrics(normalized);
-            setLyricsLoaded(true);
-            return true;
-          }
-        }
-
-        // Cleaned search fallback
-        const cleanTrack = currentTrack.title
-          .replace(/\s*[\(\[][^\)\]]*(?:feat|ft|remix|edit|version|remaster|live|official|audio)[^\)\]]*[\)\]]/gi, "")
-          .trim();
-        const searchRes = await fetch(
-          `https://lrclib.net/api/search?q=${encodeURIComponent(`${cleanTrack} ${artist}`)}`
-        );
-        if (searchRes.ok) {
-          const list = await searchRes.json();
-          if (Array.isArray(list) && list.length > 0 && !isCancelled) {
-            const match = list.find((item: any) => item.syncedLyrics || item.plainLyrics) || list[0];
-            const matchRaw = match?.syncedLyrics || match?.plainLyrics;
-            if (matchRaw) {
-              const durationNum = currentTrack.duration ? Number(currentTrack.duration) : undefined;
-              const normalized = normalizeLyrics(matchRaw, durationNum);
-              setFetchedLyrics(normalized);
-              setLyricsLoaded(true);
-              return true;
-            }
-          }
-        }
-      } catch {
-        // network or CORS error
-      }
-      return false;
-    };
-
     getLyrics(currentTrack.title, artist)
       .then(async (data) => {
         if (isCancelled) return;
@@ -290,17 +243,13 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
           }
         }
 
-        // Fallback to direct LRCLIB search if backend had empty result
-        const found = await fetchFromDirectLrclib();
-        if (!found && !isCancelled) {
+        if (!isCancelled) {
           setFetchedLyrics([]);
           setLyricsLoaded(true);
         }
       })
-      .catch(async () => {
-        if (isCancelled) return;
-        const found = await fetchFromDirectLrclib();
-        if (!found && !isCancelled) {
+      .catch(() => {
+        if (!isCancelled) {
           setFetchedLyrics([]);
           setLyricsLoaded(true);
         }
@@ -311,17 +260,157 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
     };
   }, [currentTrack]);
 
-  // Smooth Center Auto-Scroll on Active Line
+  // Mount / Unmount modal
   useEffect(() => {
-    if (isLyricsOpen && activeLineRef.current) {
-      activeLineRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+    if (isLyricsOpen) {
+      setIsMounted(true);
     }
-  }, [activeIndex, isLyricsOpen]);
+  }, [isLyricsOpen]);
 
-  // Handle Seek directly on click
+  // GSAP: Modal entry animation
+  useGSAP(
+    () => {
+      if (!isLyricsOpen || !modalRef.current) return;
+      gsap.fromTo(
+        modalRef.current,
+        { yPercent: 100, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: 0.8, ease: "power4.out" }
+      );
+    },
+    [isLyricsOpen]
+  );
+
+  // GSAP: Modal exit animation
+  useEffect(() => {
+    if (isLyricsOpen || !isMounted || !modalRef.current) return;
+    gsap.to(modalRef.current, {
+      yPercent: 100,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power3.in",
+      onComplete: () => setIsMounted(false),
+    });
+  }, [isLyricsOpen, isMounted]);
+
+  // GSAP: Blob infinite animations
+  useGSAP(
+    () => {
+      if (!isLyricsOpen) return;
+      const ctx = gsap.context(() => {
+        if (blob1Ref.current) {
+          gsap.to(blob1Ref.current, {
+            x: 80,
+            y: -60,
+            scale: 1.15,
+            duration: 5.5,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut",
+          });
+        }
+        if (blob2Ref.current) {
+          gsap.to(blob2Ref.current, {
+            x: -70,
+            y: 50,
+            scale: 0.9,
+            duration: 6.5,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut",
+          });
+        }
+      });
+      return () => ctx.revert();
+    },
+    [isLyricsOpen]
+  );
+
+  // GSAP: Loader spinner
+  useGSAP(
+    () => {
+      if (lyricsLoaded || !loaderRef.current) return;
+      gsap.to(loaderRef.current, {
+        rotate: 360,
+        duration: 4,
+        repeat: -1,
+        ease: "none",
+      });
+    },
+    [lyricsLoaded]
+  );
+
+  // GSAP: Minimize button hover
+  useEffect(() => {
+    const btn = minimizeBtnRef.current;
+    if (!btn) return;
+    const onEnter = () => gsap.to(btn, { scale: 1.1, duration: 0.2, force3D: true });
+    const onLeave = () => gsap.to(btn, { scale: 1, duration: 0.2, force3D: true });
+    const onDown = () => gsap.to(btn, { scale: 0.9, duration: 0.1, force3D: true });
+    const onUp = () => gsap.to(btn, { scale: 1.1, duration: 0.2, force3D: true });
+    btn.addEventListener("mouseenter", onEnter);
+    btn.addEventListener("mouseleave", onLeave);
+    btn.addEventListener("mousedown", onDown);
+    btn.addEventListener("mouseup", onUp);
+    return () => {
+      btn.removeEventListener("mouseenter", onEnter);
+      btn.removeEventListener("mouseleave", onLeave);
+      btn.removeEventListener("mousedown", onDown);
+      btn.removeEventListener("mouseup", onUp);
+    };
+  }, [isLyricsOpen]);
+
+  // GSAP: Karaoke lyrics timeline + smooth scroll interp
+  useGSAP(
+    () => {
+      if (!isLyricsOpen || !lyricsRef.current || activeIndex < 0) return;
+
+      const container = lyricsRef.current;
+      const lines = container.querySelectorAll("[data-lyric-line]");
+
+      lines.forEach((line, idx) => {
+        const el = line as HTMLElement;
+        if (idx === activeIndex) {
+          gsap.to(el, {
+            scale: 1.05,
+            color: "white",
+            duration: 0.4,
+            ease: "power2.out",
+            force3D: true,
+          });
+        } else if (idx < activeIndex) {
+          gsap.to(el, {
+            scale: 1,
+            color: "rgba(255,255,255,0.35)",
+            duration: 0.3,
+            ease: "power2.out",
+          });
+        } else {
+          gsap.to(el, {
+            scale: 1,
+            color: "rgba(255,255,255,0.3)",
+            duration: 0.3,
+            ease: "power2.out",
+          });
+        }
+      });
+
+      const activeEl = lines[activeIndex] as HTMLElement | undefined;
+      if (activeEl && container) {
+        const targetY =
+          activeEl.offsetTop -
+          container.offsetTop -
+          container.clientHeight / 2 +
+          activeEl.clientHeight / 2;
+        gsap.to(container, {
+          scrollTop: targetY,
+          duration: 0.8,
+          ease: "power3.out",
+        });
+      }
+    },
+    [activeIndex, isLyricsOpen]
+  );
+
   const handleSeek = (time: number) => {
     if (onSeek) {
       onSeek(time);
@@ -331,87 +420,49 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
   if (!currentTrack) return null;
 
   return (
-    <AnimatePresence>
-      {isLyricsOpen && (
-        <motion.div
-          variants={slideUpVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
+    <>
+      {isMounted && (
+        <div
+          ref={modalRef}
           className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-[#07080d] pb-[108px] sm:pb-[100px] md:pb-[96px]"
         >
-          {/* ========================================================================= */}
-          {/* 1. DYNAMIC MESH GRADIENT BACKDROP & VIGNETTE                              */}
-          {/* ========================================================================= */}
+          {/* Backdrop blobs */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            {/* Animated Fluid Blob 1 */}
-            <motion.div
+            <div
+              ref={blob1Ref}
               className="absolute -top-[20%] -left-[10%] h-[75vw] w-[75vw] max-h-[850px] max-w-[850px] rounded-full blur-[110px]"
               style={{
                 background: `radial-gradient(circle, ${palette.primaryGlow} 0%, transparent 70%)`,
               }}
-              animate={{
-                x: [0, 80, -50, 0],
-                y: [0, -60, 50, 0],
-                scale: [1, 1.15, 0.9, 1],
-              }}
-              transition={{
-                duration: 22,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
             />
-
-            {/* Animated Fluid Blob 2 */}
-            <motion.div
+            <div
+              ref={blob2Ref}
               className="absolute -bottom-[20%] -right-[10%] h-[80vw] w-[80vw] max-h-[900px] max-w-[900px] rounded-full blur-[130px]"
               style={{
                 background: `radial-gradient(circle, ${palette.secondaryGlow} 0%, transparent 70%)`,
               }}
-              animate={{
-                x: [0, -70, 60, 0],
-                y: [0, 50, -60, 0],
-                scale: [1, 0.9, 1.18, 1],
-              }}
-              transition={{
-                duration: 26,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
             />
-
-            {/* Backdrop Blur & Audiophile Vignette Filter */}
             <div className="absolute inset-0 backdrop-blur-3xl opacity-35" />
             <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/75 to-[#05060a]/95" />
           </div>
 
-          {/* ========================================================================= */}
-          {/* 2. TOP MINIMIZE BUTTON (CIRCULAR DOWN BUTTON LIKE SCREENSHOT)              */}
-          {/* ========================================================================= */}
+          {/* Minimize button */}
           <div className="relative z-20 flex items-center justify-end px-6 pt-5 pb-1 sm:px-10 sm:pt-6">
-            <motion.button
+            <button
+              ref={minimizeBtnRef}
               onClick={closeLyrics}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white cursor-pointer active:scale-90 shadow-lg border border-white/10"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80 backdrop-blur-md border border-white/10 shadow-lg cursor-pointer active:scale-90 transition-all hover:bg-white/20 hover:text-white"
               title="Thu nhỏ lời bài hát"
             >
               <ChevronDown className="h-6 w-6" />
-            </motion.button>
+            </button>
           </div>
 
-          {/* ========================================================================= */}
-          {/* 3. MAIN CONTENT: CỘT TRÁI (ARTWORK & DETAILS) + CỘT PHẢI (BIG BOLD LYRICS) */}
-          {/* ========================================================================= */}
+          {/* Main content */}
           <div className="relative z-10 flex flex-1 min-h-0 flex-col lg:flex-row overflow-hidden px-6 sm:px-10 lg:px-16 pb-4">
-            
-            {/* ----------------------------------------------------------------------- */}
-            {/* CỘT TRÁI: ARTWORK CARD + TITLE + SINGER + LIKE/SHARE/MENU               */}
-            {/* ----------------------------------------------------------------------- */}
+            {/* Left column: artwork + details */}
             <div className="hidden lg:flex lg:w-5/12 xl:w-5/12 flex-col items-center justify-center p-6 xl:p-10">
               <div className="flex flex-col items-start max-w-[340px] xl:max-w-[380px] w-full">
-                
-                {/* Square Album Artwork Card with Soft Glow */}
                 <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-white/10 group">
                   <div
                     className="pointer-events-none absolute -inset-3 -z-10 rounded-2xl opacity-40 blur-2xl transition-opacity duration-700"
@@ -426,7 +477,6 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
                   />
                 </div>
 
-                {/* Metadata & Actions under Artwork */}
                 <div className="mt-5 w-full">
                   <h3 className="text-xl xl:text-2xl font-bold text-white tracking-tight line-clamp-1">
                     {currentTrack.title}
@@ -435,7 +485,6 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
                     {artistName}
                   </p>
 
-                  {/* Actions Row: Heart with Count, Share with Count, More (...) */}
                   <div className="mt-4 flex items-center gap-7">
                     <button
                       onClick={() => toggleLike(currentTrack)}
@@ -447,9 +496,7 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
                           liked ? "fill-pink-500 text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" : ""
                         }`}
                       />
-                      <span className="text-[11px] font-medium font-mono text-white/50">
-                        {likeCount}
-                      </span>
+                      <span className="text-[11px] font-medium font-mono text-white/50">{likeCount}</span>
                     </button>
 
                     <button
@@ -458,25 +505,19 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
                       title="Chia sẻ bài hát"
                     >
                       <Share2 className="h-5 w-5 transition-transform group-hover:scale-110" />
-                      <span className="text-[11px] font-medium font-mono text-white/50">
-                        {shareCount}
-                      </span>
+                      <span className="text-[11px] font-medium font-mono text-white/50">{shareCount}</span>
                     </button>
 
                     <div className="flex flex-col items-center gap-1 pt-0.5">
                       <TrackActionMenu track={currentTrack} placement="up" />
-                      <span className="text-[11px] font-medium font-mono text-transparent select-none">
-                        ...
-                      </span>
+                      <span className="text-[11px] font-medium font-mono text-transparent select-none">...</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ----------------------------------------------------------------------- */}
-            {/* CỘT PHẢI: HEADER (SONG / SINGER) + GIANT BOLD LYRICS                     */}
-            {/* ----------------------------------------------------------------------- */}
+            {/* Right column: header + lyrics */}
             <div
               ref={lyricsRef}
               className="flex-1 overflow-y-auto px-4 py-8 text-left scrollbar-none sm:px-8 lg:px-10 lg:py-12"
@@ -488,7 +529,6 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
               }}
             >
               <div className="mx-auto flex max-w-3xl flex-col">
-                {/* Header: Song & Singer in Giant Bold Typography */}
                 <div className="mb-6 lg:mb-8 text-left">
                   <h2 className="text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-bold text-neutral-400 leading-snug">
                     Song: <span className="text-white/95 font-extrabold">{currentTrack.title}</span>
@@ -498,15 +538,9 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
                   </h2>
                 </div>
 
-                {/* Lyrics Container */}
                 {!lyricsLoaded ? (
-                  <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 text-white/50">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                    >
-                      <Disc3 className="h-10 w-10 text-white/40" />
-                    </motion.div>
+                  <div ref={loaderRef} className="flex min-h-[300px] flex-col items-center justify-center gap-4 text-white/50">
+                    <Disc3 className="h-10 w-10 text-white/40" />
                     <p className="text-base font-medium tracking-wide">Đang đồng bộ hóa lời bài hát...</p>
                   </div>
                 ) : lyrics.length === 0 ? (
@@ -530,6 +564,7 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
                       return (
                         <div
                           key={`${line.time}-${index}`}
+                          data-lyric-line
                           ref={isCurrent ? activeLineRef : undefined}
                           onClick={() => handleSeek(line.time)}
                           className="group cursor-pointer select-none transition-all duration-300 text-left"
@@ -537,7 +572,7 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
                           <p
                             className={`leading-tight tracking-tight transition-all duration-300 ${
                               isCurrent
-                                ? "text-3xl sm:text-4xl lg:text-[44px] xl:text-[50px] font-black text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.7)]"
+                                ? "text-3xl sm:text-4xl lg:text-[44px] xl:text-[50px] font-black text-white"
                                 : isPassed
                                 ? "text-2xl sm:text-3xl lg:text-[36px] xl:text-[40px] font-bold text-white/35 hover:text-white/80"
                                 : "text-2xl sm:text-3xl lg:text-[36px] xl:text-[40px] font-bold text-white/30 hover:text-white/80"
@@ -560,8 +595,8 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }

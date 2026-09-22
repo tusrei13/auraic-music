@@ -4,7 +4,8 @@ import Artwork from "@/components/Artwork";
 
 import { useEffect, useState } from "react";
 import { Disc3, Loader2, Play, Radio, Search, Trophy, Users, SlidersHorizontal, Globe2, Clock3, ShieldCheck, Headphones } from "lucide-react";
-import { getJamendoTracks, getJamendoTracksPage, type JamendoSong } from "@/lib/api";
+import { StreamEngineService, AuraicAudioAdapter } from "@/lib/sound-engine/client";
+import type { EngineTrack } from "@/types/sound-engine";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
 
@@ -22,7 +23,7 @@ const configs: Record<SurfaceKind, { eyebrow: string; title: string; description
 
 const genreTags = ["electronic", "rock", "hiphop", "classical", "ambient", "jazz", "folk", "pop"];
 const genreTiles = [
-  { name: "Electronic", note: "Pulse, synth and motion", color: "from-fuchsia-500/35 to-violet-500/10", icon: "✦" },
+  { name: "Electronic", note: "Pulse, synth and motion", color: "from-fuchsia-500/35 to-violet-500/10", icon: "✧" },
   { name: "Rock", note: "Guitars with a little edge", color: "from-rose-500/30 to-orange-500/10", icon: "◒" },
   { name: "Hip hop", note: "Beats, words and attitude", color: "from-cyan-500/30 to-blue-500/10", icon: "◈" },
   { name: "Ambient", note: "Space to think clearly", color: "from-indigo-500/35 to-cyan-500/10", icon: "◌" },
@@ -40,13 +41,12 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
   const config = configs[kind];
   const Icon = config.icon;
   const { playMix, playTrack } = usePlayerStore();
-  const [tracks, setTracks] = useState<JamendoSong[]>([]);
+  const [tracks, setTracks] = useState<EngineTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState(kind === "genres" ? "electronic" : "");
   const [query, setQuery] = useState("");
   const [activeStation, setActiveStation] = useState<string | null>(null);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
 
@@ -54,28 +54,52 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
     setLoading(true);
     setError(null);
     let active = true;
-    getJamendoTracksPage({ limit: 16, tags: kind === "genres" ? selectedTag : undefined, search: kind === "search" ? query : undefined, order: kind === "charts" ? "popularity_total" : undefined })
-      .then((page) => { if (active) { setTracks(page.tracks); setNextCursor(page.nextCursor); } })
-      .catch(() => { if (active) { setTracks([]); setNextCursor(null); setError("Không thể tải catalog lúc này. Hãy thử lại."); } })
-      .finally(() => setLoading(false));
+    const run = async () => {
+      try {
+        let fetched: EngineTrack[] = [];
+        if (kind === "search" && query.trim()) {
+          fetched = await StreamEngineService.searchEngineCatalog(query.trim(), 16);
+        } else if (kind === "charts") {
+          fetched = await StreamEngineService.fetchTrendingTracks(16, selectedTag || undefined);
+        } else if (kind === "genres" && selectedTag) {
+          fetched = await StreamEngineService.fetchTracksByTag(selectedTag, 16);
+        } else if (kind === "radio" && activeStation) {
+          const station = stations.find((s) => s.name === activeStation);
+          fetched = await StreamEngineService.fetchTracksByTag(station?.tags || selectedTag, 16);
+        }
+        if (active) {
+          setTracks(fetched);
+        }
+      } catch {
+        if (active) {
+          setTracks([]);
+          setError("Không thể tải catalog lúc này. Hãy thử lại.");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    void run();
     return () => { active = false; };
-  }, [kind, selectedTag, query, retryToken]);
+  }, [kind, selectedTag, query, retryToken, activeStation]);
 
   const loadMore = async () => {
-    if (!nextCursor || loadingMore) return;
     setLoadingMore(true);
     try {
-      const page = await getJamendoTracksPage({ limit: 16, cursor: nextCursor, tags: kind === "genres" ? selectedTag : undefined, search: kind === "search" ? query : undefined, order: kind === "charts" ? "popularity_total" : undefined });
-      setTracks((current) => [...current, ...page.tracks.filter((track) => !current.some((item) => item.id === track.id))]);
-      setNextCursor(page.nextCursor);
-    } finally { setLoadingMore(false); }
+      const more = kind === "search" && query.trim()
+        ? await StreamEngineService.searchEngineCatalog(query.trim(), 16)
+        : await StreamEngineService.fetchTracksByTag(selectedTag, 16);
+      setTracks((current) => [...current, ...more.filter((track) => !current.some((item) => item.id === track.id))]);
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   const playStation = async (tags: string, title: string) => {
     setActiveStation(title);
-    const next = await getJamendoTracks({ limit: 16, tags });
+    const next = await StreamEngineService.fetchTracksByTag(tags, 16);
     setTracks(next);
-    playMix(next, title);
+    playMix(next.map((t) => AuraicAudioAdapter.toPlayerTrack(t)), title);
   };
 
   return (
@@ -96,7 +120,7 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
         <div className="mt-5 flex items-center gap-2 text-xs text-white/40"><ShieldCheck className="h-4 w-4 text-emerald-300" /> Auraic catalog · license information available per track</div>
       </> : null}
       {kind === "charts" ? <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_0.8fr]">
-        <div className="relative min-h-64 overflow-hidden rounded-2xl border border-amber-300/20 bg-gradient-to-br from-amber-300/20 via-rose-500/10 to-transparent p-6"><div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.35),transparent_65%)]" /><div className="relative flex h-full flex-col justify-between"><div className="flex items-center justify-between"><span className="rounded-full border border-amber-200/30 bg-black/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-100">#01 this week</span><Trophy className="h-5 w-5 text-amber-200" /></div><div><p className="text-xs uppercase tracking-[0.2em] text-white/45">Auraic global pulse</p><h2 className="mt-2 max-w-md text-3xl font-black text-white sm:text-4xl">{tracks[0]?.title || "Loading the top track"}</h2><p className="mt-2 text-sm text-white/60">{tracks[0]?.artist.name || "Auraic artists"} · 12.4K plays this week</p></div></div></div>
+        <div className="relative min-h-64 overflow-hidden rounded-2xl border border-amber-300/20 bg-gradient-to-br from-amber-300/20 via-rose-500/10 to-transparent p-6"><div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.35),transparent_65%)]" /><div className="relative flex h-full flex-col justify-between"><div className="flex items-center justify-between"><span className="rounded-full border border-amber-200/30 bg-black/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-100">#01 this week</span><Trophy className="h-5 w-5 text-amber-200" /></div><div><p className="text-xs uppercase tracking-[0.2em] text-white/45">Auraic global pulse</p><h2 className="mt-2 max-w-md text-3xl font-black text-white sm:text-4xl">{tracks[0]?.title || "Loading the top track"}</h2><p className="mt-2 text-sm text-white/60">{tracks[0]?.user?.name || "Auraic artists"} · 12.4K plays this week</p></div></div></div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5"><div className="flex items-center gap-2 text-sm font-bold"><Globe2 className="h-4 w-4 text-cyan-300" /> Chart view</div><div className="mt-5 grid grid-cols-2 gap-2"><button type="button" className="min-h-11 rounded-xl bg-white text-sm font-bold text-slate-950">Global</button><button type="button" className="min-h-11 rounded-xl border border-white/10 text-sm font-semibold text-white/55 hover:bg-white/10">Vietnam</button></div><div className="mt-3 grid grid-cols-3 gap-2"><button type="button" className="min-h-10 rounded-lg border border-fuchsia-300/50 bg-fuchsia-300/10 text-xs font-bold text-fuchsia-100">Week</button><button type="button" className="min-h-10 rounded-lg border border-white/10 text-xs text-white/50">Month</button><button type="button" className="min-h-10 rounded-lg border border-white/10 text-xs text-white/50">All time</button></div><p className="mt-5 flex items-center gap-2 text-xs leading-5 text-white/40"><Clock3 className="h-4 w-4 shrink-0" /> Snapshot refreshed daily from Auraic listening events.</p></div>
       </div> : null}
       {kind === "radio" ? <div className="mt-8 grid gap-4 sm:grid-cols-2">{stations.map((station, index) => <button key={station.name} type="button" onClick={() => void playStation(station.tags, station.name)} className={`group relative overflow-hidden rounded-2xl border p-5 text-left transition hover:-translate-y-1 hover:border-cyan-300/50 ${activeStation === station.name ? "border-cyan-300/70 bg-cyan-300/10" : `border-white/10 bg-gradient-to-br ${index % 2 === 0 ? "from-cyan-400/15 to-white/[0.03]" : "from-fuchsia-400/15 to-white/[0.03]"}`}`}><span className="absolute -right-5 -top-8 h-32 w-32 rounded-full border border-white/10 bg-white/[0.05]" /><span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200"><Radio className="h-5 w-5" /></span><h2 className="relative mt-8 text-lg font-bold">{station.name}</h2><p className="relative mt-1 text-sm text-white/45">{station.note}</p><span className="relative mt-5 inline-flex items-center gap-2 text-xs font-bold text-cyan-200">{activeStation === station.name ? <><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-300" /> Playing now</> : <><Play className="h-3.5 w-3.5 fill-current" /> Start station</>} <span className="text-white/25">·</span> 24/7</span></button>)}</div> : null}
@@ -105,7 +129,7 @@ export default function CatalogSurface({ kind }: { kind: SurfaceKind }) {
 
       <section className="mt-10">
         <div className="mb-5 flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300">{kind === "charts" ? "Ranked this week" : "From Auraic"}</p><h2 className="mt-2 text-2xl font-bold">{kind === "charts" ? "Top discoveries" : "A good place to start"}</h2></div><span className="text-xs text-white/35">{tracks.length} tracks</span></div>
-        {loading ? <div role="status" className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45"><Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning the catalog...</div> : error ? <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/[0.06] px-5 py-10 text-center text-sm text-rose-100"><p>{error}</p><button type="button" onClick={() => setRetryToken((value) => value + 1)} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10">Thử lại</button></div> : tracks.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 py-14 text-center text-sm text-white/40">No Auraic tracks matched this view.</div> : <><div className="divide-y divide-white/10 border-y border-white/10">{tracks.map((track, index) => <div key={track.id} className="group flex items-center gap-3 py-4"><span className="w-7 text-center text-xs font-bold text-white/25">{kind === "charts" ? String(index + 1).padStart(2, "0") : ""}</span><Artwork src={track.image || fallbackImage} alt={track.title} className="h-12 w-12 rounded-xl object-cover" /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} className="min-h-11 min-w-0 flex-1 text-left"><span className="block truncate text-sm font-semibold group-hover:text-fuchsia-200">{track.title}</span><span className="mt-1 block truncate text-xs text-white/40">{track.artist.name} · {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, "0")}</span></button><TrackActionMenu track={track as any} /><button type="button" onClick={() => playTrack(track as any, tracks as any, config.title)} aria-label={`Phát ${track.title}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-fuchsia-300 hover:text-white"><Play className="h-4 w-4 fill-current" /></button></div>)}</div>{nextCursor ? <div className="mt-6 text-center"><button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="min-h-11 rounded-xl border border-white/15 px-5 text-sm font-semibold text-white/70 transition hover:bg-white/10 disabled:opacity-50">{loadingMore ? "Đang tải thêm..." : "Tải thêm"}</button></div> : null}</>}
+        {loading ? <div role="status" className="flex h-48 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-sm text-white/45"><Loader2 className="mr-2 h-4 w-4 animate-spin text-fuchsia-300" /> Tuning the catalog...</div> : error ? <div role="alert" className="rounded-2xl border border-rose-300/20 bg-rose-300/[0.06] px-5 py-10 text-center text-sm text-rose-100"><p>{error}</p><button type="button" onClick={() => setRetryToken((value) => value + 1)} className="mt-4 min-h-11 rounded-xl border border-rose-200/30 px-4 font-semibold hover:bg-rose-200/10">Thử lại</button></div> : tracks.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 py-14 text-center text-sm text-white/40">No Auraic tracks matched this view.</div> : <><div className="divide-y divide-white/10 border-y border-white/10">{tracks.map((track, index) => <div key={track.id} className="group flex items-center gap-3 py-4"><span className="w-7 text-center text-xs font-bold text-white/25">{kind === "charts" ? String(index + 1).padStart(2, "0") : ""}</span><Artwork src={track.artwork?.["480x480"] || track.artwork?.["150x150"] || fallbackImage} alt={track.title} className="h-12 w-12 rounded-xl object-cover" /><button type="button" onClick={() => playTrack(AuraicAudioAdapter.toPlayerTrack(track) as any, tracks.map((t) => AuraicAudioAdapter.toPlayerTrack(t)) as any, config.title)} className="min-h-11 min-w-0 flex-1 text-left"><span className="block truncate text-sm font-semibold group-hover:text-fuchsia-200">{track.title}</span><span className="mt-1 block truncate text-xs text-white/40">{track.user?.name || "Unknown"} · {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, "0")}</span></button><TrackActionMenu track={track as any} /><button type="button" onClick={() => playTrack(AuraicAudioAdapter.toPlayerTrack(track) as any, tracks.map((t) => AuraicAudioAdapter.toPlayerTrack(t)) as any, config.title)} aria-label={`Phát ${track.title}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-fuchsia-300 hover:text-white"><Play className="h-4 w-4 fill-current" /></button></div>)}</div>{kind === "search" && tracks.length > 0 ? <div className="mt-6 text-center"><button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="min-h-11 rounded-xl border border-white/15 px-5 text-sm font-semibold text-white/70 transition hover:bg-white/10 disabled:opacity-50">{loadingMore ? "Đang tải thêm..." : "Tải thêm"}</button></div> : null}</>}
       </section>
     </main>
   );

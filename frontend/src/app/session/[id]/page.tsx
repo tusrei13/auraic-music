@@ -17,7 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { usePlayerStore, Track } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import SpinningVinyl from "@/components/player/SpinningVinyl";
-import { getJamendoTracks, JamendoSong } from "@/lib/api";
+import { StreamEngineService, AuraicAudioAdapter } from "@/lib/sound-engine/client";
 import Artwork from "@/components/Artwork";
 
 interface PageProps {
@@ -27,8 +27,8 @@ interface PageProps {
 interface ReactionItem {
   id: string;
   icon: string;
-  x: number; // percentage across screen 10-90%
-  jitter: number; // randomized drift (vw) applied on the way up
+  x: number;
+  jitter: number;
 }
 
 interface RequesterInfo {
@@ -62,15 +62,15 @@ export default function RealtimeSessionPage({ params }: PageProps) {
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop",
   });
 
-  // Request modal state
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestTitle, setRequestTitle] = useState("");
+  const [requestArtist, setRequestArtist] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<JamendoSong[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // Set initial host if first to join
   useEffect(() => {
     const isFirstHost = localStorage.getItem(`auraic-host-${sessionId}`) === "true";
     if (isFirstHost || !localStorage.getItem(`auraic-has-host-${sessionId}`)) {
@@ -80,7 +80,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
     }
   }, [sessionId]);
 
-  // Realtime Supabase Channel
   useEffect(() => {
     const myId = currentUser?.id || `guest-${Math.random().toString(36).slice(2, 8)}`;
     const myName = currentUser?.name || currentUser?.email?.split("@")[0] || "Khách ẩn danh";
@@ -97,10 +96,8 @@ export default function RealtimeSessionPage({ params }: PageProps) {
 
     channelRef.current = channel;
 
-    // 1. Listen for Broadcast Events
     channel
       .on("broadcast", { event: "SYNC_PLAYBACK" }, ({ payload }) => {
-        // If not host, sync playback state
         if (!isHost && payload) {
           if (payload.track) {
             const current = usePlayerStore.getState().currentTrack;
@@ -133,7 +130,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
           playTrack(payload.track);
         }
       })
-      // 2. Presence Tracking
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
         const total = Object.keys(state).length;
@@ -155,7 +151,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
     };
   }, [sessionId, isHost, currentUser, playTrack]);
 
-  // Host Broadcasts changes
   const broadcastPlayback = (nextTrack?: Track, nextPlaying?: boolean) => {
     if (!channelRef.current || !isHost) return;
 
@@ -171,7 +166,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
     });
   };
 
-  // Floating Reaction Trigger
   const triggerReaction = (icon: string) => {
     const newReaction = makeReaction(icon);
     setReactions((prev) => [...prev.slice(-15), newReaction]);
@@ -185,13 +179,15 @@ export default function RealtimeSessionPage({ params }: PageProps) {
     }
   };
 
-  // Search Jamendo to Request Song
-  const handleSearchJamendo = async (q: string) => {
+  const handleSearchEngine = async (q: string) => {
     setSearchQuery(q);
-    if (!q.trim()) return;
+    if (!q.trim()) {
+      setSearchResults([]);
+      return;
+    }
     setSearching(true);
     try {
-      const results = await getJamendoTracks({ limit: 6, search: q });
+      const results = await StreamEngineService.searchEngineCatalog(q, 6);
       setSearchResults(results);
     } catch {
       setSearchResults([]);
@@ -200,15 +196,8 @@ export default function RealtimeSessionPage({ params }: PageProps) {
     }
   };
 
-  const handleRequestTrack = (song: JamendoSong) => {
-    const formattedTrack: Track = {
-      id: song.id,
-      title: song.title,
-      artist: song.artist,
-      image: song.image,
-      audioUrl: song.audioUrl,
-      duration: song.duration,
-    };
+  const handleRequestTrack = (engineTrack: any) => {
+    const formattedTrack: Track = AuraicAudioAdapter.toPlayerTrack(engineTrack);
 
     const requester: RequesterInfo = {
       name: currentUser?.name || currentUser?.email?.split("@")[0] || "Bạn nghe nhạc",
@@ -232,13 +221,12 @@ export default function RealtimeSessionPage({ params }: PageProps) {
     }
 
     setShowRequestModal(false);
+    setSearchQuery("");
+    setSearchResults([]);
   };
 
   return (
     <div className="relative min-h-full overflow-hidden px-5 pb-36 pt-4 text-white sm:px-8 lg:px-12 flex flex-col items-center">
-      {/* ========================================================= */}
-      {/* FLOATING REACTIONS CANVAS OVERLAY                         */}
-      {/* ========================================================= */}
       <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
         <AnimatePresence>
           {reactions.map((rx) => (
@@ -261,7 +249,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
         </AnimatePresence>
       </div>
 
-      {/* Top Session Bar */}
       <div className="w-full flex items-center justify-between py-2 z-20">
         <Link
           href="/session"
@@ -270,7 +257,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
           <ArrowLeft className="h-4 w-4" /> Rời phòng
         </Link>
 
-        {/* Room badge & presence */}
         <div className="flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 ">
           <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
           <span className="font-mono text-xs font-bold uppercase tracking-wider text-cyan-300">
@@ -288,7 +274,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
           )}
         </div>
 
-        {/* Request Track trigger */}
         <button
           onClick={() => setShowRequestModal(true)}
           className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3.5 py-2 text-xs font-bold shadow-lg shadow-violet-600/30 transition hover:scale-105"
@@ -297,9 +282,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
         </button>
       </div>
 
-      {/* ========================================================= */}
-      {/* 2. REALISTIC 3D SPINNING VINYL IN CENTER                  */}
-      {/* ========================================================= */}
       <div className="relative my-8 flex flex-col items-center justify-center">
         <SpinningVinyl
           isPlaying={isPlaying}
@@ -309,7 +291,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
           size={330}
         />
 
-        {/* Current Song Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -332,7 +313,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
           </p>
         </motion.div>
 
-        {/* Host Playback Controls */}
         {isHost && (
           <div className="mt-5 flex items-center gap-4">
             <motion.button
@@ -354,9 +334,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* ========================================================= */}
-      {/* 3. FLOATING REACTIONS BAR                                 */}
-      {/* ========================================================= */}
       <div className="fixed bottom-24 z-30 flex items-center gap-3 rounded-full border border-white/20 bg-black/60 px-5 py-2.5  shadow-2xl">
         <span className="text-xs font-semibold text-white/50 mr-1 hidden sm:inline">
           Thả cảm xúc:
@@ -380,9 +357,6 @@ export default function RealtimeSessionPage({ params }: PageProps) {
         ))}
       </div>
 
-      {/* ========================================================= */}
-      {/* 4. REQUEST SONG MODAL                                     */}
-      {/* ========================================================= */}
       <AnimatePresence>
         {showRequestModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
@@ -395,26 +369,28 @@ export default function RealtimeSessionPage({ params }: PageProps) {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold">Request bài hát vào đĩa than</h3>
                 <button
-                  onClick={() => setShowRequestModal(false)}
+                  onClick={() => {
+                    setShowRequestModal(false);
+                    setSearchQuery("");
+                    setSearchResults([]);
+                  }}
                   className="rounded-full p-2 text-white/50 hover:bg-white/10 hover:text-white"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* Search input */}
               <div className="relative">
                 <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-white/40" />
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => handleSearchJamendo(e.target.value)}
-                  placeholder="Tìm kiếm bài hát từ catalog Jamendo..."
+                  onChange={(e) => handleSearchEngine(e.target.value)}
+                  placeholder="Tìm kiếm bài hát từ catalog..."
                   className="w-full rounded-2xl border border-white/15 bg-black/40 py-3 pl-10 pr-4 text-xs text-white focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                 />
               </div>
 
-              {/* Search results */}
               <div className="max-h-64 space-y-2 overflow-y-auto scrollbar-none pt-2">
                 {searching ? (
                   <p className="py-6 text-center text-xs text-white/40">Đang tìm kiếm...</p>
@@ -427,7 +403,7 @@ export default function RealtimeSessionPage({ params }: PageProps) {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <Artwork
-                          src={song.image}
+                          src={song.artwork?.["480x480"] || song.artwork?.["150x150"] || ""}
                           alt={song.title}
                           className="h-10 w-10 rounded-lg object-cover"
                         />
@@ -436,7 +412,7 @@ export default function RealtimeSessionPage({ params }: PageProps) {
                             {song.title}
                           </p>
                           <p className="truncate text-[11px] text-white/50">
-                            {typeof song.artist === "object" ? song.artist.name : song.artist}
+                            {song.user?.name || song.user?.handle || "Nghệ sĩ"}
                           </p>
                         </div>
                       </div>

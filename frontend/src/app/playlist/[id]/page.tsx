@@ -43,10 +43,8 @@ export default function PlaylistDetailPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [headerColor, setHeaderColor] = useState<ExtractedColor | null>(null);
 
-  // Custom Lyrics Modal State
   const [selectedTrackForLyrics, setSelectedTrackForLyrics] = useState<Track | null>(null);
 
-  // Load Playlist Data
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -72,7 +70,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
         }
       })
       .catch(() => {
-        // Fallback demo tracks if offline or not found
         if (!active) return;
         const fallback: Track[] = [
           {
@@ -80,7 +77,7 @@ export default function PlaylistDetailPage({ params }: PageProps) {
             title: "Midnight Resonance",
             artist: "Auraic Studio",
             image: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=600&auto=format&fit=crop",
-            audioUrl: "https://prod-1.storage.jamendo.com/download/track/1885408/mp32/",
+            audioUrl: "/api/sound-engine/stream?id=demo-1",
             duration: 215,
           },
           {
@@ -88,7 +85,7 @@ export default function PlaylistDetailPage({ params }: PageProps) {
             title: "Celestial Drift",
             artist: "Cosmic Audio",
             image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=600&auto=format&fit=crop",
-            audioUrl: "https://prod-1.storage.jamendo.com/download/track/1885408/mp32/",
+            audioUrl: "/api/sound-engine/stream?id=demo-2",
             duration: 184,
           },
           {
@@ -96,7 +93,7 @@ export default function PlaylistDetailPage({ params }: PageProps) {
             title: "Velvet Horizons",
             artist: "Lofi Dreamer",
             image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop",
-            audioUrl: "https://prod-1.storage.jamendo.com/download/track/1885408/mp32/",
+            audioUrl: "/api/sound-engine/stream?id=demo-3",
             duration: 242,
           },
         ];
@@ -111,7 +108,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
     };
   }, [playlistId]);
 
-  // Dynamic Color Extraction from Playlist Cover Art
   useEffect(() => {
     const targetImage = tracks[0]?.image || playlistCover;
     if (!targetImage) return;
@@ -121,10 +117,8 @@ export default function PlaylistDetailPage({ params }: PageProps) {
     });
   }, [tracks, playlistCover]);
 
-  // Handle Drag & Drop Reorder
   const handleReorder = (newOrder: Track[]) => {
     setTracks(newOrder);
-    // Sync with playback store if this playlist is currently queued
     const currentQueue = usePlayerStore.getState().userQueue;
     if (currentQueue.length > 0) {
       usePlayerStore.getState().setQueue(newOrder);
@@ -133,7 +127,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
 
   return (
     <div className="relative min-h-full px-5 pb-36 pt-4 text-white sm:px-8 lg:px-12 space-y-8">
-      {/* Back button */}
       <Link
         href="/library"
         className="inline-flex items-center gap-2 text-xs font-semibold text-white/50 transition hover:text-white"
@@ -141,11 +134,7 @@ export default function PlaylistDetailPage({ params }: PageProps) {
         <ArrowLeft className="h-4 w-4" /> Quay lại thư viện
       </Link>
 
-      {/* ========================================================= */}
-      {/* 1. DYNAMIC COLOR EXTRACTION HEADER AURA GLOW              */}
-      {/* ========================================================= */}
       <div className="relative overflow-hidden rounded-[36px] border border-white/15 bg-white/[0.03] p-6 sm:p-10">
-        {/* Dynamic Glow Banner Canvas Reflection */}
         {headerColor && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -159,7 +148,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
         )}
 
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end">
-          {/* Cover Art */}
           <div className="relative h-44 w-44 shrink-0 overflow-hidden rounded-3xl shadow-2xl border border-white/20">
             <Artwork
               src={tracks[0]?.image || playlistCover}
@@ -169,7 +157,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
             />
           </div>
 
-          {/* Details */}
           <div className="min-w-0 flex-1 space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
               <Sparkles className="h-3.5 w-3.5" />
@@ -184,7 +171,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
               {tracks.length} bài hát • Sắp xếp tự do kéo-thả • Hỗ trợ đính kèm lời
             </p>
 
-            {/* Quick Actions */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
                 onClick={() => tracks.length > 0 && playMix(tracks, playlistTitle)}
@@ -207,9 +193,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* 2. DRAG & DROP REORDER TRACK LIST (FRAMER MOTION)         */}
-      {/* ========================================================= */}
       <section className="space-y-4">
         <div className="flex items-center justify-between text-xs text-white/50 px-3">
           <span className="flex items-center gap-1 font-semibold">
@@ -248,12 +231,10 @@ export default function PlaylistDetailPage({ params }: PageProps) {
                   }}
                   className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-white/25 hover:bg-white/[0.06]"
                 >
-                  {/* Drag Handle */}
                   <div className="cursor-grab active:cursor-grabbing p-1 text-white/30 group-hover:text-white/70 transition">
                     <GripVertical className="h-4 w-4" />
                   </div>
 
-                  {/* Index or Equalizer */}
                   <div className="w-6 text-center text-xs font-mono text-white/40">
                     {isCurrent && isPlaying ? (
                       <div className="flex items-end justify-center gap-0.5 h-3">
@@ -266,7 +247,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
                     )}
                   </div>
 
-                  {/* Cover */}
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10">
                     <Artwork
                       src={track.image}
@@ -281,7 +261,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
                     </button>
                   </div>
 
-                  {/* Title & Artist */}
                   <div className="min-w-0 flex-1">
                     <h4
                       className={`truncate text-sm font-bold ${
@@ -297,12 +276,10 @@ export default function PlaylistDetailPage({ params }: PageProps) {
                     </p>
                   </div>
 
-                  {/* Duration */}
                   <div className="hidden sm:block text-xs font-mono text-white/40">
                     {formatDuration(track.duration)}
                   </div>
 
-                  {/* Attach Lyrics Button */}
                   <button
                     onClick={() => setSelectedTrackForLyrics(track)}
                     className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs text-white/60 transition hover:border-violet-400/50 hover:bg-violet-500/15 hover:text-violet-200"
@@ -312,7 +289,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
                     <span className="hidden md:inline">Attach Lyrics</span>
                   </button>
 
-                  {/* Like Button */}
                   <button
                     onClick={() => toggleLike(track)}
                     className="p-2 text-white/40 transition hover:text-rose-400"
@@ -330,9 +306,6 @@ export default function PlaylistDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      {/* ========================================================= */}
-      {/* 3. CUSTOM LYRICS MODAL                                    */}
-      {/* ========================================================= */}
       <CustomLyricsModal
         isOpen={Boolean(selectedTrackForLyrics)}
         onClose={() => setSelectedTrackForLyrics(null)}

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { useAdaptiveGraphics } from "@/hooks/useAdaptiveGraphics";
 
 export interface Card3DProps {
@@ -19,106 +20,139 @@ export default function Card3D({
   className = "",
   glowColor = "rgba(168, 85, 247, 0.45)",
   maxTilt = 12,
-  depthZ = 16,
+  depthZ = 30,
   neonBorder = true,
   onClick,
 }: Card3DProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const glareRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const quickToRef = useRef<{
+    qX: (value: number) => void;
+    qY: (value: number) => void;
+    qScale: (value: number) => void;
+  } | null>(null);
+
   const [isHovered, setIsHovered] = useState(false);
-  // Adaptive graphics: on low-spec / low-FPS tier the 3D tilt is switched off
-  // so the GPU only pays for compositing, never per-frame perspective work.
   const { quality } = useAdaptiveGraphics();
   const tiltEnabled = quality === "high";
 
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  useGSAP(() => {
+    if (!tiltEnabled || !containerRef.current) return;
 
-  const springConfig = { damping: 22, stiffness: 240, mass: 0.7 };
-  const mouseXSpring = useSpring(x, springConfig);
-  const mouseYSpring = useSpring(y, springConfig);
+    const qX = gsap.quickTo(containerRef.current, "rotateY", {
+      duration: 0.4,
+      ease: "power3.out",
+      force3D: true,
+    });
+    const qY = gsap.quickTo(containerRef.current, "rotateX", {
+      duration: 0.4,
+      ease: "power3.out",
+      force3D: true,
+    });
+    const qScale = gsap.quickTo(containerRef.current, "scale", {
+      duration: 0.4,
+      ease: "power3.out",
+      force3D: true,
+    });
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [maxTilt, -maxTilt]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-maxTilt, maxTilt]);
-
-  // Glare position (paint-only overlay, never layout).
-  const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["0%", "100%"]);
-  const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["0%", "100%"]);
+    quickToRef.current = { qX, qY, qScale };
+  }, [tiltEnabled]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!tiltEnabled || !ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
+    if (!tiltEnabled || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const xPct = (e.clientX - rect.left) / rect.width - 0.5;
+    const yPct = (e.clientY - rect.top) / rect.height - 0.5;
 
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const qs = quickToRef.current;
+    if (qs) {
+      qs.qY(maxTilt * -yPct);
+      qs.qX(maxTilt * xPct);
+      qs.qScale(1.03);
+    }
 
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-
-    x.set(xPct);
-    y.set(yPct);
+    if (glareRef.current) {
+      gsap.set(glareRef.current, {
+        backgroundPosition: `${50 + xPct * 100}% ${50 + yPct * 100}%`,
+      });
+    }
   };
 
   const handleMouseEnter = () => {
     setIsHovered(true);
+    if (!tiltEnabled) return;
+    if (glowRef.current) {
+      gsap.to(glowRef.current, { opacity: 1, duration: 0.3 });
+    }
+    if (glareRef.current) {
+      gsap.to(glareRef.current, { opacity: 1, duration: 0.3 });
+    }
   };
 
   const handleMouseLeave = () => {
     setIsHovered(false);
-    x.set(0);
-    y.set(0);
+    if (!tiltEnabled || !containerRef.current) return;
+    const qs = quickToRef.current;
+    if (qs) {
+      gsap.to(containerRef.current, {
+        rotateX: 0,
+        rotateY: 0,
+        scale: 1,
+        duration: 1.2,
+        ease: "elastic.out(1, 0.5)",
+        force3D: true,
+      });
+    }
+    if (glareRef.current) {
+      gsap.to(glareRef.current, { opacity: 0, duration: 0.3 });
+    }
+    if (glowRef.current) {
+      gsap.to(glowRef.current, { opacity: 0, duration: 0.3 });
+    }
   };
 
   return (
-    <motion.div
-      ref={ref}
+    <div
+      ref={containerRef}
       onMouseMove={tiltEnabled ? handleMouseMove : undefined}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
-      style={{
-        rotateX: tiltEnabled ? rotateX : 0,
-        rotateY: tiltEnabled ? rotateY : 0,
-        transformStyle: "preserve-3d",
-      }}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 350, damping: 25 }}
       className={`relative cursor-pointer overflow-hidden rounded-2xl border bg-white/[0.03] will-change-transform transform-gpu transition-[background-color,border-color] duration-300 hover:bg-white/[0.08] ${
         isHovered && neonBorder && tiltEnabled
           ? "border-white/30"
           : "border-white/10 hover:border-white/20"
       } ${className}`}
+      style={{ transformStyle: "preserve-3d", perspective: 1000 }}
     >
-      {/* Pre-rendered ambient glow layer — cheaper than per-frame box-shadow. */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-0 rounded-2xl opacity-0 transition-opacity duration-300 will-change-transform"
-        style={{ boxShadow: `0 24px 50px -10px rgba(0, 0, 0, 0.65), 0 0 30px -4px ${glowColor}, inset 0 1px 0 0 rgba(255, 255, 255, 0.25)` }}
-        animate={{ opacity: isHovered ? 1 : 0 }}
+      <div
+        ref={glowRef}
+        className="pointer-events-none absolute inset-0 z-0 rounded-2xl opacity-0 will-change-transform"
+        style={{
+          boxShadow: `0 24px 50px -10px rgba(0, 0, 0, 0.65), 0 0 30px -4px ${glowColor}, inset 0 1px 0 0 rgba(255, 255, 255, 0.25)`,
+        }}
       />
 
-      {/* Dynamic Specular Glare Overlay */}
       {tiltEnabled && (
-        <motion.div
-          className="pointer-events-none absolute inset-0 z-20 rounded-2xl opacity-0 transition-opacity duration-300"
+        <div
+          ref={glareRef}
+          className="pointer-events-none absolute inset-0 z-20 rounded-2xl opacity-0"
           style={{
-            background: `radial-gradient(circle at ${glareX} ${glareY}, rgba(255, 255, 255, 0.18) 0%, transparent 60%)`,
+            background: "radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18) 0%, transparent 60%)",
+            backgroundSize: "200% 200%",
           }}
-          animate={{ opacity: isHovered ? 1 : 0 }}
         />
       )}
 
-      {/* 3D Elevated Children Container */}
       <div
-        style={{
-          transform: `translateZ(${depthZ}px)`,
-          transformStyle: "preserve-3d",
-        }}
+        ref={innerRef}
+        style={{ transform: `translateZ(${depthZ}px)`, transformStyle: "preserve-3d" }}
         className="relative z-10 h-full w-full will-change-transform"
       >
         {children}
       </div>
-    </motion.div>
+    </div>
   );
 }

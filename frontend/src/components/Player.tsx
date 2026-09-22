@@ -23,12 +23,12 @@ import {
 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import { isJamendoTrackId } from "@/lib/api";
+import { AuraicAudioAdapter } from "@/lib/sound-engine/client";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import QueueDrawer from "@/components/player/QueueDrawer";
 import AudioVisualizer from "@/components/AudioVisualizer";
 import Hls from "hls.js";
-import { recordAnalyticsEvent, recordJamendoListening, resolveMediaUrl } from "@/lib/api";
+import { recordAnalyticsEvent, resolveMediaUrl } from "@/lib/api";
 import { useAdaptiveGraphics } from "@/hooks/useAdaptiveGraphics";
 import LyricsViewModal from "@/components/player/LyricsViewModal";
 
@@ -119,7 +119,7 @@ export default function Player() {
     void recordAnalyticsEvent({
       eventType,
       trackId: currentTrack.id,
-      source: isJamendoTrackId(currentTrack.id) ? "jamendo" : "local",
+      source: "local",
       title: currentTrack.title,
       position,
       duration,
@@ -305,7 +305,7 @@ export default function Player() {
         recordedTrackIdRef.current !== currentTrack.id
       ) {
         recordedTrackIdRef.current = currentTrack.id;
-        if (isJamendoTrackId(currentTrack.id)) {
+        if (AuraicAudioAdapter.isEngineTrackId(currentTrack.id) || currentTrack.isEngineTrack) {
           const userId = useAuthStore.getState().user?.id;
           if (userId) {
             const storageKey = `auraic-history-${userId}`;
@@ -319,14 +319,6 @@ export default function Player() {
             history = [{ id: `${String(currentTrack.id)}-${Date.now()}`, listenedAt: new Date().toISOString(), song: currentTrack }, ...history.filter((item) => String(item.song?.id) !== String(currentTrack.id))].slice(0, 50);
             localStorage.setItem(storageKey, JSON.stringify(history));
             window.dispatchEvent(new CustomEvent("auraic:history-updated"));
-            void recordJamendoListening({
-              trackId: String(currentTrack.id),
-              title: currentTrack.title,
-              artistName,
-              image: currentTrack.image,
-              audioUrl: currentTrack.audioUrl,
-              ...(typeof currentTrack.duration === "number" ? { duration: currentTrack.duration } : {}),
-            }).catch(() => undefined);
           }
         } else {
           void recordListening(currentTrack.id);
@@ -361,7 +353,6 @@ export default function Player() {
   const handlePause = () => {
     if (audioRef.current && !audioRef.current.ended) setPlaybackStatus("paused");
   };
-  const fallbackTriedRef = useRef<string | number | null>(null);
 
   const handleAudioError = () => {
     const audio = audioRef.current;
@@ -370,25 +361,7 @@ export default function Player() {
       return;
     }
 
-    const trackIdStr = String(currentTrack.id);
-    const rawId = trackIdStr.replace(/^jamendo:/, "");
-
-    if (isJamendoTrackId(currentTrack.id) && fallbackTriedRef.current !== currentTrack.id) {
-      fallbackTriedRef.current = currentTrack.id;
-      const fallbackUrl = `https://mp3d.jamendo.com/download/track/${rawId}/mp32/`;
-      audio.src = fallbackUrl;
-      audio.load();
-      audio.play().catch(() => {
-        setPlaybackStatus("error", "Bài hát không khả dụng, đang chuyển tiếp...");
-        setTimeout(() => nextTrack(), 1200);
-      });
-      return;
-    }
-
-    setPlaybackStatus("error", "Bài hát không khả dụng, đang chuyển bài...");
-    setTimeout(() => {
-      nextTrack();
-    }, 1200);
+    setPlaybackStatus("error", "Không thể tải bài hát này. Bạn có thể thử lại hoặc chuyển bài thủ công.");
   };
 
   const handleEnded = () => {
@@ -497,6 +470,7 @@ export default function Player() {
           <audio
             ref={audioRef}
             src={isHlsSource ? undefined : mediaUrl}
+            crossOrigin="anonymous"
             preload="metadata"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
@@ -738,7 +712,7 @@ export default function Player() {
 
             {/* Bitrate Badge as shown in reference */}
             <span className="hidden xl:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider text-white/70 bg-white/5 border border-white/10 select-none">
-              {isJamendoTrackId(currentTrack.id) ? "320 kbps" : "128 kbps"}
+              {AuraicAudioAdapter.isEngineTrackId(currentTrack.id) || currentTrack.isEngineTrack ? "320kbps Hi-Res" : "128 kbps"}
             </span>
 
             <div className="flex items-center gap-2.5 group">

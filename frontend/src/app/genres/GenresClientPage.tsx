@@ -4,8 +4,10 @@ import { useCallback, useMemo, useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Play, Heart, Disc3 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
+import { proxyImageUrl } from "@/lib/api";
 import { useGenreTracks, pickRandomTrack } from "@/hooks/useGenreTracks";
 import { useDebounce } from "@/hooks/useDebounce";
+import { EngineTrack } from "@/types/sound-engine";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import Artwork from "@/components/Artwork";
 import { containerVariants, fadeIn, scaleIn, slideIn, TiltCard } from "@/lib/motion";
@@ -36,6 +38,19 @@ const SkeletonTrack = () => (
   </div>
 );
 
+function getTrackArtist(track: EngineTrack): string {
+  return track.user?.name || track.user?.handle || "Nghệ sĩ";
+}
+
+function getTrackArtwork(track: EngineTrack): string {
+  return (
+    track.artwork?.["480x480"] ||
+    track.artwork?.["150x150"] ||
+    track.artwork?.["1000x1000"] ||
+    "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500&auto=format&fit=crop"
+  );
+}
+
 const GenreTrackRow = function GenreTrackRow({
   track,
   isPlayingThis,
@@ -45,7 +60,7 @@ const GenreTrackRow = function GenreTrackRow({
   onPlay,
   onToggleLike,
 }: {
-  track: import("@/lib/api").JamendoSong;
+  track: EngineTrack;
   isPlayingThis: boolean;
   liked: boolean;
   artistName: string;
@@ -65,7 +80,7 @@ const GenreTrackRow = function GenreTrackRow({
       <div className="relative flex items-center gap-4">
         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl">
           <div className="h-full w-full overflow-hidden rounded-xl transition-transform duration-300 group-hover:scale-110">
-            <Artwork src={track.image || track.album?.coverImage || ""} alt={track.title} className="h-full w-full object-cover" />
+            <Artwork src={getTrackArtwork(track)} alt={track.title} className="h-full w-full object-cover" />
           </div>
           <div
             className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -112,7 +127,7 @@ const GenreTrackRow = function GenreTrackRow({
           >
             <Heart className={`w-4 h-4 ${liked ? "fill-current" : ""}`} />
           </motion.button>
-          <TrackActionMenu track={track} />
+          <TrackActionMenu track={track as any} />
         </div>
       </div>
     </div>
@@ -133,7 +148,7 @@ export default function GenresClientPage() {
   const toggleLike = store.toggleLike;
   const playTrack = store.playTrack;
 
-  const currentImage = currentTrack?.image || "";
+  const currentImage = proxyImageUrl(currentTrack?.image || "");
 
   const activeAccent = useMemo(() => {
     if (hoveredGenre) {
@@ -167,7 +182,7 @@ export default function GenresClientPage() {
     if (!debouncedGenre || !tracks.length) return;
     const randomTrack = pickRandomTrack(tracks);
     if (randomTrack) {
-      playTrack(randomTrack, tracks, debouncedGenre);
+      playTrack(randomTrack as any, tracks as any, debouncedGenre);
     }
   }, [debouncedGenre, tracks, playTrack]);
 
@@ -335,8 +350,8 @@ export default function GenresClientPage() {
               {tracks.map((track) => {
                 const liked = store.likedIds?.some((id: any) => String(id) === String(track.id));
                 const isPlayingThis = String(currentTrack?.id) === String(track.id);
-                const artistName = typeof track.artist === "object" ? track.artist?.name : track.artist || "Nghệ sĩ";
-                const genreName = track.genres?.slice(0, 2).join(" · ") || selectedGenre || "";
+                const artistName = getTrackArtist(track);
+                const genreName = track.genre || selectedGenre || "";
 
                 return (
                   <GenreTrackRow
@@ -347,7 +362,7 @@ export default function GenresClientPage() {
                     artistName={artistName}
                     genreName={genreName}
                     onPlay={() => playTrack(track as any, tracks as any, selectedGenre)}
-                    onToggleLike={() => toggleLike(track)}
+                    onToggleLike={() => toggleLike(track as any)}
                   />
                 );
               })}

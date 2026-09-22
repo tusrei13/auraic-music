@@ -6,7 +6,7 @@ import ToastContainer from '@/components/ToastContainer';
 import AuthProvider from '@/context/AuthProvider';
 import AuthModal from '@/components/AuthModal';
 import DynamicTheme from '@/components/DynamicTheme';
-import GlobalSearchBar from '@/components/GlobalSearchBar';
+import SearchBar from '@/components/header/SearchBar';
 import { QueryProvider } from '@/providers/QueryProvider';
 import SpatialStarfieldCanvas from '@/components/visualizer/SpatialStarfieldCanvas';
 import './globals.css';
@@ -16,6 +16,9 @@ const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-pl
 export const metadata: Metadata = {
   title: 'Auraic | Cảm nhận âm nhạc',
   description: 'Nền tảng âm nhạc không gian 3D tối giản và cao cấp',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -71,7 +74,7 @@ export default function RootLayout({
                 Sidebar, Header and Player Bar keep real glassmorphism so the
                 GPU never composites dozens of live blur regions). */}
             <main className="relative flex-1 overflow-y-auto rounded-[32px] border border-white/15 bg-[#0a0c16]/90 shadow-[0_30px_70px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.22)] scroll-smooth">
-              <GlobalSearchBar />
+              <SearchBar />
               {/* Content sits on its own compositor layer so scrolling stays GPU-composited. */}
               <div className="transform-gpu will-change-transform">
                 {children}

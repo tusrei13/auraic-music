@@ -21,9 +21,15 @@ import {
 import { ambientEngine } from "@/lib/ambientEngine";
 import RainVisualizer from "@/components/visualizer/RainVisualizer";
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { getJamendoTracks, JamendoSong, formatDuration } from "@/lib/api";
+import { StreamEngineService, AuraicAudioAdapter } from "@/lib/sound-engine/client";
 import Artwork from "@/components/Artwork";
 import TiltCard from "@/components/ui/TiltCard";
+
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
 
 interface MoodStation {
   id: string;
@@ -72,6 +78,17 @@ const STATIONS: MoodStation[] = [
     icon: Moon,
   },
   {
+    id: "midnight-cyberpunk",
+    name: "Midnight Cyberpunk",
+    tagline: "Nhịp synthwave & bassline tương lai huyền bí",
+    searchQuery: "cyberpunk",
+    backupQuery: "synthwave",
+    accent: "#ec4899",
+    glow: "rgba(236, 72, 153, 0.45)",
+    gradient: "from-pink-950/40 via-purple-950/30 to-black/60",
+    icon: Sparkles,
+  },
+  {
     id: "astral-drift",
     name: "Astral Drift",
     tagline: "Lơ lửng giữa không gian vũ trụ vô tận",
@@ -97,11 +114,10 @@ const STATIONS: MoodStation[] = [
 
 export default function StationsPage() {
   const [selectedStation, setSelectedStation] = useState<MoodStation>(STATIONS[0]);
-  const [stationTracks, setStationTracks] = useState<JamendoSong[]>([]);
+  const [stationTracks, setStationTracks] = useState<any[]>([]);
   const [loadingTracks, setLoadingTracks] = useState(false);
   const [filterQuery, setFilterQuery] = useState("");
 
-  // Ambient Layering State
   const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
   const [rainVol, setRainVol] = useState(40);
   const [vinylVol, setVinylVol] = useState(35);
@@ -111,25 +127,17 @@ export default function StationsPage() {
   const { playMix, playTrack, currentTrack, isPlaying, toggleLike, likedIds } =
     usePlayerStore();
 
-  // Load tracks when station changes
   const fetchTracks = useCallback(async (station: MoodStation) => {
     setLoadingTracks(true);
     try {
-      // 1. Primary search query
-      let tracks = await getJamendoTracks({
-        limit: 24,
-        search: station.searchQuery,
-      });
+      const engineTracks = await StreamEngineService.fetchTracksByTag(station.searchQuery, 24);
+      let tracks = engineTracks.map(AuraicAudioAdapter.toPlayerTrack);
 
-      // 2. If results are sparse (< 12), supplement with backup query
       if (tracks.length < 12 && station.backupQuery) {
-        const backupTracks = await getJamendoTracks({
-          limit: 16,
-          search: station.backupQuery,
-        }).catch(() => []);
-
+        const backupEngine = await StreamEngineService.fetchTracksByTag(station.backupQuery, 16);
+        const backupConverted = backupEngine.map(AuraicAudioAdapter.toPlayerTrack);
         const seen = new Set(tracks.map((t) => t.id));
-        for (const t of backupTracks) {
+        for (const t of backupConverted) {
           if (!seen.has(t.id)) {
             tracks.push(t);
             seen.add(t.id);
@@ -137,16 +145,16 @@ export default function StationsPage() {
         }
       }
 
-      // 3. If still empty (e.g. strict rate limit), fetch general tracks
       if (tracks.length === 0) {
-        tracks = await getJamendoTracks({ limit: 24 }).catch(() => []);
+        const searchResults = await StreamEngineService.searchEngineCatalog(station.searchQuery, 24);
+        tracks = searchResults.map(AuraicAudioAdapter.toPlayerTrack);
       }
 
       setStationTracks(tracks);
     } catch (error) {
       console.error("Lỗi tải bài hát station:", error);
-      const fallback = await getJamendoTracks({ limit: 20 }).catch(() => []);
-      setStationTracks(fallback);
+      const searchResults = await StreamEngineService.searchEngineCatalog(station.searchQuery, 20);
+      setStationTracks(searchResults.map(AuraicAudioAdapter.toPlayerTrack));
     } finally {
       setLoadingTracks(false);
     }
@@ -190,7 +198,6 @@ export default function StationsPage() {
     ambientEngine.setMasterVolume(val / 100);
   };
 
-  // Filtered tracks
   const displayedTracks = stationTracks.filter((t) => {
     if (!filterQuery.trim()) return true;
     const q = filterQuery.toLowerCase();
@@ -198,16 +205,14 @@ export default function StationsPage() {
     return (
       t.title.toLowerCase().includes(q) ||
       artistName.toLowerCase().includes(q) ||
-      (t.genres || []).some((g) => g.toLowerCase().includes(q))
+      (t.genre || "").toLowerCase().includes(q)
     );
   });
 
   return (
     <div className="relative min-h-full px-5 pb-36 pt-4 text-white sm:px-8 lg:px-12">
-      {/* Bass & Particle Droplet Visualizer Canvas */}
       <RainVisualizer themeColor={selectedStation.accent} />
 
-      {/* Dynamic Mood Backdrop with Smooth Cross-fade */}
       <AnimatePresence mode="wait">
         <motion.div
           key={selectedStation.id}
@@ -220,9 +225,6 @@ export default function StationsPage() {
       </AnimatePresence>
 
       <div className="relative z-10 space-y-10">
-        {/* ========================================================= */}
-        {/* HEADER: AMBIENT STUDIO                                    */}
-        {/* ========================================================= */}
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-3.5 py-1 text-xs font-semibold ">
@@ -238,7 +240,6 @@ export default function StationsPage() {
             </p>
           </div>
 
-          {/* Master Ambient Layering Engine Switch */}
           <div className="flex items-center gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -265,9 +266,6 @@ export default function StationsPage() {
           </div>
         </div>
 
-        {/* ========================================================= */}
-        {/* 1. MOOD SELECTOR (CROSS-FADE TONE TABS)                   */}
-        {/* ========================================================= */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-white/50">
@@ -335,9 +333,6 @@ export default function StationsPage() {
           </div>
         </section>
 
-        {/* ========================================================= */}
-        {/* 2. AMBIENT LAYERING ENGINE CONTROLS                       */}
-        {/* ========================================================= */}
         <section className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-8  shadow-xl">
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
             <div>
@@ -350,7 +345,6 @@ export default function StationsPage() {
               </p>
             </div>
 
-            {/* Master slider */}
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-2">
               <span className="text-xs font-semibold text-white/70">Master:</span>
               <input
@@ -368,7 +362,6 @@ export default function StationsPage() {
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {/* Channel 1: Rain */}
             <div className="rounded-2xl border border-white/10 bg-black/25 p-4 ">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -392,7 +385,6 @@ export default function StationsPage() {
               />
             </div>
 
-            {/* Channel 2: Vinyl Crackle */}
             <div className="rounded-2xl border border-white/10 bg-black/25 p-4 ">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -416,7 +408,6 @@ export default function StationsPage() {
               />
             </div>
 
-            {/* Channel 3: Ocean Waves */}
             <div className="rounded-2xl border border-white/10 bg-black/25 p-4 ">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -442,9 +433,6 @@ export default function StationsPage() {
           </div>
         </section>
 
-        {/* ========================================================= */}
-        {/* 3. CURATED STATION TRACKS                                 */}
-        {/* ========================================================= */}
         <section className="space-y-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -457,7 +445,6 @@ export default function StationsPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              {/* Inline search */}
               <div className="relative">
                 <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-white/40" />
                 <input
@@ -469,7 +456,6 @@ export default function StationsPage() {
                 />
               </div>
 
-              {/* Refresh button */}
               <button
                 onClick={() => fetchTracks(selectedStation)}
                 className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white transition"
@@ -514,7 +500,6 @@ export default function StationsPage() {
                     className="group flex cursor-pointer items-center justify-between gap-3 p-3"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* Cover with 3D elevation */}
                       <div
                         style={{ transform: "translateZ(10px)" }}
                         className="relative h-13 w-13 shrink-0 overflow-hidden rounded-xl border border-white/10 shadow-sm"
@@ -533,7 +518,6 @@ export default function StationsPage() {
                         </div>
                       </div>
 
-                      {/* Info */}
                       <div className="min-w-0 flex-1">
                         <h3
                           className={`truncate text-xs font-bold transition-colors ${
@@ -555,7 +539,6 @@ export default function StationsPage() {
                       </div>
                     </div>
 
-                    {/* Like button */}
                     <button
                       type="button"
                       onClick={(e) => {

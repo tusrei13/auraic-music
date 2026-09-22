@@ -28,14 +28,12 @@ import {
   getAdminOverview,
   getAdminPlaylists,
   getAdminSongs,
-  getAdminTopJamendo,
   getAdminUsers,
   updateAdminUserRole,
   type AdminArtist,
   type AdminOverview,
   type AdminPlaylist,
   type AdminSong,
-  type AdminTopSong,
   type AdminUser,
 } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -53,7 +51,6 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [songs, setSongs] = useState<AdminSong[]>([]);
   const [playlists, setPlaylists] = useState<AdminPlaylist[]>([]);
-  const [topJamendo, setTopJamendo] = useState<AdminTopSong[]>([]);
   const [artists, setArtists] = useState<AdminArtist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,19 +73,17 @@ export default function AdminPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const [nextOverview, nextUsers, nextSongs, nextPlaylists, nextTopJamendo, nextArtists] = await Promise.all([
+      const [nextOverview, nextUsers, nextSongs, nextPlaylists, nextArtists] = await Promise.all([
         getAdminOverview(),
         getAdminUsers(),
         getAdminSongs(),
         getAdminPlaylists(),
-        getAdminTopJamendo(),
         getAdminArtists(),
       ]);
       setOverview(nextOverview);
       setUsers(nextUsers.users);
       setSongs(nextSongs.songs);
       setPlaylists(nextPlaylists.playlists);
-      setTopJamendo(nextTopJamendo.songs);
       setArtists(nextArtists.artists);
     } catch (requestError) {
       if (requestError instanceof ApiError && requestError.status === 403) {
@@ -281,26 +276,6 @@ export default function AdminPage() {
               <span className="h-2 w-2 rounded-full bg-emerald-300" /> Quyền ADMIN đang hoạt động
             </div>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-black/20 p-6">
-            <div className="flex items-center gap-3">
-              <BarChart3 className="h-5 w-5 text-amber-300" />
-              <h2 className="text-lg font-bold">Top bài hát Auraic</h2>
-            </div>
-            <div className="mt-5 space-y-4">
-              {topJamendo.map((song, index) => (
-                <div key={song.trackId} className="flex items-center gap-3">
-                  <span className="w-5 text-xs font-bold text-white/35">{index + 1}</span>
-                  <Artwork src={song.image} alt="" className="h-9 w-9 rounded-lg object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{song.title}</p>
-                    <p className="truncate text-xs text-white/40">{song.artistName}</p>
-                  </div>
-                  <span className="text-xs tabular-nums text-amber-200">{song.plays.toLocaleString("vi-VN")} lượt</span>
-                </div>
-              ))}
-              {topJamendo.length === 0 && !isLoading ? <p className="text-sm text-white/40">Chưa có dữ liệu lượt nghe.</p> : null}
-            </div>
-          </article>
         </div>
       </section>
 
@@ -473,7 +448,7 @@ export default function AdminPage() {
         </div>
       </section>
 
-      {/* SECTION: THƯ VIỆN BÀI HÁT JAMENDO WITH SEARCH & GENRE FILTER */}
+      {/* SECTION: THƯ VIỆN BÀI HÁT AURAIC */}
       <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <div>

@@ -31,9 +31,10 @@ import {
 import { usePlayerStore, Track as StoreTrack, type LocalListeningHistoryItem } from "@/store/usePlayerStore";
 import { usePlaylistStore } from "@/store/usePlaylistStore";
 import TrackActionMenu from "@/components/TrackActionMenu";
-import { formatDuration, getListeningHistory, getSongs } from "@/lib/api";
+import { formatDuration, getListeningHistory } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import Artwork from "@/components/Artwork";
+import { StreamEngineService, AuraicAudioAdapter } from "@/lib/sound-engine/client";
 import CustomLyricsModal from "@/components/player/CustomLyricsModal";
 import VirtualList from "@/components/ui/VirtualList";
 
@@ -122,9 +123,9 @@ export default function LibraryPage() {
   const [librarySearch, setLibrarySearch] = useState("");
 
   useEffect(() => {
-    getSongs()
-      .then((data) => {
-        setSystemSongs(Array.isArray(data) ? data : []);
+    StreamEngineService.fetchTrendingTracks(48, "All", "week")
+      .then((engineTracks) => {
+        setSystemSongs(engineTracks.map((t) => AuraicAudioAdapter.toPlayerTrack(t)));
       })
       .catch((err) => console.error("Lỗi tải bài hát cho Thư viện:", err))
       .finally(() => setLoadingSongs(false));
@@ -324,8 +325,7 @@ export default function LibraryPage() {
           <div className="pointer-events-none absolute -bottom-10 left-1/3 h-72 w-72 rounded-full bg-cyan-500/20 blur-[85px]" />
           {latestImage && (
             <div className="pointer-events-none absolute -right-4 -top-4 h-64 w-64 overflow-hidden rounded-full opacity-20 blur-3xl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={latestImage} alt="" className="h-full w-full object-cover scale-150" />
+              <Artwork src={latestImage} alt="" className="h-full w-full object-cover scale-150" />
             </div>
           )}
 
@@ -450,8 +450,7 @@ export default function LibraryPage() {
             {/* Dynamic blurred background from playlist image */}
             <div className="absolute top-0 left-0 right-0 h-[500px] overflow-hidden pointer-events-none">
               <div className="absolute inset-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Artwork
                   src={activePlaylistImage}
                   alt=""
                   className="w-full h-full object-cover opacity-50 blur-[100px] scale-125"
@@ -1053,8 +1052,7 @@ export default function LibraryPage() {
                 >
                   {/* Artwork background */}
                   <div className="absolute inset-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Artwork
                       src={pImage}
                       alt={pName}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -1153,8 +1151,7 @@ export default function LibraryPage() {
                 >
                   {/* Ambient blurred background */}
                   <div className="absolute -inset-4 rounded-[2.5rem] overflow-hidden pointer-events-none">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Artwork
                       src={latestImage}
                       alt=""
                       className="w-full h-full object-cover opacity-30 blur-[80px] scale-125"
@@ -1172,8 +1169,7 @@ export default function LibraryPage() {
                       <div className="relative shrink-0">
                         <div className="absolute -inset-2 bg-cyan-500/20 rounded-3xl blur-2xl group-hover:bg-cyan-500/30 transition-all" />
                          <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border border-white/15 shadow-2xl">
-                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                           <img
+                           <Artwork
                             src={latestImage}
                             alt={latestTitle}
                             className="w-full h-full object-cover"
@@ -1286,8 +1282,7 @@ export default function LibraryPage() {
 
                       {/* Artwork */}
                       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Artwork
                           src={songImage}
                           alt={getStringValue(song.title)}
                           className="h-full w-full object-cover"

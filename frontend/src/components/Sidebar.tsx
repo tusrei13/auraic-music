@@ -3,11 +3,12 @@
 import Artwork from "@/components/Artwork";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Radio, Library, Users, BarChart3 } from "lucide-react";
+import { Home, Radio, Library, Users, BarChart3, Compass } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
   { name: "Trang chủ", href: "/", icon: Home },
+  { name: "Khám phá (Matrix)", href: "/explore", icon: Compass },
   { name: "Stations & Ambient", href: "/stations", icon: Radio },
   { name: "Thư viện", href: "/library", icon: Library },
   { name: "Phòng nghe chung", href: "/session", icon: Users },

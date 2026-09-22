@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Bell, ChevronDown, Loader2, LogIn, LogOut, Mic, Play, Search, Settings2, User, X } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import { searchAll, type Album, type Artist, type JamendoSong } from "@/lib/api";
+import { searchAll, type Song, type Album, type Artist } from "@/lib/api";
 import Artwork from "@/components/Artwork";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 
@@ -25,7 +25,7 @@ export default function GlobalSearchBar() {
   const playTrack = usePlayerStore((state) => state.playTrack);
   const { user, status, openAuthModal, signOut } = useAuthStore();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<JamendoSong[]>([]);
+  const [results, setResults] = useState<Song[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,7 +50,7 @@ export default function GlobalSearchBar() {
     setLoading(true);
     searchAll(normalized)
       .then((searchResult) => {
-        setResults(searchResult.songs as JamendoSong[]);
+        setResults(searchResult.songs);
         setArtists(searchResult.artists);
         setAlbums(searchResult.albums);
       })
@@ -64,7 +64,6 @@ export default function GlobalSearchBar() {
       });
   }, []);
 
-  // Update query when voice recognition updates
   useEffect(() => {
     if (voiceSearch.transcript) {
       setQuery(voiceSearch.transcript);
@@ -72,8 +71,6 @@ export default function GlobalSearchBar() {
     }
   }, [voiceSearch.transcript]);
 
-  // When voice search finishes listening, immediately trigger search for instant response.
-  // Also covers the case where onend fires before the final onresult transcript arrives.
   useEffect(() => {
     if (!voiceSearch.isListening && voiceSearch.transcript && !hasAutoSearchedRef.current) {
       hasAutoSearchedRef.current = true;
@@ -86,9 +83,8 @@ export default function GlobalSearchBar() {
     }
   }, [voiceSearch.isListening, voiceSearch.transcript, executeSearch]);
 
-  // Debounced search for manual typing
   useEffect(() => {
-    if (voiceSearch.isListening) return; // Don't debounce while voice is streaming
+    if (voiceSearch.isListening) return;
 
     const normalizedQuery = query.trim();
     if (!normalizedQuery) {
@@ -105,7 +101,7 @@ export default function GlobalSearchBar() {
       searchAll(normalizedQuery)
         .then((searchResult) => {
           if (active) {
-            setResults(searchResult.songs as JamendoSong[]);
+            setResults(searchResult.songs);
             setArtists(searchResult.artists);
             setAlbums(searchResult.albums);
           }
@@ -137,7 +133,7 @@ export default function GlobalSearchBar() {
     return () => document.removeEventListener("mousedown", closeMenus);
   }, []);
 
-  const chooseTrack = (track: JamendoSong) => {
+  const chooseTrack = (track: Song) => {
     playTrack(track as any, results as any, "Tìm kiếm Auraic");
     setQuery("");
     setResults([]);
@@ -146,7 +142,7 @@ export default function GlobalSearchBar() {
     setOpen(false);
   };
 
-  const chooseArtist = (artist: JamendoSong["artist"]) => {
+  const chooseArtist = (artist: Artist) => {
     setQuery("");
     setResults([]);
     setArtists([]);
@@ -155,7 +151,7 @@ export default function GlobalSearchBar() {
     router.push(`/artist/${encodeURIComponent(artist.id)}?name=${encodeURIComponent(artist.name)}`);
   };
 
-  const chooseAlbum = (album: NonNullable<JamendoSong["album"]>) => {
+  const chooseAlbum = (album: Album) => {
     setQuery("");
     setResults([]);
     setArtists([]);
@@ -259,7 +255,7 @@ export default function GlobalSearchBar() {
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Bài hát</p>
                   {results.slice(0, 8).map((track) => <button key={track.id} role="option" aria-selected={false} type="button" onClick={() => chooseTrack(track)} className="group flex min-h-12 w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400">
                     <Artwork src={track.image || fallbackArtwork} alt="" className="h-10 w-10 rounded-lg object-cover" width={40} height={40} />
-                    <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-white">{track.title}</span><span className="block truncate text-xs text-white/45">{track.artist.name}</span></span>
+                    <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-white">{track.title}</span><span className="block truncate text-xs text-white/45">{typeof track.artist === "string" ? track.artist : track.artist?.name || "Unknown"}</span></span>
                     <Play aria-hidden="true" className="h-4 w-4 shrink-0 fill-white text-white/60 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100" />
                   </button>)}
                 </div>}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import gsap from "gsap";
 
 const MAX_DPR = 1.5;
 
@@ -15,6 +16,7 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
   const contextRef = useRef<AudioContext | null>(null);
   const isPlayingRef = useRef(isPlaying);
   const startLoopRef = useRef<(() => void) | null>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
@@ -33,7 +35,6 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
       return;
     }
 
-    let animationFrame = 0;
     let running = false;
     let visible = false;
     let source: MediaElementAudioSourceNode | null = null;
@@ -43,13 +44,13 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
     const renderLoop = () => {
       if (!visible || !isPlayingRef.current) {
         running = false;
+        gsap.ticker.remove(renderLoop);
         return;
       }
       const currentCanvas = canvasRef.current;
       if (!currentCanvas || !analyser) return;
 
       const rect = currentCanvas.getBoundingClientRect();
-      // Resolution capping keeps the tiny equalizer cheap on Retina/4K.
       const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_DPR);
       const width = Math.max(1, Math.floor(rect.width * pixelRatio));
       const height = Math.max(1, Math.floor(rect.height * pixelRatio));
@@ -58,10 +59,10 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
         currentCanvas.height = height;
       }
 
-      const context2d = currentCanvas.getContext("2d");
-      if (!context2d) return;
-      context2d.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      context2d.clearRect(0, 0, rect.width, rect.height);
+      const ctx = currentCanvas.getContext("2d");
+      if (!ctx) return;
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      ctx.clearRect(0, 0, rect.width, rect.height);
 
       const data = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(data);
@@ -71,21 +72,20 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
       data.forEach((value, index) => {
         const amplitude = (value / 255) * rect.height * 0.8;
         const x = index * barWidth;
-        const gradient = context2d.createLinearGradient(0, center - amplitude, 0, center + amplitude);
+        const gradient = ctx.createLinearGradient(0, center - amplitude, 0, center + amplitude);
         gradient.addColorStop(0, "rgba(129, 140, 248, 0.08)");
         gradient.addColorStop(0.5, "rgba(236, 72, 153, 0.7)");
         gradient.addColorStop(1, "rgba(129, 140, 248, 0.08)");
-        context2d.fillStyle = gradient;
-        context2d.fillRect(x, center - amplitude / 2, Math.max(1, barWidth - pixelRatio), amplitude);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, center - amplitude / 2, Math.max(1, barWidth - pixelRatio), amplitude);
       });
 
       running = true;
-      animationFrame = window.requestAnimationFrame(renderLoop);
     };
 
     const startLoop = () => {
       if (running || !visible) return;
-      animationFrame = window.requestAnimationFrame(renderLoop);
+      gsap.ticker.add(renderLoop);
     };
     startLoopRef.current = startLoop;
 
@@ -93,6 +93,10 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
       (entries) => {
         visible = entries[0]?.isIntersecting !== false;
         if (visible) startLoop();
+        else if (!visible) {
+          gsap.ticker.remove(renderLoop);
+          running = false;
+        }
       },
       { rootMargin: "50px" }
     );
@@ -116,13 +120,13 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
     }
 
     return () => {
+      mountedRef.current = false;
       observer.disconnect();
-      window.cancelAnimationFrame(animationFrame);
+      gsap.ticker.remove(renderLoop);
       running = false;
       startLoopRef.current = null;
       source?.disconnect();
       analyserRef.current?.disconnect();
-      if (context && context.state !== "closed") void context.close();
       if (typeof window !== "undefined" && (window as unknown as { __auraic_analyser__?: AnalyserNode | null }).__auraic_analyser__ === analyser) {
         (window as unknown as { __auraic_analyser__?: AnalyserNode | null }).__auraic_analyser__ = null;
       }
@@ -132,7 +136,7 @@ export default function AudioVisualizer({ audioRef, isPlaying }: AudioVisualizer
   }, [audioRef]);
 
   useEffect(() => {
-    if (isPlaying && contextRef.current?.state === "suspended") {
+    if (isPlaying && contextRef.current?.state === "suspended" && mountedRef.current) {
       void contextRef.current.resume();
     }
   }, [isPlaying]);
