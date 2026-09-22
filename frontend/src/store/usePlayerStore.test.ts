@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { removeDuplicateTracks, type Track } from "./usePlayerStore";
-import { isJamendoTrackId } from "../lib/api";
 
 const track = (id: number): Track => ({
   id,
@@ -23,12 +22,5 @@ describe("removeDuplicateTracks", () => {
       track(1),
       track(2),
     ]);
-  });
-});
-
-describe("isJamendoTrackId", () => {
-  it("recognizes external Jamendo IDs without treating numeric IDs as external", () => {
-    expect(isJamendoTrackId("jamendo:123")).toBe(true);
-    expect(isJamendoTrackId(123)).toBe(false);
   });
 });

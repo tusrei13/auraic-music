@@ -37,11 +37,13 @@ export type SpeechRecognitionState = "idle" | "listening" | "unsupported" | "err
 export interface UseVoiceSearchResult {
   isListening: boolean;
   transcript: string;
+  error: string | null;
   state: SpeechRecognitionState;
   errorMessage: string | null;
   start: () => void;
   stop: () => void;
   toggle: () => void;
+  toggleListening: () => void;
 }
 
 function getSpeechRecognition(): { new (): SpeechRecognitionInstance } | undefined {
@@ -353,10 +355,12 @@ export function useVoiceSearch(language = "vi-VN"): UseVoiceSearchResult {
   return {
     isListening,
     transcript,
+    error: errorMessage,
     state,
     errorMessage,
     start,
     stop,
     toggle,
+    toggleListening: toggle,
   };
 }

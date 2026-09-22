@@ -7,20 +7,7 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "usercontent.jamendo.com",
-      },
-      {
-        protocol: "https",
-        hostname: "imgjam1.jamendo.com",
-      },
-      {
-        protocol: "https",
-        hostname: "imgjam2.jamendo.com",
-      },
-    ],
+    remotePatterns: [],
   },
 };
 

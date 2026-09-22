@@ -35,17 +35,8 @@ const hasToken = () => typeof window !== "undefined" && Boolean(localStorage.get
 
 const toLocalPlaylist = (playlist: any): Playlist => {
   const dbSongs = playlist.songs?.map((item: any) => ({ ...item.song, addedAt: item.addedAt })).filter(Boolean) || [];
-  const dbJamendo = playlist.jamendoSongs?.map((item: any) => ({
-    id: item.trackId,
-    title: item.title,
-    artist: item.artistName,
-    image: item.image,
-    audioUrl: item.audioUrl,
-    duration: item.duration,
-    addedAt: item.addedAt,
-  })) || [];
 
-  const tracks = [...dbJamendo, ...dbSongs].sort((a: any, b: any) => {
+  const tracks = dbSongs.sort((a: any, b: any) => {
     const dateA = new Date(a.addedAt || 0).getTime();
     const dateB = new Date(b.addedAt || 0).getTime();
     return dateA - dateB;
@@ -211,7 +202,6 @@ export const usePlaylistStore = create<PlaylistState>()((set, get) => ({
           const user = await getCurrentUser();
           const remotePlaylists = user.playlists.map(toLocalPlaylist);
 
-          // Merge local tracks that haven't synced yet
           const mergedPlaylists = remotePlaylists.map((remoteP) => {
             const localP = currentLocal.find((l) => l.id === remoteP.id);
             if (!localP) return remoteP;

@@ -1,14 +1,36 @@
-import { catalogResponseContract, searchResponseContract } from './contracts';
+import { searchResponseContract } from './contracts';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+function getApiOrigin(): string {
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return "http://localhost:5000";
+  }
+}
+
 export const resolveMediaUrl = (url: string) => {
+  if (!url) return url;
   if (/^https?:\/\//i.test(url)) return url;
-  const apiUrl = new URL(API_BASE_URL, typeof window === "undefined" ? "http://localhost" : window.location.origin);
+  if (typeof window !== "undefined" && url.startsWith("/api/sound-engine/")) {
+    return new URL(url, window.location.origin).toString();
+  }
+  const apiUrl = new URL(API_BASE_URL, typeof window !== "undefined" ? window.location.origin : "http://localhost");
   return new URL(url, `${apiUrl.origin}/`).toString();
 };
 
-export const isJamendoTrackId = (id: string | number) => String(id).startsWith("jamendo:");
+export const proxyImageUrl = (url: string) => {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) {
+    const encoded = encodeURIComponent(url);
+    if (typeof window !== "undefined") {
+      return `${getApiOrigin()}/api/images/proxy?url=${encoded}`;
+    }
+    return `/api/images/proxy?url=${encoded}`;
+  }
+  return url;
+};
 
 export const formatDuration = (duration?: number | string | null) => {
   if (typeof duration === "string") return duration;
@@ -26,18 +48,6 @@ export interface Album { id: string; title: string; coverImage: string; releaseY
 export interface Song { id: string | number; title: string; audioUrl: string; image: string; duration?: number | null; hlsUrl?: string | null; lyrics?: string | Array<{ time: number; text: string }>; playCount?: number; artist: Artist | string; genre?: Genre | string | null; genres?: string[]; album?: Album | null; mood?: Mood | null; source?: string; licenseUrl?: string }
 export interface Playlist { id: string; name: string; coverImage?: string | null; color?: string | null; userId?: string; songs?: Array<{ song: Song }> }
 export interface SearchResult { songs: Song[]; artists: Artist[]; albums: Album[]; pagination?: { nextCursor: string | null } }
-export interface JamendoSong {
-  id: string;
-  title: string;
-  audioUrl: string;
-  image: string;
-  duration: number;
-  artist: { id: string; name: string; avatar: string };
-  album: { id: string; title: string; coverImage: string; artistId: string } | null;
-  source: "jamendo";
-  licenseUrl?: string;
-  genres: string[];
-}
 export interface CurrentUser { id: string; email: string; name?: string | null; avatar?: string | null; createdAt?: string; role: "USER" | "ADMIN"; playlists: Playlist[] }
 export interface AuthResponse { message: string; token?: string; user?: { id: string; email?: string | null; user_metadata?: { full_name?: string } } }
 export interface ApiErrorPayload { code: string; message: string; requestId?: string; details?: unknown }
@@ -50,15 +60,23 @@ export interface AdminSong { id: string; title: string; image: string; duration?
 export interface AdminSongsResponse { songs: AdminSong[] }
 export interface AdminPlaylist { id: string; name: string; createdAt: string; updatedAt: string; user: { name?: string | null; email: string }; _count: { songs: number } }
 export interface AdminPlaylistsResponse { playlists: AdminPlaylist[] }
-export interface AdminTopSong { trackId: string; title: string; artistName: string; image: string; plays: number }
-export interface AdminTopSongsResponse { songs: AdminTopSong[] }
 export interface AdminAnalytics { periodDays: number; totals: { started: number; completed: number; skipped: number }; daily: Array<{ date: string; started: number; completed: number; skipped: number }>; topTracks: Array<{ trackId: string; title: string; plays: number }>; quality: { invalidTitle: number; invalidTiming: number; unknownSource: number; duplicateStarted: number; totalIssues: number } }
 export interface AdminArtist { id: string; name: string; avatar: string; trackCount: number; albumCount: number }
 export interface AdminArtistsResponse { artists: AdminArtist[] }
 export interface IngestionJob { id: string; status: "RUNNING" | "SUCCEEDED" | "FAILED"; startedAt: string; finishedAt?: string | null; imported: number; updated: number; failed: number; errorMessage?: string | null }
 
 // Phase 3 Intelligence Interfaces
-export interface SemanticSearchResultItem extends JamendoSong {
+export interface SemanticSearchResultItem {
+  id: string | number;
+  title: string;
+  audioUrl: string;
+  image: string;
+  duration?: number | null;
+  artist: { id: string; name: string; avatar: string };
+  album: { id: string; title: string; coverImage: string; artistId: string } | null;
+  source?: string;
+  licenseUrl?: string;
+  genres: string[];
   semanticScore: number;
   matchedReason?: string;
 }
@@ -74,7 +92,17 @@ export interface RecommendationExplanation {
   confidence: number;
   basis: 'likes' | 'history' | 'time_of_day' | 'trending' | 'genre_affinity';
 }
-export interface RecommendedTrackItem extends JamendoSong {
+export interface RecommendedTrackItem {
+  id: string | number;
+  title: string;
+  audioUrl: string;
+  image: string;
+  duration?: number | null;
+  artist: { id: string; name: string; avatar: string };
+  album: { id: string; title: string; coverImage: string; artistId: string } | null;
+  source?: string;
+  licenseUrl?: string;
+  genres: string[];
   explanation: RecommendationExplanation;
   score: number;
 }
@@ -145,7 +173,6 @@ async function fetcher<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 // 1. BÀI HÁT (SONGS)
-export const getSongs = () => getJamendoTracks({ limit: 48 });
 export const getSongById = (id: string | number) => fetcher<Song>(`/songs/${id}`);
 
 // 2. PLAYLISTS
@@ -193,32 +220,13 @@ export const searchAll = (query: string) => fetcher<unknown>(`/search?q=${encode
 export const searchSemantic = (query: string, options: { limit?: number; offset?: number } = {}) =>
   fetcher<SemanticSearchResponse>(`/search/semantic?q=${encodeURIComponent(query)}&limit=${options.limit || 24}&offset=${options.offset || 0}`);
 
-export interface CatalogPage { tracks: JamendoSong[]; nextCursor: string | null }
-export const getJamendoTracksPage = async (options: { limit?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string; signal?: AbortSignal } = {}): Promise<CatalogPage> => {
-  const { signal, ...rest } = options;
-  const params = new URLSearchParams();
-  if (rest.limit) params.set("limit", String(rest.limit));
-  if (rest.cursor) params.set("cursor", rest.cursor);
-  if (rest.tags) params.set("tags", rest.tags);
-  if (rest.search) params.set("search", rest.search);
-  if (rest.artistId) params.set("artistId", rest.artistId);
-  if (rest.artistName) params.set("artistName", rest.artistName);
-  if (rest.albumId) params.set("albumId", rest.albumId);
-  if (rest.order) params.set("order", rest.order);
-  const response = await fetch(`${API_BASE_URL}/catalog/jamendo${params.size ? `?${params}` : ""}`, { cache: "no-store", signal, headers: { ...(typeof window !== "undefined" && localStorage.getItem("token") ? { Authorization: `Bearer ${localStorage.getItem("token")}` } : {}) } });
-  const payload = await response.json().catch(() => []);
-  if (!response.ok) throw new ApiError(response.status, payload?.error || { code: "API_ERROR", message: response.statusText });
-  return { tracks: catalogResponseContract.parse(payload) as JamendoSong[], nextCursor: response.headers.get("x-next-cursor") };
-};
-export const getJamendoTracks = (options: { limit?: number; offset?: number; cursor?: string; tags?: string; search?: string; artistId?: string; artistName?: string; albumId?: string; order?: string; signal?: AbortSignal } = {}) => getJamendoTracksPage({ ...options, cursor: options.cursor || (options.offset ? btoa(String(options.offset)) : undefined) }).then((page) => page.tracks);
-
 export const getLyrics = (trackName: string, artistName: string) =>
   fetcher<LyricsResponse>(`/lyrics?trackName=${encodeURIComponent(trackName)}&artistName=${encodeURIComponent(artistName)}`);
 
 // 5. MOOD MIXES & SMART PLAYLISTS
 export const getMoods = () => fetcher<{ data: MoodMix[] }>('/moods');
 export const getMoodTracks = (moodId: string, options: { limit?: number; offset?: number } = {}) =>
-  fetcher<{ mood: MoodMix; tracks: JamendoSong[] }>(`/moods/${encodeURIComponent(moodId)}?limit=${options.limit || 24}&offset=${options.offset || 0}`);
+  fetcher<{ mood: MoodMix; tracks: Song[] }>(`/moods/${encodeURIComponent(moodId)}?limit=${options.limit || 24}&offset=${options.offset || 0}`);
 
 // 6. PERSONALIZED RECOMMENDATIONS (EXPLAINABLE AI)
 export const getPersonalizedRecommendations = (options: { limit?: number } = {}) =>
@@ -226,19 +234,8 @@ export const getPersonalizedRecommendations = (options: { limit?: number } = {})
 
 // 7. YÊU THÍCH (LIKES)
 export const getLikedSongs = () => fetcher<Array<{ song: Song }>>("/likes/my-likes");
-export type LikeTrackMetadata = Pick<Song, "title" | "image" | "audioUrl" | "licenseUrl"> & { artist: string | { id?: string; name: string; avatar?: string }; duration?: number | string | null };
-export const toggleLikeSong = (songId: string | number, track?: LikeTrackMetadata) =>
-  fetcher<{ liked: boolean }>("/likes/toggle", { method: "POST", body: JSON.stringify({
-    songId,
-    ...(isJamendoTrackId(songId) && track ? {
-      title: track.title,
-      artistName: typeof track.artist === "string" ? track.artist : track.artist?.name,
-      image: track.image,
-      audioUrl: track.audioUrl,
-      duration: track.duration,
-      licenseUrl: track.licenseUrl,
-    } : {}),
-  }) });
+export const toggleLikeSong = (songId: string | number) =>
+  fetcher<{ liked: boolean }>("/likes/toggle", { method: "POST", body: JSON.stringify({ songId }) });
 
 // 8. THỂ LOẠI & LISTENING HISTORY
 export const getGenres = () => fetcher<Genre[]>("/genres");
@@ -246,8 +243,6 @@ export const recordListening = (songId: string | number) =>
   fetcher<{ id: string; listenedAt: string }>(`/songs/${songId}/listen`, { method: "POST" });
 export const getListeningHistory = () =>
   fetcher<Array<{ id: string; listenedAt: string; song: Song }>>("/songs/history");
-export const recordJamendoListening = (data: { trackId: string; title: string; artistName: string; image: string; audioUrl: string; duration?: number | null }) =>
-  fetcher("/songs/jamendo-listen", { method: "POST", body: JSON.stringify(data) });
 
 // 9. ANALYTICS & EVENT PIPELINE
 export const recordAnalyticsEvent = (data: { eventType: "TRACK_STARTED" | "TRACK_COMPLETED" | "TRACK_SKIPPED"; trackId: string | number; source?: string; title: string; position?: number; duration?: number }) =>
@@ -266,7 +261,6 @@ export const updateAdminUserRole = (userId: string, role: "USER" | "ADMIN") => f
 export const getAdminSongs = () => fetcher<AdminSongsResponse>("/admin/songs");
 export const getAdminPlaylists = () => fetcher<AdminPlaylistsResponse>("/admin/playlists");
 export const deleteAdminPlaylist = (playlistId: string) => fetcher<{ message: string; playlistId: string }>(`/admin/playlists/${encodeURIComponent(playlistId)}`, { method: "DELETE" });
-export const getAdminTopJamendo = () => fetcher<AdminTopSongsResponse>("/admin/top-jamendo");
 export const getAdminAnalytics = () => fetcher<AdminAnalytics>("/admin/analytics");
 export const getAdminArtists = () => fetcher<AdminArtistsResponse>("/admin/artists");
 export const updateUserProfile = (name?: string, avatar?: string) => fetcher<{ message: string; user: CurrentUser }>("/auth/profile", { method: "PATCH", body: JSON.stringify({ ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) }) });

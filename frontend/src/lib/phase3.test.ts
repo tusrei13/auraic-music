@@ -41,7 +41,7 @@ describe('Phase 3 Frontend API Client', () => {
     const mockRecs = {
       recommendations: [
         {
-          id: 'jamendo:1',
+          id: 'track:1',
           title: 'Morning Acoustic',
           score: 0.95,
           explanation: {

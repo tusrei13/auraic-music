@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useToastStore } from "./useToastStore";
-import { getLikedSongs, isJamendoTrackId, recordListening, toggleLikeSong, type LikeTrackMetadata } from "../lib/api";
+import { getLikedSongs, recordListening, toggleLikeSong } from "../lib/api";
 import { useAuthStore } from "./useAuthStore";
+import { EngineTrack } from "@/types/sound-engine";
+import { AuraicAudioAdapter } from "@/lib/sound-engine/client";
 
 export interface Track {
   id: number | string;
@@ -13,6 +15,21 @@ export interface Track {
   genre?: string | { name: string } | null;
   duration?: number | string | null;
   lyrics?: string | { time: number; text: string }[];
+  isEngineTrack?: boolean;
+  rawEngineTrack?: EngineTrack;
+}
+
+export function normalizeTrack(track: Track | EngineTrack): Track {
+  if (!track) return track as Track;
+  if ("is_streamable" in track && "user" in track) {
+    const converted = AuraicAudioAdapter.toPlayerTrack(track as EngineTrack);
+    return {
+      ...converted,
+      isEngineTrack: true,
+      rawEngineTrack: track as EngineTrack,
+    };
+  }
+  return track as Track;
 }
 
 export interface LocalListeningHistoryItem {
@@ -42,15 +59,16 @@ interface PlayerState {
   likedTracks: Track[];
   isLyricsOpen: boolean;
 
-  playTrack: (track: Track, contextQueue?: Track[], contextTitle?: string) => void;
-  playMix: (tracks: Track[], contextTitle?: string) => void;
-  addToQueue: (track: Track) => void;
+  playTrack: (track: Track | EngineTrack, contextQueue?: (Track | EngineTrack)[], contextTitle?: string) => void;
+  playMix: (tracks: (Track | EngineTrack)[], contextTitle?: string) => void;
+  playEngineTrack: (track: EngineTrack, contextQueue?: EngineTrack[], contextTitle?: string) => void;
+  addToQueue: (track: Track | EngineTrack) => void;
   removeFromUserQueue: (index: number) => void;
   removeFromContextQueue: (index: number) => void;
   removeFromQueue: (index: number) => void;
   clearQueue: () => void;
   reorderQueue: (newQueue: Track[]) => void;
-  setQueue: (newQueue: Track[]) => void;
+  setQueue: (newQueue: (Track | EngineTrack)[]) => void;
   togglePlay: () => void;
   toggleShuffle: () => void;
   toggleRepeat: () => void;
@@ -165,16 +183,23 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       playTrack: (track, pageQueue, title) => {
-        const currentList = pageQueue && pageQueue.length > 0 ? [...pageQueue] : [track];
+        const normalizedItem = normalizeTrack(track);
+        if (normalizedItem.isEngineTrack || normalizedItem.rawEngineTrack) {
+          const rawId = normalizedItem.rawEngineTrack?.id || AuraicAudioAdapter.extractRawId(normalizedItem.id);
+          normalizedItem.audioUrl = `/api/sound-engine/stream?id=${encodeURIComponent(rawId)}`;
+        }
+        const currentList = pageQueue && pageQueue.length > 0
+          ? pageQueue.map(normalizeTrack)
+          : [normalizedItem];
         const cleanList = removeDuplicateTracks(currentList);
 
-        let foundIdx = cleanList.findIndex((t) => String(t.id) === String(track.id));
+        let foundIdx = cleanList.findIndex((t) => String(t.id) === String(normalizedItem.id));
         if (foundIdx === -1) {
-          cleanList.unshift(track);
+          cleanList.unshift(normalizedItem);
           foundIdx = 0;
         }
 
-        const displayTitle = title && title.trim() !== "" ? title : "Danh sách phát";
+        const displayTitle = title && title.trim() !== "" ? title : "Auraic Sound Stream";
         const isShuffle = get().isShuffle;
 
         let activeQueue = [...cleanList];
@@ -188,7 +213,7 @@ export const usePlayerStore = create<PlayerState>()(
         }
 
         set({
-          currentTrack: track,
+          currentTrack: normalizedItem,
           contextQueue: activeQueue,
           originalQueue: cleanList,
           contextTitle: displayTitle,
@@ -199,8 +224,14 @@ export const usePlayerStore = create<PlayerState>()(
         });
       },
 
+      playEngineTrack: (engineTrack, queue, title) => {
+        const normalized = normalizeTrack(engineTrack);
+        const normalizedQueue = queue ? queue.map(normalizeTrack) : undefined;
+        get().playTrack(normalized, normalizedQueue, title || "Auraic Sound Engine Stream");
+      },
+
       playMix: (tracks, contextTitle = "Mix ngẫu nhiên") => {
-        const pool = tracks && tracks.length > 0 ? tracks : [];
+        const pool = tracks && tracks.length > 0 ? tracks.map(normalizeTrack) : [];
         if (pool.length === 0) return;
         const cleanTracks = removeDuplicateTracks(pool);
         const shuffled = shuffleArray(cleanTracks);
@@ -219,15 +250,16 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       addToQueue: (track) => {
+        const normalized = normalizeTrack(track);
         const { userQueue, currentTrack } = get();
-        if (String(currentTrack?.id) === String(track.id)) {
+        if (String(currentTrack?.id) === String(normalized.id)) {
           useToastStore.getState().addToast("Bài hát đang phát!", "info");
           return;
         }
 
-        const filtered = userQueue.filter((t) => String(t.id) !== String(track.id));
-        set({ userQueue: [...filtered, track] });
-        useToastStore.getState().addToast(`Đã thêm "${track.title}" vào Hàng đợi`, "success");
+        const filtered = userQueue.filter((t) => String(t.id) !== String(normalized.id));
+        set({ userQueue: [...filtered, normalized] });
+        useToastStore.getState().addToast(`Đã thêm "${normalized.title}" vào Hàng đợi`, "success");
       },
 
       removeFromUserQueue: (index) => {
@@ -278,10 +310,13 @@ export const usePlayerStore = create<PlayerState>()(
 
       reorderQueue: (newQueue) => set({ userQueue: removeDuplicateTracks(newQueue) }),
 
-      setQueue: (newQueue) => set({ 
-        contextQueue: removeDuplicateTracks(newQueue), 
-        originalQueue: removeDuplicateTracks(newQueue) 
-      }),
+      setQueue: (newQueue) => {
+        const normalized = newQueue.map(normalizeTrack);
+        set({ 
+          contextQueue: removeDuplicateTracks(normalized), 
+          originalQueue: removeDuplicateTracks(normalized) 
+        });
+      },
 
       togglePlay: () => set((state) => ({
         isPlaying: !state.isPlaying,
@@ -294,7 +329,32 @@ export const usePlayerStore = create<PlayerState>()(
 
       recordListening: async (songId) => {
         if (typeof window === "undefined" || !localStorage.getItem("token")) return;
-        if (isJamendoTrackId(songId)) return;
+        if (AuraicAudioAdapter.isEngineTrackId(songId)) {
+          // Record engine track play to local history
+          const userId = useAuthStore.getState().user?.id;
+          if (userId && get().currentTrack) {
+            const storageKey = `auraic-history-${userId}`;
+            let history: any[] = [];
+            try {
+              const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
+              if (Array.isArray(stored)) history = stored;
+            } catch {
+              history = [];
+            }
+            history = [
+              {
+                id: `${String(songId)}-${Date.now()}`,
+                listenedAt: new Date().toISOString(),
+                song: get().currentTrack,
+              },
+              ...history.filter((item) => String(item.song?.id) !== String(songId)),
+            ].slice(0, 50);
+            localStorage.setItem(storageKey, JSON.stringify(history));
+            window.dispatchEvent(new CustomEvent("auraic:history-updated"));
+          }
+          return;
+        }
+
         try {
           await recordListening(songId);
         } catch {
@@ -432,25 +492,17 @@ export const usePlayerStore = create<PlayerState>()(
           `${wasLiked ? "Đã xóa" : "Đã thêm"} ${formattedTitle} ${wasLiked ? "khỏi" : "vào"} Yêu thích`,
           wasLiked ? "info" : "success"
         );
-        const track = typeof trackOrId === "object" && trackOrId !== null ? trackOrId : undefined;
-        if (typeof window !== "undefined" && localStorage.getItem("token") && (!isJamendoTrackId(id) || track)) {
+        if (typeof window !== "undefined" && localStorage.getItem("token")) {
           try {
-            const result = await toggleLikeSong(id, track ? {
-              title: track.title,
-              artist: track.artist,
-              image: track.image,
-              audioUrl: track.audioUrl,
-              duration: track.duration,
-              licenseUrl: (track as Track & { licenseUrl?: string }).licenseUrl,
-            } satisfies LikeTrackMetadata : undefined);
+            const result = await toggleLikeSong(id);
             set((current) => ({
               likedIds: result.liked
                 ? current.likedIds.some((item) => String(item) === String(id))
                   ? current.likedIds
                   : [...current.likedIds, id]
                 : current.likedIds.filter((item) => String(item) !== String(id)),
-              likedTracks: result.liked && track
-                ? [track, ...current.likedTracks.filter((item) => String(item.id) !== String(id))]
+              likedTracks: result.liked && typeof trackOrId === "object"
+                ? [trackOrId, ...current.likedTracks.filter((item) => String(item.id) !== String(id))]
                 : current.likedTracks.filter((item) => String(item.id) !== String(id)),
             }));
           } catch {
@@ -458,7 +510,7 @@ export const usePlayerStore = create<PlayerState>()(
               likedIds: wasLiked
                 ? [...current.likedIds, id]
                 : current.likedIds.filter((item) => String(item) !== String(id)),
-              likedTracks: wasLiked || !track
+              likedTracks: wasLiked || typeof trackOrId !== "object"
                 ? current.likedTracks
                 : current.likedTracks.filter((item) => String(item.id) !== String(id)),
             }));
