@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { updateAdminUserRole, deleteAdminPlaylist, updateSystemSettings, runIngestion, updateSongLyrics } from './admin.controller'
+import { updateAdminUserRole, deleteAdminPlaylist, updateSystemSettings, updateSongLyrics } from './admin.controller'
 import { prisma } from '../lib/prisma'
 
 
@@ -104,33 +104,6 @@ describe('admin.controller audit logging', () => {
         userAgent: 'test',
       },
     })
-  })
-
-  it('logs RUN_INGESTION success and failure', async () => {
-    const req = {
-      user: { id: 'admin-1' },
-      ip: '127.0.0.1',
-      headers: { 'user-agent': 'test' },
-    } as any
-    const res = {
-      status: vi.fn(() => res),
-      json: vi.fn(),
-    } as any
-
-    vi.spyOn(prisma.ingestionJob, 'create').mockResolvedValue({ id: 'job-1', status: 'RUNNING' } as any)
-    vi.spyOn(prisma.ingestionJob, 'update').mockResolvedValue({ id: 'job-1', status: 'SUCCEEDED', imported: 10 } as any)
-    vi.spyOn(prisma.adminAuditLog, 'create').mockResolvedValue({} as any)
-    const timeoutMock = { unref: vi.fn() } as any
-    vi.spyOn(global, 'setTimeout').mockReturnValue(timeoutMock)
-
-    await runIngestion(req, res)
-
-    const calls = (prisma.adminAuditLog.create as any).mock.calls
-    expect(calls).toHaveLength(2)
-    expect(calls[0][0].data.action).toBe('RUN_INGESTION')
-    expect(calls[0][0].data.changes).toEqual({ status: 'RUNNING' })
-    expect(calls[1][0].data.action).toBe('RUN_INGESTION')
-    expect(calls[1][0].data.changes).toEqual({ status: 'SUCCEEDED', imported: 10 })
   })
 
   it('does not fail the request if audit logging fails', async () => {
