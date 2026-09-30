@@ -162,6 +162,60 @@
           }
         }
       }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
+      "id": 7,
+      "title": "Redis Cache Hit Ratio (Target: > 85%)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "(sum(rate(cache_hits_total[5m])) or vector(0)) / ((sum(rate(cache_hits_total[5m])) or vector(0)) + (sum(rate(cache_misses_total[5m])) or vector(1))) * 100",
+          "legendFormat": "Cache Hit Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "green", "value": 85 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
+      "id": 8,
+      "title": "Audio Stream First Chunk Latency (p95 Target: < 120ms)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(stream_time_to_first_audio_seconds_bucket[5m])) by (le)) * 1000",
+          "legendFormat": "p95 First Chunk Latency"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 120 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        }
+      }
     }
   ],
   "schemaVersion": 38,
