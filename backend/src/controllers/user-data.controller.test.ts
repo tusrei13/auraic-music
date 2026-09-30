@@ -18,10 +18,8 @@ describe('user-data.controller', () => {
 
     vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({ id: 'user-1', email: 'u@test.com', name: 'U', avatar: null, createdAt: new Date(), updatedAt: new Date(), role: 'USER' } as any)
     vi.spyOn(prisma.like, 'findMany').mockResolvedValue([])
-    vi.spyOn(prisma.jamendoLike, 'findMany').mockResolvedValue([])
     vi.spyOn(prisma.playlist, 'findMany').mockResolvedValue([])
     vi.spyOn(prisma.listeningHistory, 'findMany').mockResolvedValue([])
-    vi.spyOn(prisma.jamendoListening, 'findMany').mockResolvedValue([])
     vi.spyOn(prisma.analyticsEvent, 'findMany').mockResolvedValue([])
     vi.spyOn(prisma.follow, 'findMany').mockResolvedValue([])
 
@@ -71,13 +69,10 @@ describe('user-data.controller', () => {
     vi.spyOn(prisma, '$transaction').mockImplementation(async (callback: any) => {
       const tx = {
         analyticsEvent: { updateMany: vi.fn().mockResolvedValue({}) },
-        jamendoListening: { updateMany: vi.fn().mockResolvedValue({}) },
         listeningHistory: { deleteMany: vi.fn().mockResolvedValue({}) },
         like: { deleteMany: vi.fn().mockResolvedValue({}) },
-        jamendoLike: { deleteMany: vi.fn().mockResolvedValue({}) },
         follow: { deleteMany: vi.fn().mockResolvedValue({}) },
         playlist: { findMany: vi.fn().mockResolvedValue([{ id: 'playlist-1' }]), deleteMany: vi.fn().mockResolvedValue({}) },
-        jamendoPlaylistSong: { deleteMany: vi.fn().mockResolvedValue({}) },
         playlistSong: { deleteMany: vi.fn().mockResolvedValue({}) },
         user: { update: vi.fn().mockResolvedValue({ id: 'user-1' }) },
       }

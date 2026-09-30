@@ -9,7 +9,7 @@ export const exportUserData = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id
 
-    const [user, likes, jamendoLikes, playlists, histories, jamendoHistory, analyticsEvents, follows] = await Promise.all([
+    const [user, likes, playlists, histories, analyticsEvents, follows] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: { id: true, email: true, name: true, avatar: true, createdAt: true, updatedAt: true, role: true },
@@ -18,25 +18,15 @@ export const exportUserData = async (req: AuthRequest, res: Response) => {
         where: { userId },
         include: { song: { select: { id: true, title: true, image: true, duration: true, artistId: true } } },
       }),
-      prisma.jamendoLike.findMany({
-        where: { userId },
-        select: { trackId: true, title: true, artistName: true, image: true, audioUrl: true, duration: true, licenseUrl: true, createdAt: true },
-      }),
       prisma.playlist.findMany({
         where: { userId },
         include: {
           songs: { include: { song: { select: { id: true, title: true, image: true, duration: true, artistId: true } } } },
-          jamendoSongs: true,
         },
       }),
       prisma.listeningHistory.findMany({
         where: { userId },
         include: { song: { select: { id: true, title: true, image: true, duration: true } } },
-        orderBy: { listenedAt: 'desc' },
-      }),
-      prisma.jamendoListening.findMany({
-        where: { userId },
-        select: { trackId: true, title: true, artistName: true, image: true, audioUrl: true, duration: true, listenedAt: true },
         orderBy: { listenedAt: 'desc' },
       }),
       prisma.analyticsEvent.findMany({
@@ -55,7 +45,6 @@ export const exportUserData = async (req: AuthRequest, res: Response) => {
       exportedAt: new Date().toISOString(),
       user: user || null,
       likes: likes.map(l => ({ songId: l.songId, song: l.song, createdAt: l.createdAt })),
-      jamendoLikes,
       playlists: playlists.map(p => ({
         id: p.id,
         name: p.name,
@@ -64,16 +53,14 @@ export const exportUserData = async (req: AuthRequest, res: Response) => {
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
         songs: p.songs.map(ps => ({ addedAt: ps.addedAt, song: ps.song })),
-        jamendoSongs: p.jamendoSongs,
       })),
       listeningHistory: histories,
-      jamendoListeningHistory: jamendoHistory,
       analyticsEvents,
       follows: follows.map(f => ({ artist: f.artist, createdAt: f.createdAt })),
       summary: {
-        totalLikes: likes.length + jamendoLikes.length,
+        totalLikes: likes.length,
         totalPlaylists: playlists.length,
-        totalHistoryEntries: histories.length + jamendoHistory.length,
+        totalHistoryEntries: histories.length,
         totalAnalyticsEvents: analyticsEvents.length,
         totalFollows: follows.length,
       },
@@ -99,19 +86,12 @@ export const deleteUserData = async (req: AuthRequest, res: Response) => {
         data: { userId: `anonymized-${userId}` },
       })
 
-      await tx.jamendoListening.updateMany({
-        where: { userId },
-        data: { userId: `anonymized-${userId}` },
-      })
-
       await tx.listeningHistory.deleteMany({ where: { userId } })
       await tx.like.deleteMany({ where: { userId } })
-      await tx.jamendoLike.deleteMany({ where: { userId } })
       await tx.follow.deleteMany({ where: { userId } })
 
       const userPlaylists = await tx.playlist.findMany({ where: { userId }, select: { id: true } })
       for (const playlist of userPlaylists) {
-        await tx.jamendoPlaylistSong.deleteMany({ where: { playlistId: playlist.id } })
         await tx.playlistSong.deleteMany({ where: { playlistId: playlist.id } })
       }
       await tx.playlist.deleteMany({ where: { userId } })
