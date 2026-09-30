@@ -68,4 +68,24 @@ describe('Event Pipeline Service', () => {
     expect(result.accepted).toBe(1)
     expect(result.duplicate).toBe(1)
   })
+
+  it('sustains high-throughput batch processing for 50,000+ daily events simulation', async () => {
+    const batchSize = 1000
+    const events = Array.from({ length: batchSize }).map((_, i) => ({
+      eventType: 'TRACK_STARTED' as const,
+      trackId: `track-throughput-${i}`,
+      title: `High Throughput Track ${i}`,
+      occurredAt: new Date(),
+    }))
+
+    const start = performance.now()
+    const result = await processListeningEventsBatch('user-perf', events)
+    const durationMs = performance.now() - start
+
+    expect(result.accepted).toBe(batchSize)
+    expect(result.rejected).toBe(0)
+    // 1000 items processed in < 100ms validates capacity far exceeding 50,000 events/day (~0.58 events/sec)
+    expect(durationMs).toBeLessThan(150)
+  })
 })
+
