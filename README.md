@@ -152,7 +152,14 @@ OpenAPI/Swagger setup is registered by the backend at startup. Check the generat
 
 ## 9. Configuration
 
-Create `backend/.env` and `frontend/.env.local` locally. Keep both files out of source control.
+Copy the committed examples to local environment files before running the app:
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+```
+
+Set the required values in each copied file. Keep `backend/.env` and `frontend/.env.local` out of source control.
 
 ### Backend variables
 
@@ -196,6 +203,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 git clone https://github.com/tusrei13/auraic-music.git
 cd auraic
 
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+
 cd backend
 npm install
 npm run prisma:generate
@@ -204,7 +214,7 @@ cd ../frontend
 npm install
 ```
 
-Create the environment files described above, then initialize the database:
+After setting the environment values, initialize the database:
 
 ```bash
 cd backend
