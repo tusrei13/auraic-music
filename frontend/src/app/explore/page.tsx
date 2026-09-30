@@ -55,7 +55,7 @@ export default function ExplorePage() {
     setHasSearched(true);
 
     try {
-      let type = tab === "all" ? undefined : tab === "songs" ? "song" : tab === "artists" ? "artist" : tab === "albums" ? "album" : "playlist";
+      const type = tab === "all" ? undefined : tab === "songs" ? "song" : tab === "artists" ? "artist" : tab === "albums" ? "album" : "playlist";
       const res = await fetch(`/api/sound-engine/search?q=${encodeURIComponent(q)}${type ? `&type=${type}` : ""}`);
       if (!res.ok) throw new Error("Search failed");
       const data = await res.json();
@@ -83,11 +83,11 @@ export default function ExplorePage() {
   const handlePlaySong = (song: any, pool: any[]) => {
     const artwork = song.artwork?.["480x480"] || song.artwork?.["150x150"] || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop";
     const playerTrack = {
-      id: `engine:${song.id}`,
+      id: `youtube:${song.id}`,
       title: song.title,
       artist: { id: song.id, name: song.artist || "Unknown Artist", avatar: artwork },
       image: artwork,
-      audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(song.id)}`,
+      audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(song.id)}&source=youtube`,
       duration: song.duration || 0,
       genre: "Electronic",
       isEngineTrack: true,
@@ -95,11 +95,11 @@ export default function ExplorePage() {
     const playerPool = pool.map((s: any) => {
       const a = s.artwork?.["480x480"] || s.artwork?.["150x150"] || artwork;
       return {
-        id: `engine:${s.id}`,
+        id: `youtube:${s.id}`,
         title: s.title,
         artist: { id: s.id, name: s.artist || "Unknown Artist", avatar: a },
         image: a,
-        audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(s.id)}`,
+        audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(s.id)}&source=youtube`,
         duration: s.duration || 0,
         genre: "Electronic",
         isEngineTrack: true,
@@ -189,8 +189,8 @@ export default function ExplorePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {results.songs.map((song) => {
               const artwork = song.artwork?.["480x480"] || song.artwork?.["150x150"] || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop";
-              const isCurrent = String(currentTrack?.id) === `engine:${song.id}`;
-              const isLiked = likedIds.some((id) => String(id) === `engine:${song.id}`);
+              const isCurrent = String(currentTrack?.id) === `youtube:${song.id}`;
+              const isLiked = likedIds.some((id) => String(id) === `youtube:${song.id}`);
 
               return (
                 <TiltCard

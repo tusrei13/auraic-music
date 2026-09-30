@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { removeDuplicateTracks, type Track } from "./usePlayerStore";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { normalizeTrack, removeDuplicateTracks, usePlayerStore, type Track } from "./usePlayerStore";
 
-const track = (id: number): Track => ({
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+const track = (id: number | string): Track => ({
   id,
   title: `Track ${id}`,
   artist: "Artist",
@@ -22,5 +26,34 @@ describe("removeDuplicateTracks", () => {
       track(1),
       track(2),
     ]);
+  });
+});
+
+describe("playback stream errors", () => {
+  it("advances only once when the same track reports repeated errors", () => {
+    vi.useFakeTimers();
+    const tracks = [track(1), track(2), track(3)];
+    const player = usePlayerStore.getState();
+
+    player.playTrack(tracks[0], tracks);
+    player.handlePlaybackError("Network error");
+    usePlayerStore.getState().setPlaybackStatus("error", "Network error");
+
+    vi.advanceTimersByTime(1500);
+    expect(usePlayerStore.getState().currentTrack?.id).toBe(2);
+  });
+});
+
+describe("normalizeTrack stream URLs", () => {
+  it("infers YouTube source and corrects an extra leading hyphen", () => {
+    const normalized = normalizeTrack({
+      ...track("-7IID5YLPg7w"),
+      isEngineTrack: true,
+    });
+
+    expect(normalized.streamSource).toBe("youtube");
+    expect(normalized.audioUrl).toBe(
+      "/api/sound-engine/stream?id=7IID5YLPg7w&source=youtube"
+    );
   });
 });

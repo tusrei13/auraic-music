@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import { AuraicAudioAdapter } from "@/lib/sound-engine/client";
+import { AuraicAudioAdapter, isValidTrackId, sanitizeTrackId } from "@/lib/sound-engine/client";
 import TrackActionMenu from "@/components/TrackActionMenu";
 import QueueDrawer from "@/components/player/QueueDrawer";
 import AudioVisualizer from "@/components/AudioVisualizer";
@@ -71,6 +71,7 @@ export default function Player() {
     playbackStatus,
     playbackError,
     setPlaybackStatus,
+    handlePlaybackError,
     recordListening,
     crossfadeEnabled,
     crossfadeDuration,
@@ -92,7 +93,12 @@ export default function Player() {
   const hlsRef = useRef<Hls | null>(null);
   const hlsReadyRef = useRef(false);
   const isPlayingRef = useRef(isPlaying);
-  const mediaUrl = resolveMediaUrl(currentTrack?.audioUrl || "");
+  const rawMediaUrl = currentTrack?.audioUrl || "";
+  const streamId = currentTrack?.isEngineTrack || currentTrack?.rawEngineTrack
+    ? sanitizeTrackId(currentTrack.id, "youtube")
+    : null;
+  const hasValidStreamId = !streamId || isValidTrackId(streamId);
+  const mediaUrl = hasValidStreamId ? resolveMediaUrl(rawMediaUrl) : "";
   const isHlsSource = /\.m3u8(?:\?|$)/i.test(mediaUrl);
 
   useEffect(() => {
@@ -146,6 +152,11 @@ export default function Player() {
     setCurrentTime(0);
     setDuration(typeof currentTrack.duration === "number" ? currentTrack.duration : 0);
 
+    if (!mediaUrl) {
+      handlePlaybackError("Bài hát có mã phát không hợp lệ");
+      return;
+    }
+
     if (!isHlsSource) {
       audio.src = mediaUrl;
       audio.load();
@@ -192,14 +203,18 @@ export default function Player() {
       hlsRef.current = null;
       hlsReadyRef.current = false;
     };
-  }, [currentTrack, isHlsSource, mediaUrl, setPlaybackStatus]);
+  }, [currentTrack, isHlsSource, mediaUrl, handlePlaybackError, setPlaybackStatus]);
 
   useEffect(() => {
     if (currentTrack && audioRef.current) {
       setPlaybackStatus("loading");
       if (isPlaying && (!isHlsSource || hlsReadyRef.current)) {
-        audioRef.current.play().catch(() => {
-          setPlaybackStatus("error", "Không thể phát bài hát này");
+        audioRef.current.play().catch((err) => {
+          // "NotAllowedError" means the browser blocked autoplay — this is not a stream
+          // failure. The onerror event on <audio> handles real decode/network errors.
+          if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
+            setPlaybackStatus("error", "Không thể phát bài hát này");
+          }
         });
       } else if (!isPlaying) {
         audioRef.current.autoplay = false;
@@ -305,7 +320,7 @@ export default function Player() {
         recordedTrackIdRef.current !== currentTrack.id
       ) {
         recordedTrackIdRef.current = currentTrack.id;
-        if (AuraicAudioAdapter.isEngineTrackId(currentTrack.id) || currentTrack.isEngineTrack) {
+        if (AuraicAudioAdapter.isYouTubeTrackId(currentTrack.id) || currentTrack.isEngineTrack) {
           const userId = useAuthStore.getState().user?.id;
           if (userId) {
             const storageKey = `auraic-history-${userId}`;
@@ -357,11 +372,20 @@ export default function Player() {
   const handleAudioError = () => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) {
-      setPlaybackStatus("error", "Không thể tải file âm thanh");
+      handlePlaybackError("Không thể tải file âm thanh");
       return;
     }
 
-    setPlaybackStatus("error", "Không thể tải bài hát này. Bạn có thể thử lại hoặc chuyển bài thủ công.");
+    const mediaErr = audio.error;
+    if (mediaErr?.code === MediaError.MEDIA_ERR_ABORTED) {
+      return;
+    }
+    const errorDetails = mediaErr
+      ? `MediaError code ${mediaErr.code}: ${mediaErr.message || "playback error"}`
+      : "Không thể phát luồng âm thanh";
+
+    console.warn(`[Player] Audio playback error on "${currentTrack.title}" (${currentTrack.id}):`, errorDetails);
+    handlePlaybackError(errorDetails);
   };
 
   const handleEnded = () => {
@@ -469,7 +493,7 @@ export default function Player() {
 
           <audio
             ref={audioRef}
-            src={isHlsSource ? undefined : mediaUrl}
+            src={isHlsSource || !mediaUrl ? undefined : mediaUrl}
             crossOrigin="anonymous"
             preload="metadata"
             onTimeUpdate={handleTimeUpdate}
@@ -712,7 +736,7 @@ export default function Player() {
 
             {/* Bitrate Badge as shown in reference */}
             <span className="hidden xl:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider text-white/70 bg-white/5 border border-white/10 select-none">
-              {AuraicAudioAdapter.isEngineTrackId(currentTrack.id) || currentTrack.isEngineTrack ? "320kbps Hi-Res" : "128 kbps"}
+              {AuraicAudioAdapter.isYouTubeTrackId(currentTrack.id) || currentTrack.isEngineTrack ? "YouTube Music" : "Local audio"}
             </span>
 
             <div className="flex items-center gap-2.5 group">

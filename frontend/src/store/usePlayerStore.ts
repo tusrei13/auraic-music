@@ -4,7 +4,7 @@ import { useToastStore } from "./useToastStore";
 import { getLikedSongs, recordListening, toggleLikeSong } from "../lib/api";
 import { useAuthStore } from "./useAuthStore";
 import { EngineTrack } from "@/types/sound-engine";
-import { AuraicAudioAdapter } from "@/lib/sound-engine/client";
+import { AuraicAudioAdapter, isValidTrackId, sanitizeTrackId, PROXY_BASE } from "@/lib/sound-engine/client";
 
 export interface Track {
   id: number | string;
@@ -17,6 +17,7 @@ export interface Track {
   lyrics?: string | { time: number; text: string }[];
   isEngineTrack?: boolean;
   rawEngineTrack?: EngineTrack;
+  streamSource?: "youtube";
 }
 
 export function normalizeTrack(track: Track | EngineTrack): Track {
@@ -29,7 +30,19 @@ export function normalizeTrack(track: Track | EngineTrack): Track {
       rawEngineTrack: track as EngineTrack,
     };
   }
-  return track as Track;
+  const normalized = track as Track;
+  if (normalized.isEngineTrack || normalized.rawEngineTrack) {
+    const streamSource = "youtube";
+    const cleanId = sanitizeTrackId(normalized.id, "youtube");
+    return {
+      ...normalized,
+      streamSource,
+      audioUrl: isValidTrackId(cleanId)
+        ? `${PROXY_BASE}/stream?id=${encodeURIComponent(cleanId)}&source=${streamSource}`
+        : "",
+    };
+  }
+  return normalized;
 }
 
 export interface LocalListeningHistoryItem {
@@ -78,6 +91,7 @@ interface PlayerState {
   prevTrack: () => void;
   toggleLike: (trackOrId: number | string | Track) => Promise<void>;
   setPlaybackStatus: (status: PlaybackStatus, error?: string | null) => void;
+  handlePlaybackError: (errorDetails?: string | unknown) => void;
   recordListening: (songId: number | string) => Promise<void>;
   switchUser: (userId: string | null) => void;
   toggleLyrics: () => void;
@@ -92,6 +106,9 @@ export const removeDuplicateTracks = (tracks: Track[]): Track[] => {
     return true;
   });
 };
+
+const isPlayableTrack = (track: Track): boolean =>
+  !(track.isEngineTrack || track.rawEngineTrack) || isValidTrackId(track.id);
 
 const shuffleArray = <T>(array: T[]): T[] => {
   const arr = [...array];
@@ -185,19 +202,24 @@ export const usePlayerStore = create<PlayerState>()(
       playTrack: (track, pageQueue, title) => {
         const normalizedItem = normalizeTrack(track);
         if (normalizedItem.isEngineTrack || normalizedItem.rawEngineTrack) {
-          const rawId = normalizedItem.rawEngineTrack?.id || AuraicAudioAdapter.extractRawId(normalizedItem.id);
-          normalizedItem.audioUrl = `/api/sound-engine/stream?id=${encodeURIComponent(rawId)}`;
+          const streamSource = "youtube";
+          const cleanId = sanitizeTrackId(normalizedItem.id, "youtube");
+          normalizedItem.streamSource = streamSource;
+          normalizedItem.audioUrl = isValidTrackId(cleanId)
+            ? `${PROXY_BASE}/stream?id=${encodeURIComponent(cleanId)}&source=${streamSource}`
+            : "";
         }
         const currentList = pageQueue && pageQueue.length > 0
           ? pageQueue.map(normalizeTrack)
           : [normalizedItem];
-        const cleanList = removeDuplicateTracks(currentList);
+        const cleanList = removeDuplicateTracks(currentList).filter(isPlayableTrack);
+        if (cleanList.length === 0) {
+          useToastStore.getState().addToast("Không có bài hát hợp lệ để phát.", "error");
+          return;
+        }
 
         let foundIdx = cleanList.findIndex((t) => String(t.id) === String(normalizedItem.id));
-        if (foundIdx === -1) {
-          cleanList.unshift(normalizedItem);
-          foundIdx = 0;
-        }
+        if (foundIdx === -1) foundIdx = 0;
 
         const displayTitle = title && title.trim() !== "" ? title : "Auraic Sound Stream";
         const isShuffle = get().isShuffle;
@@ -213,7 +235,7 @@ export const usePlayerStore = create<PlayerState>()(
         }
 
         set({
-          currentTrack: normalizedItem,
+          currentTrack: cleanList[foundIdx],
           contextQueue: activeQueue,
           originalQueue: cleanList,
           contextTitle: displayTitle,
@@ -233,7 +255,8 @@ export const usePlayerStore = create<PlayerState>()(
       playMix: (tracks, contextTitle = "Mix ngẫu nhiên") => {
         const pool = tracks && tracks.length > 0 ? tracks.map(normalizeTrack) : [];
         if (pool.length === 0) return;
-        const cleanTracks = removeDuplicateTracks(pool);
+        const cleanTracks = removeDuplicateTracks(pool).filter(isPlayableTrack);
+        if (cleanTracks.length === 0) return;
         const shuffled = shuffleArray(cleanTracks);
 
         set({
@@ -324,13 +347,92 @@ export const usePlayerStore = create<PlayerState>()(
         playbackError: null,
       })),
 
-      setPlaybackStatus: (playbackStatus, playbackError = null) =>
-        set({ playbackStatus, playbackError }),
+      handlePlaybackError: (errorDetails?: string | unknown) => {
+        const state = get();
+        const current = state.currentTrack;
+        if (state.playbackStatus === "error") return;
+
+        console.warn(
+          `[PlayerStore] Playback error on track "${current?.title}" (ID: ${current?.id}):`,
+          errorDetails
+        );
+
+        const errorMsg =
+          typeof errorDetails === "string"
+            ? errorDetails
+            : "Không thể phát bài hát này.";
+
+        set({
+          playbackStatus: "error",
+          playbackError: errorMsg,
+          isPlaying: false,
+        });
+
+        useToastStore
+          .getState()
+          .addToast(
+            `Không thể tải "${current?.title || "bài hát"}". Chuyển bài tiếp theo...`,
+            "error"
+          );
+
+        // Auto-advance to the next available track after a short delay
+        setTimeout(() => {
+          const latestState = get();
+          // Only skip if the errored track is still the current one
+          if (
+            latestState.playbackStatus === "error" &&
+            latestState.currentTrack &&
+            String(latestState.currentTrack.id) === String(current?.id)
+          ) {
+            latestState.nextTrack();
+          }
+        }, 1500);
+      },
+
+      setPlaybackStatus: (playbackStatus, playbackError = null) => {
+        const previousState = get();
+        if (
+          playbackStatus === "error" &&
+          previousState.playbackStatus === "error" &&
+          previousState.currentTrack
+        ) {
+          return;
+        }
+
+        set({ playbackStatus, playbackError });
+        if (playbackStatus === "error") {
+          const state = get();
+          const current = state.currentTrack;
+          console.warn(
+            `[PlayerStore] Playback status error on track "${current?.title}" (ID: ${current?.id}):`,
+            playbackError
+          );
+          if (current) {
+            useToastStore
+              .getState()
+              .addToast(
+                `Không thể tải "${current.title}". Chuyển bài tiếp theo...`,
+                "error"
+              );
+            setTimeout(() => {
+              const latestState = get();
+              // Only auto-advance if still in error state on the same track
+              if (
+                latestState.playbackStatus === "error" &&
+                latestState.currentTrack &&
+                String(latestState.currentTrack.id) === String(current.id)
+              ) {
+                latestState.nextTrack();
+              }
+            }, 1500);
+          }
+        }
+      },
 
       recordListening: async (songId) => {
         if (typeof window === "undefined" || !localStorage.getItem("token")) return;
-        if (AuraicAudioAdapter.isEngineTrackId(songId)) {
-          // Record engine track play to local history
+        if (AuraicAudioAdapter.isYouTubeTrackId(songId)) {
+          // Record provider track play to local history
           const userId = useAuthStore.getState().user?.id;
           if (userId && get().currentTrack) {
             const storageKey = `auraic-history-${userId}`;
@@ -443,6 +545,8 @@ export const usePlayerStore = create<PlayerState>()(
           contextQueue: newQueue,
           contextIndex: nextIdx,
           isPlaying: true,
+          playbackStatus: "loading",
+          playbackError: null,
         });
       },
 

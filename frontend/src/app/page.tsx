@@ -15,7 +15,6 @@ import {
   Flame,
   Zap,
   Activity,
-  Repeat2,
   Share2,
   Compass,
   Headphones,
@@ -42,18 +41,6 @@ export default function HomePage() {
   const [undergroundTracks, setUndergroundTracks] = useState<EngineTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentHour, setCurrentHour] = useState<number>(new Date().getHours());
-  const [nodeHealth, setNodeHealth] = useState<{
-    status: string;
-    latencyMs: number;
-    activeNode: string;
-    badge: string;
-  }>({
-    status: "online",
-    latencyMs: 42,
-    activeNode: "Decentralized Audio Node",
-    badge: "Engine Node: Connected - 320kbps Hi-Res (42ms)",
-  });
-
   // Time theme
   useEffect(() => {
     const updateHour = () => setCurrentHour(new Date().getHours());
@@ -62,30 +49,11 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Check Node Health
-  useEffect(() => {
-    let mounted = true;
-    const checkHealth = async () => {
-      try {
-        const health = await StreamEngineService.checkEngineHealth();
-        if (mounted) setNodeHealth(health);
-      } catch {
-        // keep fallback
-      }
-    };
-    checkHealth();
-    const interval = setInterval(checkHealth, 30000);
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-  }, []);
-
   const timeTheme: TimeOfDayTheme = useMemo(() => {
     if (currentHour >= 5 && currentHour < 12) {
       return {
         label: "Buổi Sáng",
-        greeting: "Khởi đầu ngày mới với âm thanh 320kbps thuần khiết",
+        greeting: "Khởi đầu ngày mới cùng âm nhạc bạn yêu thích",
         icon: Sun,
         meshClasses:
           "from-amber-500/25 via-orange-500/15 to-sky-500/20 shadow-[0_0_80px_rgba(245,158,11,0.2)]",
@@ -95,7 +63,7 @@ export default function HomePage() {
     } else if (currentHour >= 12 && currentHour < 18) {
       return {
         label: "Buổi Chiều",
-        greeting: "Nạp năng lượng sáng tạo với dải âm Decentralized Stream",
+        greeting: "Nạp năng lượng sáng tạo với âm nhạc mới",
         icon: Sunset,
         meshClasses:
           "from-violet-600/30 via-fuchsia-500/20 to-cyan-500/25 shadow-[0_0_80px_rgba(168,85,247,0.25)]",
@@ -105,7 +73,7 @@ export default function HomePage() {
     } else {
       return {
         label: "Buổi Tối & Đêm",
-        greeting: "Không gian tĩnh mịch cho tâm hồn thưởng âm Audiophile",
+        greeting: "Không gian tĩnh mịch cho những giai điệu dịu êm",
         icon: Moon,
         meshClasses:
           "from-indigo-900/40 via-purple-900/25 to-cyan-900/30 shadow-[0_0_80px_rgba(99,102,241,0.3)]",
@@ -120,7 +88,7 @@ export default function HomePage() {
     setLoading(true);
     try {
       const [trending, underground] = await Promise.all([
-        StreamEngineService.fetchTrendingTracks(10, undefined, "week"),
+        StreamEngineService.fetchTrendingTracks(10),
         StreamEngineService.fetchUndergroundTracks(12),
       ]);
       setTrendingTracks(trending);
@@ -147,7 +115,7 @@ export default function HomePage() {
   return (
     <div className="min-h-full px-5 pb-36 pt-4 text-white sm:px-8 lg:px-12 space-y-12">
       {/* ========================================================= */}
-      {/* 1. HERO BANNER: SPATIAL 3D BENTO GLASS + NODE RESOLVER    */}
+      {/* 1. HERO BANNER: SPATIAL 3D BENTO GLASS                    */}
       {/* ========================================================= */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -187,12 +155,12 @@ export default function HomePage() {
             <h1 className="text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl text-white">
               Âm Thanh Mở.{" "}
               <span className="bg-gradient-to-r from-cyan-300 via-indigo-200 to-pink-300 bg-clip-text text-transparent">
-                Đỉnh Cao Audiophile.
+                Khám Phá Âm Nhạc.
               </span>
             </h1>
 
             <p className="text-sm font-medium text-white/75 sm:text-base leading-relaxed">
-              {timeTheme.greeting}. Khai thác trực tiếp từ Decentralized Sound Engine với chất lượng 320kbps MP3 nguyên bản và mạng lưới nodes phân tán.
+              {timeTheme.greeting}. Khám phá và nghe các bài hát được tìm thấy trên YouTube Music.
             </p>
 
             {/* Quick CTAs */}
@@ -214,7 +182,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Quick Host Resolver Badge */}
+          {/* Provider badge */}
           <div className="flex flex-col items-start lg:items-end gap-3 shrink-0">
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-black/50 px-4 py-3 backdrop-blur-2xl shadow-2xl">
               <div className="relative flex h-3 w-3">
@@ -223,17 +191,17 @@ export default function HomePage() {
               </div>
               <div className="text-left">
                 <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-300">
-                  {nodeHealth.badge}
+                  YouTube Music
                 </div>
                 <div className="text-[10px] text-white/50">
-                  Độ trễ ping: <span className="font-mono text-white/80">{nodeHealth.latencyMs}ms</span> • Dynamic Load Balancing
+                  Tìm kiếm và phát nhạc qua YouTube
                 </div>
               </div>
             </div>
 
             <div className="inline-flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-1 text-[11px] font-mono text-cyan-200">
               <Headphones className="w-3.5 h-3.5 text-cyan-400" />
-              <span>True 320kbps Hi-Res Stream</span>
+              <span>YouTube Music streams</span>
             </div>
           </div>
         </div>
@@ -303,9 +271,9 @@ export default function HomePage() {
                       </span>
                     </div>
 
-                    {/* Quality badge */}
+                    {/* Provider badge */}
                     <div className="absolute top-4 right-4 z-20 px-2 py-0.5 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-[9px] font-mono font-bold text-emerald-300 backdrop-blur-md">
-                      320kbps
+                      YouTube Music
                     </div>
 
                     {/* Artwork with 3D Pop */}
@@ -347,16 +315,9 @@ export default function HomePage() {
                         )}
                       </Link>
 
-                      {/* Stats: Plays & Reposts */}
+                      {/* Provider and library action */}
                       <div className="flex items-center justify-between text-[11px] text-white/40 pt-2 border-t border-white/10 font-mono">
-                        <div className="flex items-center gap-1">
-                          <Headphones className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>{(track.play_count || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Repeat2 className="w-3.5 h-3.5 text-pink-400" />
-                          <span>{(track.repost_count || 0).toLocaleString()}</span>
-                        </div>
+                        <span>YouTube Music</span>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -373,14 +334,14 @@ export default function HomePage() {
                         </button>
                       </div>
 
-                      {/* View Track Lineage Link */}
+                      {/* Track details link */}
                       <div className="pt-1">
                         <Link
                           href={`/track/${track.id}`}
                           onClick={(e) => e.stopPropagation()}
                           className="text-[10px] text-indigo-300 hover:text-indigo-100 flex items-center gap-1 font-mono tracking-wide"
                         >
-                          <span>Xem cây Remix & Stem Lineage →</span>
+                          <span>Xem thông tin bài hát →</span>
                         </Link>
                       </div>
                     </div>

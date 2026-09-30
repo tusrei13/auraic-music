@@ -117,7 +117,7 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
       const avatar = t.user?.profile_picture?.["480x480"] || t.user?.profile_picture?.["150x150"] || coverImage;
 
       return {
-        id: `engine:${t.id}`,
+        id: `youtube:${t.id}`,
         title: t.title,
         artist: { id: t.user?.id || "", name: t.user?.name || t.user?.handle || "Unknown Artist", avatar },
         image: artwork,
@@ -137,7 +137,7 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
     const avatar = track.user?.profile_picture?.["480x480"] || track.user?.profile_picture?.["150x150"] || coverImage;
 
     const playerTrack = {
-      id: `engine:${track.id}`,
+      id: `youtube:${track.id}`,
       title: track.title,
       artist: { id: track.user?.id || "", name: track.user?.name || track.user?.handle || "Unknown Artist", avatar },
       image: artwork,
@@ -152,7 +152,7 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
       const a = t.artwork?.["1000x1000"] || t.artwork?.["480x480"] || t.artwork?.["150x150"] || coverImage;
       const av = t.user?.profile_picture?.["480x480"] || t.user?.profile_picture?.["150x150"] || coverImage;
       return {
-        id: `engine:${t.id}`,
+        id: `youtube:${t.id}`,
         title: t.title,
         artist: { id: t.user?.id || "", name: t.user?.name || t.user?.handle || "Unknown Artist", avatar: av },
         image: a,

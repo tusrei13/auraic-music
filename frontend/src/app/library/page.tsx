@@ -123,7 +123,7 @@ export default function LibraryPage() {
   const [librarySearch, setLibrarySearch] = useState("");
 
   useEffect(() => {
-    StreamEngineService.fetchTrendingTracks(48, "All", "week")
+    StreamEngineService.fetchTrendingTracks(48, "All")
       .then((engineTracks) => {
         setSystemSongs(engineTracks.map((t) => AuraicAudioAdapter.toPlayerTrack(t)));
       })

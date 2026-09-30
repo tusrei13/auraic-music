@@ -26,7 +26,7 @@ function artworkFor(track: EngineTrack): string {
 }
 
 function artistName(artist: EngineArtist): string {
-  return artist.name || artist.handle || "Nghệ sĩ chưa rõ";
+  return artist.name || artist.handle || "Nghệ sĩ";
 }
 
 export default function SearchBar() {
@@ -36,6 +36,8 @@ export default function SearchBar() {
   const voiceSearch = useVoiceSearch("vi-VN");
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query.trim(), 300);
+  const debouncedQueryRef = useRef(debouncedQuery);
+  useEffect(() => { debouncedQueryRef.current = debouncedQuery; }, [debouncedQuery]);
   const [payload, setPayload] = useState<SearchPayload>({ songs: [], artists: [], albums: [] });
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -98,23 +100,26 @@ export default function SearchBar() {
       return;
     }
 
-    const controller = new AbortController();
+    let isMounted = true;
+    const queryRef = { current: debouncedQuery };
     setLoading(true);
     Promise.all([
-      fetch(`/api/sound-engine/search/suggestions?q=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal }).then((response) => response.ok ? response.json() : []),
-      fetch(`/api/sound-engine/search?q=${encodeURIComponent(debouncedQuery)}&type=all`, { signal: controller.signal }).then((response) => response.ok ? response.json() : { songs: [], artists: [], albums: [] }),
+      fetch(`/api/sound-engine/search/suggestions?q=${encodeURIComponent(debouncedQuery)}`).then((response) => response.ok ? response.json() : []),
+      fetch(`/api/sound-engine/search?q=${encodeURIComponent(debouncedQuery)}&type=all`).then((response) => response.ok ? response.json() : { songs: [], artists: [], albums: [] }),
     ]).then(([nextSuggestions, nextPayload]) => {
-      setSuggestions(Array.isArray(nextSuggestions) ? nextSuggestions : []);
-      setPayload({ songs: nextPayload.songs || [], artists: nextPayload.artists || [], albums: nextPayload.albums || [] });
+      if (isMounted && queryRef.current === debouncedQueryRef.current) {
+        setSuggestions(Array.isArray(nextSuggestions) ? nextSuggestions : []);
+        setPayload({ songs: nextPayload.songs || [], artists: nextPayload.artists || [], albums: nextPayload.albums || [] });
+      }
     }).catch((error: unknown) => {
-      if ((error as { name?: string }).name !== "AbortError") {
+      if (isMounted && queryRef.current === debouncedQueryRef.current && (error as { name?: string }).name !== "AbortError") {
         setSuggestions([]);
         setPayload({ songs: [], artists: [], albums: [] });
       }
     }).finally(() => {
-      if (!controller.signal.aborted) setLoading(false);
+      if (isMounted && queryRef.current === debouncedQueryRef.current) setLoading(false);
     });
-    return () => controller.abort();
+    return () => { isMounted = false; };
   }, [debouncedQuery]);
 
   const playQuickResult = (track: EngineTrack) => {
@@ -165,7 +170,7 @@ export default function SearchBar() {
               {suggestions.length > 0 && <section><p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Gợi ý từ khóa</p>{suggestions.slice(0, 5).map((suggestion) => <button key={suggestion} type="button" onClick={() => handleSearch(suggestion)} className="flex min-h-9 w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-white/75 hover:bg-white/[0.08]"><Search className="h-3.5 w-3.5 text-cyan-200/60" />{suggestion}</button>)}</section>}
               {hasQuickResults ? <>
                 {payload.topResult && <section><p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Kết quả hàng đầu</p><button type="button" onClick={() => handleSearch()} className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-white/[0.08]"><Artwork src={payload.topResult.thumbnail || fallbackArtwork} alt="" width={44} height={44} className="h-11 w-11 rounded-lg object-cover" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-white">{payload.topResult.title}</span><span className="block truncate text-xs text-white/45">{payload.topResult.artist}</span></span><span className="text-[10px] uppercase text-cyan-200/60">{payload.topResult.type}</span></button></section>}
-                {payload.songs.slice(0, 3).length > 0 && <section><p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Bài hát phù hợp</p>{payload.songs.slice(0, 3).map((track) => <button key={track.id} type="button" onClick={() => playQuickResult(track)} className="group flex min-h-12 w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-white/[0.08]"><Artwork src={artworkFor(track)} alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-cover" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-white">{track.title}</span><span className="block truncate text-xs text-white/45">{artistName(track.user)}</span></span><Play className="h-4 w-4 fill-white text-white/70 opacity-0 transition group-hover:opacity-100" /></button>)}</section>}
+                {payload.songs.slice(0, 3).length > 0 && <section><p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Bài hát phù hợp</p>{payload.songs.slice(0, 3).map((track) => <button key={track.id} type="button" onClick={() => playQuickResult(track)} className="group flex min-h-12 w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-white/[0.08]"><Artwork src={artworkFor(track)} alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-cover" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-white">{track.title}</span><span className="block truncate text-xs text-white/45">{track.artist || artistName(track.user)}</span></span><Play className="h-4 w-4 fill-white text-white/70 opacity-0 transition group-hover:opacity-100" /></button>)}</section>}
               </> : !loading && <p className="px-3 py-6 text-center text-sm text-white/45">Chưa có kết quả phù hợp.</p>}
             </div>}
           </div>}

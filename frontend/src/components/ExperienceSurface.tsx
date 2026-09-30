@@ -4,7 +4,6 @@ import Artwork from "@/components/Artwork";
 import { useEffect, useState } from "react";
 import {
   Check,
-  Clipboard,
   Heart,
   Music2,
   Play,
@@ -26,7 +25,7 @@ const fallbackTrack = {
   duration: 0,
 };
 
-type ExperienceKind = "now-playing" | "track-info" | "download" | "credits" | "settings";
+type ExperienceKind = "now-playing" | "settings";
 
 function GlossyToggle({
   checked,
@@ -59,23 +58,11 @@ function GlossyToggle({
 export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
   const { currentTrack, isPlaying, togglePlay, likedIds, toggleLike } = usePlayerStore();
   const { user } = useAuthStore();
-  const [quality, setQualityState] = useState("Lossless (24-bit / 96kHz)");
-  const [copied, setCopied] = useState(false);
   const [privacy, setPrivacy] = useState<PrivacySettings>({
     privateHistory: true,
     hideFromCharts: false,
     allowAnalytics: true,
   });
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(`auraic-settings-${user?.id || "guest"}`);
-    if (stored) setQualityState(stored);
-  }, [user?.id]);
-
-  const setQuality = (value: string) => {
-    setQualityState(value);
-    window.localStorage.setItem(`auraic-settings-${user?.id || "guest"}`, value);
-  };
 
   useEffect(() => {
     setPrivacy(getPrivacySettings(user?.id || "guest"));
@@ -90,13 +77,6 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
   const track = currentTrack || fallbackTrack;
   const artist = typeof track.artist === "string" ? track.artist : track.artist.name;
   const liked = likedIds.some((id) => String(id) === String(track.id));
-  const attribution = `"${track.title}" by ${artist}. Source and usage terms are available from the original track page.`;
-
-  const copyCredit = async () => {
-    await navigator.clipboard.writeText(attribution);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
-  };
 
   if (kind === "settings") {
     return (
@@ -114,23 +94,23 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
                 Cài Đặt & Không Gian Âm Thanh
               </h1>
               <p className="max-w-xl text-sm text-white/65 leading-relaxed">
-                Tùy biến môi trường âm thanh 3D, độ phân giải giải mã Hi-Res DAC và hệ thống bảo mật không gian thưởng thức cá nhân.
+                Quản lý tùy chọn ứng dụng và quyền riêng tư. Chất lượng phát phụ thuộc nguồn nhạc, thiết bị và kết nối mạng.
               </p>
             </div>
 
-            {/* Engine Quick Metrics Pill Row */}
+            {/* Playback source and status */}
             <div className="relative z-10 grid grid-cols-3 gap-3 pt-4 border-t border-white/10">
               <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-center">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-400">Audio Engine</p>
-                <p className="mt-1 text-base font-black text-white">Web Audio 3D</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-400">Music source</p>
+                <p className="mt-1 text-base font-black text-white">YouTube Music</p>
               </div>
               <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-center">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-fuchsia-400">Stream DAC</p>
-                <p className="mt-1 text-base font-black text-white">24-bit / 96kHz</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-fuchsia-400">Stream quality</p>
+                <p className="mt-1 text-base font-black text-white">Source-dependent</p>
               </div>
               <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-center">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400">Buffer Latency</p>
-                <p className="mt-1 text-base font-black text-emerald-300">&lt; 12ms (Ultra)</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400">Buffer</p>
+                <p className="mt-1 text-base font-black text-emerald-300">Network-dependent</p>
               </div>
             </div>
           </header>
@@ -207,7 +187,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
             </div>
           </div>
 
-          {/* Card 2: Chất lượng & Độ phân giải DAC (Audio Quality) */}
+          {/* Card 2: Audio source and quality */}
           <div className="rounded-[28px] border border-white/15 bg-white/[0.035] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col justify-between space-y-5">
             <div className="flex items-center gap-3.5">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
@@ -215,32 +195,18 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
               </div>
               <div>
                 <h2 className="font-bold text-base text-white">Chất lượng phát âm thanh</h2>
-                <p className="text-xs text-white/50">Độ phân giải dải âm thanh DAC / Stream</p>
+                <p className="text-xs text-white/50">Định dạng phụ thuộc nguồn phát và trình duyệt</p>
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs text-white/70 block">Dải tần giải mã Stream:</label>
-              <select
-                value={quality}
-                onChange={(event) => setQuality(event.target.value)}
-                className="w-full rounded-2xl border border-cyan-400/30 bg-slate-900/90 px-4 py-3 text-xs font-semibold text-white shadow-inner outline-none focus:border-cyan-400 cursor-pointer"
-                aria-label="Chất lượng phát nhạc"
-              >
-                <option>Standard (128 kbps AAC)</option>
-                <option>High Definition (320 kbps MP3/OGG)</option>
-                <option>Lossless (24-bit / 96kHz FLAC)</option>
-              </select>
             </div>
 
             <div className="rounded-2xl border border-white/8 bg-black/25 p-3.5 space-y-2">
               <div className="flex justify-between text-xs text-white/70">
-                <span>Giải thuật tăng cường Spatial:</span>
-                <span className="font-mono font-bold text-cyan-300">Convolver Reverb</span>
+                <span>Nguồn bên ngoài:</span>
+                <span className="font-mono font-bold text-cyan-300">YouTube Music</span>
               </div>
               <div className="flex justify-between text-xs text-white/70">
-                <span>Hỗ trợ phần cứng WebGL/Audio:</span>
-                <span className="font-mono font-bold text-emerald-400">Đã kích hoạt</span>
+                <span>Chọn bitrate thủ công:</span>
+                <span className="font-mono font-bold text-white/50">Không hỗ trợ</span>
               </div>
             </div>
           </div>
@@ -348,16 +314,10 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
       <header className="flex flex-col gap-5 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-fuchsia-300">
-            <Music2 className="h-4 w-4" /> {kind === "credits" ? "Artist credits" : "Track details"}
+          <Music2 className="h-4 w-4" /> Track details
           </p>
           <h1 className="mt-4 text-4xl font-black sm:text-6xl">
-            {kind === "track-info"
-              ? "Track & license"
-              : kind === "download"
-              ? "Use this track"
-              : kind === "credits"
-              ? "Give credit well"
-              : "Track details"}
+          Track details
           </h1>
         </div>
         {currentTrack ? (
@@ -395,28 +355,19 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
 
         <div className="max-w-xl space-y-6">
           <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.05] p-6 sm:p-7 ">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200">Usage information</p>
-            <h2 className="mt-2 text-xl font-bold">Original source terms</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200">Playback source</p>
+            <h2 className="mt-2 text-xl font-bold">
+              {currentTrack?.streamSource === "youtube" ? "YouTube Music" : "Auraic library"}
+            </h2>
             <p className="mt-4 text-sm leading-6 text-white/60">
-              Review the license before publishing, remixing or using this track commercially. Attribution may be required.
+              Source availability and usage terms are determined by the original provider and content owner.
             </p>
-            <div className="mt-5">
-              <button
-                type="button"
-                onClick={() => void copyCredit()}
-                className="flex min-h-11 items-center gap-2 rounded-2xl bg-white px-5 text-sm font-bold text-slate-950 shadow-md transition hover:bg-neutral-100 cursor-pointer"
-              >
-                <Clipboard className="h-4 w-4" />
-                {copied ? "Copied" : "Copy attribution"}
-              </button>
-            </div>
           </div>
           <p className="text-sm leading-6 text-white/45">
-            {currentTrack ? attribution : "Chọn một bài hát từ Auraic để xem thông tin chi tiết."}
+            {currentTrack ? `${track.title} — ${artist}` : "Chọn một bài hát từ Auraic để xem thông tin chi tiết."}
           </p>
         </div>
       </div>
     </div>
   );
 }
-

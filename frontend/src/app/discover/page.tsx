@@ -167,7 +167,7 @@ export default function DiscoverPage() {
     setCatalogError(null);
     try {
       const [engineTracks] = await Promise.all([
-        StreamEngineService.fetchTrendingTracks(48, "All", "week"),
+        StreamEngineService.fetchTrendingTracks(48, "All"),
       ]);
       const playerTracks = engineTracks.map((t) => AuraicAudioAdapter.toPlayerTrack(t));
       setSongs(playerTracks);
