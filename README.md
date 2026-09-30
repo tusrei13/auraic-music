@@ -152,22 +152,29 @@ OpenAPI/Swagger setup is registered by the backend at startup. Check the generat
 
 ## 9. Configuration
 
-Copy the committed examples to local environment files before running the app:
+Create local environment files from the committed examples (choose your shell):
+
+**Linux / macOS (Bash):**
 
 ```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
+cp backend/.env.example backend/.env && cp frontend/.env.example frontend/.env.local
 ```
 
-Set the required values in each copied file. Keep `backend/.env` and `frontend/.env.local` out of source control.
+**Windows (PowerShell):**
+
+```powershell
+Copy-Item backend/.env.example backend/.env; Copy-Item frontend/.env.example frontend/.env.local
+```
+
+Set the required values in each file. Do not commit `backend/.env` or `frontend/.env.local`.
 
 ### Backend variables
 
 ```env
 PORT=5000
 NODE_ENV=development
-DATABASE_URL=postgresql://auraic:auraic_secret@localhost:5432/auraic_db?schema=public
-DIRECT_URL=postgresql://auraic:auraic_secret@localhost:5432/auraic_db
+DATABASE_URL=******localhost:5432/auraic_db?schema=public
+DIRECT_URL=******localhost:5432/auraic_db
 REDIS_URL=redis://localhost:6379
 FRONTEND_URL=http://localhost:3001
 SUPABASE_URL=https://your-project.supabase.co
@@ -192,63 +199,69 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ### Requirements
 
 - Node.js 22 or newer and npm 10 or newer
-- Docker Desktop with Docker Compose
+- Git
+- Docker Desktop with Docker Compose (for the local infrastructure stack)
 - PostgreSQL 16 and Redis 7, or the development Compose stack
 - Supabase project credentials for authenticated workflows
 - FFmpeg when using local transcoding workflows
 
-### Install and configure
+### Clone, configure, and run
+
+Use the shell-specific commands below. Clone the repository, then copy the example environment files before installing dependencies.
+
+**Linux / macOS (Bash):**
 
 ```bash
-git clone https://github.com/tusrei13/auraic-music.git
-cd auraic
-
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
-
-cd backend
-npm install
-npm run prisma:generate
-
-cd ../frontend
-npm install
+git clone https://github.com/tusrei13/auraic-music.git && cd auraic-music
+cp backend/.env.example backend/.env && cp frontend/.env.example frontend/.env.local
+cd backend && npm install && npm run prisma:generate && npm run prisma:push
+cd ../frontend && npm install
 ```
 
-After setting the environment values, initialize the database:
+**Windows (PowerShell):**
 
-```bash
-cd backend
-npm run prisma:push
-npm run prisma:seed       # optional
+```powershell
+git clone https://github.com/tusrei13/auraic-music.git; cd auraic-music
+Copy-Item backend/.env.example backend/.env; Copy-Item frontend/.env.example frontend/.env.local
+cd backend; npm install; npm run prisma:generate; npm run prisma:push
+cd ..\frontend; npm install
 ```
 
-### Run locally
+Optional database seed (run from the repository root): `npm --prefix backend run prisma:seed`.
 
-Use separate terminals:
+Run the backend and frontend in separate terminals:
+
+**Linux / macOS (Bash):**
 
 ```bash
-cd backend
-npm run dev
+cd backend && npm run dev
 ```
 
 ```bash
-cd frontend
-npm run dev
+cd frontend && npm run dev
+```
+
+**Windows (PowerShell):**
+
+```powershell
+cd backend; npm run dev
+```
+
+```powershell
+cd frontend; npm run dev
 ```
 
 Open [http://localhost:3001](http://localhost:3001). The API is available at [http://localhost:5000](http://localhost:5000).
 
 ### Run infrastructure with Docker
 
-For PostgreSQL, Redis, Prometheus, and Grafana only:
+Run from the repository root; these Docker Compose commands work in Bash and PowerShell.
 
-```bash
+```text
+# PostgreSQL, Redis, Prometheus, and Grafana
 docker compose -f docker-compose.dev.yml up
-```
 
-For the complete application stack:
-
-```bash
+# Full application stack
 docker compose -f docker-compose.yml up --build
 ```
 
@@ -260,29 +273,40 @@ The full stack exposes the frontend on `3001`, backend on `5000`, PostgreSQL on 
 - Terraform modules: `modules/storage`, `modules/database`, `modules/compute`, and `modules/cdn`.
 - Monitoring configuration: `monitoring/prometheus/` and `monitoring/grafana/provisioning/`.
 - Incident procedures: `docs/runbooks/database-outage.md`, `disaster-recovery.md`, `high-latency-slo-breach.md`, and `security-incident.md`.
-- Repository helpers: `scripts/backup-db.sh` and `scripts/restore-db.sh`.
+- Repository backup and restore scripts (`scripts/backup-db.sh`, `scripts/restore-db.sh`) require Bash; use Linux/macOS, WSL, or Git Bash on Windows.
 
 Terraform uses an encrypted S3 state backend with DynamoDB locking by default. Configure credentials and backend values through your deployment environment before running `terraform init` or `terraform apply`.
 
 ## 12. Verification and Test Coverage
 
+These commands work in both Bash and PowerShell. Run each group from the repository root:
+
 ### Backend
 
+**Linux / macOS (Bash):**
+
 ```bash
-cd backend
-npm test
-npm run build
+cd backend && npm test && npm run build
+```
+
+**Windows (PowerShell):**
+
+```powershell
+cd backend; npm test; npm run build
 ```
 
 ### Frontend
 
+**Linux / macOS (Bash):**
+
 ```bash
-cd frontend
-npm test
-npm run lint
-npx tsc --noEmit
-npm run build
-npm run test:e2e
+cd frontend && npm test && npm run lint && npx tsc --noEmit && npm run build && npm run test:e2e
+```
+
+**Windows (PowerShell):**
+
+```powershell
+cd frontend; npm test; npm run lint; npx tsc --noEmit; npm run build; npm run test:e2e
 ```
 
 Backend tests cover route, controller, service, analytics, embeddings, chart, event-pipeline, transcoding, and user-data behavior. Frontend tests include Vitest unit coverage and Playwright end-to-end smoke coverage.
