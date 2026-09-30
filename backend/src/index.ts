@@ -101,18 +101,6 @@ app.use('/api/v1/charts', chartRoutes)
 app.use('/api/v1/user', userDataRoutes)
 app.use('/api/v1', genreRoutes)
 
-app.use('/api/v1/health', (_req: express.Request, res: express.Response) => {
-  res.json({
-    status: 'online',
-    latencyMs: 42,
-    activeNode: 'Local Engine Node',
-    quality: '320kbps Hi-Res Audiophile',
-    badge: 'Engine Node: Connected - 320kbps Hi-Res (42ms)',
-    authenticated: Boolean(process.env.SOUND_ENGINE_API_KEY || process.env.SOUND_ENGINE_BEARER_TOKEN),
-    timestamp: Date.now(),
-  })
-})
-
 app.use('/api', genreRoutes)
 
 app.use('/api/images', imageRoutes)
