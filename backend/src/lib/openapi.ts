@@ -3,6 +3,7 @@ import swaggerUi from 'swagger-ui-express'
 import type { Express } from 'express'
 import express from 'express'
 import path from 'node:path'
+import { openapiV1Paths } from './openapi-paths'
 
 const openapiSpec = swaggerJsdoc({
   definition: {
@@ -62,12 +63,17 @@ const openapiSpec = swaggerJsdoc({
   apis: ['./src/routes/**/*.ts', './src/controllers/**/*.ts'],
 })
 
-const specPaths = (openapiSpec as any).paths || {}
+const specPaths = {
+  ...openapiV1Paths,
+  ...((openapiSpec as any).paths || {}),
+}
+
 
 const setupSpec = {
   ...openapiSpec,
   paths: specPaths,
 }
+
 
 const customCssPath = path.resolve('./src/lib/swagger-custom.css')
 
