@@ -53,7 +53,6 @@ interface NormalizedArtist {
   track_count?: number;
   playlist_count?: number;
   album_count?: number;
-  repost_count?: number;
 }
 
 interface NormalizedTrack {
@@ -65,17 +64,12 @@ interface NormalizedTrack {
   duration: number;
   play_count?: number;
   favorite_count?: number;
-  repost_count?: number;
   artwork?: { "150x150"?: string; "480x480"?: string; "1000x1000"?: string } | null;
   user: NormalizedArtist;
-  remix_of?: any;
-  stem_of?: any;
   bpm?: number | null;
   tags?: string | null;
   is_streamable: boolean;
   release_date?: string | null;
-  downloadable?: boolean;
-  license?: string | null;
 }
 
 interface NormalizedPlaylist {
@@ -87,7 +81,6 @@ interface NormalizedPlaylist {
   artwork?: { "150x150"?: string; "480x480"?: string; "1000x1000"?: string } | null;
   user: NormalizedArtist;
   total_play_count?: number;
-  repost_count?: number;
   favorite_count?: number;
 }
 
@@ -128,7 +121,6 @@ function normalizeArtist(raw: any, id: string): NormalizedArtist {
     track_count: 0,
     playlist_count: 0,
     album_count: 0,
-    repost_count: 0,
   };
 }
 
@@ -153,17 +145,12 @@ function normalizeTrack(item: any, artist: NormalizedArtist): NormalizedTrack {
     duration,
     play_count: 0,
     favorite_count: 0,
-    repost_count: 0,
     artwork,
     user: artist,
-    remix_of: null,
-    stem_of: null,
     bpm: null,
     tags: null,
     is_streamable: true,
     release_date: null,
-    downloadable: false,
-    license: null,
   };
 }
 
@@ -182,7 +169,6 @@ function normalizePlaylist(item: any, artist: NormalizedArtist, isAlbum = true):
     artwork,
     user: artist,
     total_play_count: 0,
-    repost_count: 0,
     favorite_count: 0,
   };
 }

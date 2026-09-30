@@ -1,6 +1,6 @@
 /**
  * Auraic Sound Engine - Unified Type Definitions
- * Abstract data models for Decentralized Open Audio Stream Engine
+ * Normalized data models returned by YouTube Music integrations.
  */
 
 export interface EngineArtwork {
@@ -28,45 +28,25 @@ export interface EngineArtist {
   track_count?: number;
   playlist_count?: number;
   album_count?: number;
-  repost_count?: number;
-}
-
-export interface EngineRemixParentItem {
-  parent_track_id: string;
-  has_remix_author_reposted?: boolean;
-  has_remix_author_saved?: boolean;
-  user?: EngineArtist;
-}
-
-export interface EngineRemixParent {
-  tracks: EngineRemixParentItem[];
-}
-
-export interface EngineStemInfo {
-  parent_track_id: string;
-  category: "drums" | "bass" | "vocals" | "lead" | "synth" | "other" | string;
 }
 
 export interface EngineTrack {
   id: string;
+  streamSource?: "youtube";
   title: string;
+  artist?: string;
   description?: string | null;
   genre?: string | null;
   mood?: string | null;
   duration: number; // in seconds
   play_count?: number;
   favorite_count?: number;
-  repost_count?: number;
   artwork?: EngineArtwork | null;
   user: EngineArtist;
-  remix_of?: EngineRemixParent | null;
-  stem_of?: EngineStemInfo | null;
   bpm?: number | null;
   tags?: string | null;
   is_streamable: boolean;
   release_date?: string | null;
-  downloadable?: boolean;
-  license?: string | null;
 }
 
 export interface EnginePlaylist {
@@ -78,7 +58,6 @@ export interface EnginePlaylist {
   artwork?: EngineArtwork | null;
   user: EngineArtist;
   total_play_count?: number;
-  repost_count?: number;
   favorite_count?: number;
   tracks?: EngineTrack[];
 }
@@ -87,25 +66,4 @@ export interface EngineAlbum extends EnginePlaylist {
   is_album: true;
   release_year?: number;
   total_duration?: number;
-}
-
-export interface EngineRemixTreeNode {
-  id: string;
-  title: string;
-  artistName: string;
-  artworkUrl?: string;
-  duration: number;
-  isOriginal: boolean;
-  relationType: "original" | "remix" | "stem";
-  stemCategory?: string;
-  plays?: number;
-  children: EngineRemixTreeNode[];
-}
-
-export interface EngineApiResponse<T> {
-  data: T;
-  latest_chain_block?: number;
-  latest_indexed_block?: number;
-  signature?: string;
-  timestamp?: string;
 }

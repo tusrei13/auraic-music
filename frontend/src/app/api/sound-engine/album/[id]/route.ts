@@ -12,17 +12,12 @@ interface NormalizedTrack {
   duration: number;
   play_count?: number;
   favorite_count?: number;
-  repost_count?: number;
   artwork?: { "150x150"?: string; "480x480"?: string; "1000x1000"?: string } | null;
   user: { id: string; name: string; handle: string; profile_picture?: any; is_verified: boolean };
-  remix_of?: any;
-  stem_of?: any;
   bpm?: number | null;
   tags?: string | null;
   is_streamable: boolean;
   release_date?: string | null;
-  downloadable?: boolean;
-  license?: string | null;
 }
 
 function pickThumbnail(thumbnails: any[]): { "150x150"?: string; "480x480"?: string; "1000x1000"?: string } {
@@ -79,7 +74,6 @@ export async function GET(
             duration,
             play_count: 0,
             favorite_count: 0,
-            repost_count: 0,
             artwork: itemArtwork || artwork,
             user: {
               id: rawId,
@@ -88,14 +82,10 @@ export async function GET(
               profile_picture: artwork,
               is_verified: !!header.badge,
             },
-            remix_of: null,
-            stem_of: null,
             bpm: null,
             tags: null,
             is_streamable: true,
             release_date: null,
-            downloadable: false,
-            license: null,
           });
         }
       }
