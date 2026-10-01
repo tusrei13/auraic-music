@@ -19,8 +19,8 @@ describe('summarizeAnalyticsEvents', () => {
   it('reports invalid and duplicate event data without deleting source events', () => {
     const occurredAt = new Date()
     const events = [
-      { userId: 'user-1', eventType: 'TRACK_STARTED' as const, trackId: 'jamendo:1', title: 'Track', source: 'jamendo', occurredAt },
-      { userId: 'user-1', eventType: 'TRACK_STARTED' as const, trackId: 'jamendo:1', title: '', source: 'unknown', position: 20, duration: 10, occurredAt: new Date(occurredAt.getTime() + 1_000) },
+      { userId: 'user-1', eventType: 'TRACK_STARTED' as const, trackId: 'track-1', title: 'Track', source: 'local', occurredAt },
+      { userId: 'user-1', eventType: 'TRACK_STARTED' as const, trackId: 'track-1', title: '', source: 'unknown', position: 20, duration: 10, occurredAt: new Date(occurredAt.getTime() + 1_000) },
     ]
 
     expect(assessAnalyticsQuality(events)).toEqual({ invalidTitle: 1, invalidTiming: 1, unknownSource: 1, duplicateStarted: 1, totalIssues: 4 })
