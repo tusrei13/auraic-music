@@ -93,10 +93,14 @@ export default function SpinningVinyl({
               alt={requesterName ? `Requested by ${requesterName}` : "Vinyl Label"}
               className="h-full w-full object-cover"
             />
-            {/* Requester tag badge */}
-            {requesterName && (
-              <div className="absolute inset-x-0 bottom-0 bg-black/70 py-0.5 text-center text-[9px] font-bold text-cyan-300  truncate px-1">
+            {/* Requester tag badge / RPM label */}
+            {requesterName ? (
+              <div className="absolute inset-x-0 bottom-0 bg-black/70 py-0.5 text-center font-arcade text-[9px] font-bold text-cyan-300 truncate px-1">
                 {requesterName}
+              </div>
+            ) : (
+              <div className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-center font-arcade text-[8px] font-bold text-white/80 tracking-wider truncate px-1">
+                33⅓ RPM
               </div>
             )}
           </div>

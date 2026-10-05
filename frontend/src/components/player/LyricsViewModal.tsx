@@ -529,29 +529,33 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
               }}
             >
               <div className="mx-auto flex max-w-3xl flex-col">
-                <div className="mb-6 lg:mb-8 text-left">
-                  <h2 className="text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-bold text-neutral-400 leading-snug">
-                    Song: <span className="text-white/95 font-extrabold">{currentTrack.title}</span>
+                <div className="mb-6 lg:mb-8 text-left space-y-1">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-400/40 bg-purple-950/40 font-arcade text-xs text-purple-300 mb-2">
+                    <Mic2 className="w-3.5 h-3.5" />
+                    <span>8-BIT RETRO KARAOKE SYNC</span>
+                  </div>
+                  <h2 className="font-pixel text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-bold text-neutral-400 leading-snug">
+                    Track: <span className="text-white font-extrabold">{currentTrack.title}</span>
                   </h2>
-                  <h2 className="text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-black text-white leading-snug mt-1.5">
-                    Singer: <span className="text-white font-black">{artistName}</span>
-                  </h2>
+                  <h3 className="font-arcade text-sm sm:text-base text-white/70 tracking-wider">
+                    Artist: <span className="text-cyan-300 font-bold">{artistName}</span>
+                  </h3>
                 </div>
 
                 {!lyricsLoaded ? (
                   <div ref={loaderRef} className="flex min-h-[300px] flex-col items-center justify-center gap-4 text-white/50">
-                    <Disc3 className="h-10 w-10 text-white/40" />
-                    <p className="text-base font-medium tracking-wide">Đang đồng bộ hóa lời bài hát...</p>
+                    <Disc3 className="h-10 w-10 text-white/40 animate-spin" />
+                    <p className="font-arcade text-sm tracking-wide">Đang đọc dữ liệu karaoke...</p>
                   </div>
                 ) : lyrics.length === 0 ? (
                   <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 text-white/50">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-xl">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-white/20 bg-white/5 backdrop-blur-xl">
                       <Mic2 className="h-8 w-8 text-white/40" />
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-semibold text-white/80">Bản nhạc không lời</p>
-                      <p className="text-sm text-white/40 mt-1">
-                        Thưởng thức giai điệu du dương trong không gian Spatial Audio
+                      <p className="font-pixel text-lg font-bold text-white/90">Bản nhạc không lời</p>
+                      <p className="font-arcade text-xs text-white/40 mt-1 tracking-wider">
+                        Thưởng thức giai điệu du dương trong không gian Arcade Hi-Fi
                       </p>
                     </div>
                   </div>
@@ -570,17 +574,17 @@ export default function LyricsViewModal({ currentTime, onSeek }: LyricsViewModal
                           className="group cursor-pointer select-none transition-all duration-300 text-left"
                         >
                           <p
-                            className={`leading-tight tracking-tight transition-all duration-300 ${
+                            className={`font-pixel leading-tight tracking-tight transition-all duration-300 ${
                               isCurrent
-                                ? "text-3xl sm:text-4xl lg:text-[44px] xl:text-[50px] font-black text-white"
+                                ? "text-2xl sm:text-3xl lg:text-[40px] xl:text-[44px] font-black text-white"
                                 : isPassed
-                                ? "text-2xl sm:text-3xl lg:text-[36px] xl:text-[40px] font-bold text-white/35 hover:text-white/80"
-                                : "text-2xl sm:text-3xl lg:text-[36px] xl:text-[40px] font-bold text-white/30 hover:text-white/80"
+                                ? "text-xl sm:text-2xl lg:text-[30px] xl:text-[34px] font-bold text-white/35 hover:text-white/80"
+                                : "text-xl sm:text-2xl lg:text-[30px] xl:text-[34px] font-bold text-white/30 hover:text-white/80"
                             }`}
                             style={
                               isCurrent
                                 ? {
-                                    textShadow: `0 0 35px ${palette.primaryGlow}, 0 0 70px ${palette.secondaryGlow}`,
+                                    textShadow: `0 0 25px ${palette.primaryGlow}, 0 0 50px ${palette.secondaryGlow}`,
                                   }
                                 : undefined
                             }

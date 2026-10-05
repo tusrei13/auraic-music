@@ -168,17 +168,20 @@ export default function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   return (
     <div
       ref={drawerRef}
-      className="fixed right-4 top-20 bottom-28 w-80 sm:w-88 z-40 rounded-3xl border border-white/15 bg-black/60 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden select-none"
+      className="fixed right-4 top-20 bottom-28 w-80 sm:w-88 z-40 rounded-[28px] border-2 border-white/20 bg-[#0d0f1b]/98 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.95)] flex flex-col overflow-hidden select-none"
       role="dialog"
       aria-label="Hàng đợi phát nhạc"
     >
-      <div className="px-4 py-3.5 border-b border-white/10 bg-white/[0.03] backdrop-blur-xl flex items-center justify-between flex-shrink-0">
+      <div className="retro-screw absolute top-3 left-3 pointer-events-none opacity-70" />
+      <div className="retro-screw absolute top-3 right-3 pointer-events-none opacity-70" />
+
+      <div className="px-5 py-3.5 border-b-2 border-white/10 bg-white/[0.04] backdrop-blur-xl flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+          <div className="w-7 h-7 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300">
             <ListMusic className="w-4 h-4" />
           </div>
-          <h2 className="text-sm font-semibold text-white tracking-wide truncate">Hàng đợi phát</h2>
-          <span className="bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full text-xs font-medium text-white/80 shrink-0">
+          <h2 className="font-pixel text-sm font-bold text-white tracking-wide truncate">HÀNG ĐỢI PHÁT</h2>
+          <span className="bg-white/10 border border-white/20 px-2.5 py-0.5 rounded-full font-arcade text-xs text-white/80 shrink-0">
             {totalUpcoming}
           </span>
         </div>
@@ -187,7 +190,7 @@ export default function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           {userQueue.length > 0 && (
             <button
               onClick={clearQueue}
-              className="px-2.5 py-1 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg border border-rose-500/20 hover:border-rose-500/40 transition-all flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 font-arcade text-[11px] font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg border border-rose-500/20 hover:border-rose-500/40 transition-all flex items-center gap-1 cursor-pointer"
               title="Xóa tất cả bài thêm thủ công"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -206,48 +209,44 @@ export default function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3.5 space-y-4 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
         {currentTrack ? (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1">
-                <Sparkles className="w-3 h-3 animate-pulse" /> Đang phát
+              <span className="font-arcade text-[10px] font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3 h-3 animate-pulse" /> ĐANG PHÁT HIỆN TẠI
               </span>
               <SpatialEqualizer isPlaying={isPlaying} />
             </div>
 
-            <div className="bg-indigo-500/15 border border-indigo-500/40 rounded-2xl p-3 shadow-[0_0_20px_rgba(99,102,241,0.2)] relative overflow-hidden group">
-              <div className="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
-
+            <div className="bg-purple-950/30 border-2 border-purple-500/40 rounded-2xl p-3 shadow-[0_0_20px_rgba(168,85,247,0.25)] relative overflow-hidden group">
               <div className="relative z-10 flex items-center gap-3">
-                <div className="relative w-12 h-12 flex-shrink-0 rounded-xl overflow-hidden shadow-md ring-1 ring-white/20">
+                <div className="relative w-12 h-12 flex-shrink-0 rounded-xl overflow-hidden shadow-md border border-white/20">
                   <Artwork
                     src={currentTrack.image}
                     alt={currentTrack.title}
                     className="w-full h-full object-cover"
                   />
                   {isPlaying && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                       <SpatialEqualizer isPlaying={isPlaying} />
                     </div>
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-indigo-200 transition-colors truncate">
-                      {currentTrack.title}
-                    </h4>
-                  </div>
-                  <p className="text-xs text-white/60 truncate mt-0.5 font-medium">{renderArtist(currentTrack.artist)}</p>
+                  <h4 className="font-pixel text-xs sm:text-sm font-bold text-white group-hover:text-purple-300 transition-colors truncate">
+                    {currentTrack.title}
+                  </h4>
+                  <p className="font-arcade text-[11px] text-white/60 truncate mt-0.5 tracking-wider">{renderArtist(currentTrack.artist)}</p>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="p-4 rounded-2xl border border-dashed border-white/10 text-center space-y-1">
+          <div className="p-4 rounded-2xl border-2 border-dashed border-white/10 text-center space-y-1">
             <Music2 className="w-6 h-6 text-white/30 mx-auto" />
-            <p className="text-xs text-white/50">Chưa có bài hát đang phát</p>
+            <p className="font-pixel text-xs text-white/50">Chưa có bài hát đang phát</p>
           </div>
         )}
 

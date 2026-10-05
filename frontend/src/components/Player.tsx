@@ -31,6 +31,8 @@ import Hls from "hls.js";
 import { recordAnalyticsEvent, resolveMediaUrl } from "@/lib/api";
 import { useAdaptiveGraphics } from "@/hooks/useAdaptiveGraphics";
 import LyricsViewModal from "@/components/player/LyricsViewModal";
+import BlockyWaveform from "@/components/ui/BlockyWaveform";
+import PixelBadge from "@/components/ui/PixelBadge";
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.98 },
@@ -81,12 +83,10 @@ export default function Player() {
   const [volume, setVolume] = useState(0.7);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isSeeking, setIsSeeking] = useState(false);
-  const [seekValue, setSeekValue] = useState<number | null>(null);
-  const isSeekingRef = useRef(false);
   const [showQueue, setShowQueue] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const isSeekingRef = useRef(false);
   const recordedTrackIdRef = useRef<string | number | null>(null);
   const startedTrackIdRef = useRef<string | number | null>(null);
   const completedTrackIdRef = useRef<string | number | null>(null);
@@ -415,24 +415,6 @@ export default function Player() {
     }
   };
 
-  const handleSeekInput = (e: React.FormEvent<HTMLInputElement>) => {
-    const val = Number((e.target as HTMLInputElement).value);
-    isSeekingRef.current = true;
-    setIsSeeking(true);
-    setSeekValue(val);
-  };
-
-  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = Number(e.target.value);
-    if (audioRef.current && Number.isFinite(newTime)) {
-      audioRef.current.currentTime = newTime;
-    }
-    setCurrentTime(newTime);
-    isSeekingRef.current = false;
-    setIsSeeking(false);
-    setSeekValue(null);
-  };
-
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = Number(e.target.value);
     setVolume(newVolume);
@@ -441,8 +423,7 @@ export default function Player() {
     }
   };
 
-  const displayTime = isSeeking && seekValue !== null ? seekValue : currentTime;
-  const progressPercent = duration > 0 ? (displayTime / duration) * 100 : 0;
+  const displayTime = currentTime;
 
   if (!currentTrack) {
     return (
@@ -490,20 +471,26 @@ export default function Player() {
         className="relative z-50"
       >
         <motion.div
-          className="relative flex min-h-24 w-full flex-col items-center justify-between overflow-visible rounded-[30px] border border-white/15 bg-[#0f111c]/92 px-4 py-3 shadow-[0_25px_65px_-8px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.22)] backdrop-blur-lg md:min-h-20 md:flex-row md:px-6 md:py-2.5 transform-gpu will-change-transform"
+          className="relative flex min-h-24 w-full flex-col items-center justify-between overflow-visible rounded-[32px] border-2 border-white/20 bg-[#0e101c]/95 px-4 py-3.5 shadow-[0_25px_65px_-8px_rgba(0,0,0,0.88),inset_0_1px_0_0_rgba(255,255,255,0.25)] backdrop-blur-xl md:min-h-20 md:flex-row md:px-6 md:py-2.5 transform-gpu will-change-transform"
           {...pulseGlow}
           animate={isPlaying ? "animate" : "initial"}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          {/* Pulse aura — static box-shadow composited once; only opacity animates. */}
+          {/* 4 Corner Screws for Retro Hardware Turntable Deck Feel */}
+          <div className="retro-screw absolute top-2.5 left-2.5 pointer-events-none opacity-80" />
+          <div className="retro-screw absolute top-2.5 right-2.5 pointer-events-none opacity-80" />
+          <div className="retro-screw absolute bottom-2.5 left-2.5 pointer-events-none opacity-80" />
+          <div className="retro-screw absolute bottom-2.5 right-2.5 pointer-events-none opacity-80" />
+
+          {/* Pulse aura */}
           <motion.span
             aria-hidden="true"
-            className="pointer-events-none absolute -inset-2 -z-10 rounded-[36px] will-change-transform"
-            style={{ boxShadow: "0 0 20px rgba(168, 85, 247, 0.18), 0 0 42px rgba(168, 85, 247, 0.35)" }}
+            className="pointer-events-none absolute -inset-2 -z-10 rounded-[38px] will-change-transform"
+            style={{ boxShadow: "0 0 24px rgba(168, 85, 247, 0.25), 0 0 48px rgba(168, 85, 247, 0.4)" }}
           />
 
-          {/* Subtle Ambient Bleed Overlay */}
-          <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-gradient-to-r from-fuchsia-500/10 via-transparent to-cyan-400/10 opacity-70 mix-blend-screen" />
+          {/* Ambient Bleed Overlay */}
+          <div className="pointer-events-none absolute inset-0 rounded-[32px] bg-gradient-to-r from-fuchsia-500/10 via-transparent to-cyan-400/10 opacity-70 mix-blend-screen" />
 
           <audio
             ref={audioRef}
@@ -521,8 +508,8 @@ export default function Player() {
           />
           <AudioVisualizer audioRef={audioRef} isPlaying={isPlaying} />
 
-          {/* LEFT: Track Info with Rotating Vinyl & Equalizer Aura */}
-          <div className="relative z-10 mb-2 flex min-w-0 w-full items-center gap-3.5 md:mb-0 md:w-1/3">
+          {/* LEFT: Track Info with Rotating Vinyl, Pixel Title, and Like Badge */}
+          <div className="relative z-10 mb-2 flex min-w-0 w-full items-center gap-3 md:mb-0 md:w-1/3">
             {/* Vinyl Record & Concentric Equalizer Aura Rings */}
             <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
               {isPlaying && !isLowPower && (
@@ -545,7 +532,7 @@ export default function Player() {
 
               {/* Rotating Vinyl Record */}
               <motion.div
-                className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white/30 bg-black shadow-[0_0_24px_rgba(168,85,247,0.45)] transition-transform duration-500 ${
+                className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white/40 bg-black shadow-[0_0_24px_rgba(168,85,247,0.45)] transition-transform duration-500 ${
                   isPlaying && !isLowPower ? "scale-105" : ""
                 }`}
                 animate={isPlaying && !isLowPower ? { rotate: 360 } : { rotate: 0 }}
@@ -565,14 +552,21 @@ export default function Player() {
               </motion.div>
             </div>
 
-            <div className="min-w-0 max-w-[min(48vw,260px)] flex-none truncate pr-1 sm:max-w-[220px]">
-              <h4 className="text-sm font-bold text-white tracking-wide drop-shadow-md truncate">
+            <div className="min-w-0 max-w-[min(48vw,260px)] flex-none truncate pr-1 sm:max-w-[210px]">
+              <h4 className="font-pixel text-sm font-bold text-white tracking-wide drop-shadow-md truncate">
                 {currentTrack.title}
               </h4>
-              <p className="text-xs text-white/60 mt-0.5 truncate">{artistName}</p>
+              <p className="font-arcade text-xs text-white/60 mt-0.5 truncate tracking-wider">{artistName}</p>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1.5">
+              <PixelBadge
+                count={liked ? 393 : 392}
+                variant="bubble"
+                onClick={() => toggleLike(currentTrack)}
+                className="hidden xl:inline-flex"
+              />
+
               <motion.button
                 onClick={() => toggleLike(currentTrack)}
                 className="text-white/40 hover:text-pink-500 transition-colors p-1.5 hover:bg-white/5 rounded-lg cursor-pointer"
@@ -593,9 +587,9 @@ export default function Player() {
             </div>
           </div>
 
-          {/* CENTER: Controls & Neon Tube Seek-Bar */}
-          <div className="relative z-10 flex w-full max-w-[450px] flex-col items-center">
-            <div className="mb-1 flex items-center gap-7">
+          {/* CENTER: Arcade Transport Controls & Blocky Pixelated Waveform */}
+          <div className="relative z-10 flex w-full max-w-[480px] flex-col items-center">
+            <div className="mb-1 flex items-center gap-6 sm:gap-7">
               <motion.button
                 onClick={toggleShuffle}
                 className={`transition-all p-1 cursor-pointer ${
@@ -626,19 +620,20 @@ export default function Player() {
 
               <motion.button
                 onClick={() => handleSkip("previous")}
-                className="text-white/60 hover:text-white transition-all cursor-pointer"
+                className="text-white/70 hover:text-white transition-all cursor-pointer"
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
               >
                 <SkipBack className="w-5 h-5 fill-current" />
               </motion.button>
 
+              {/* ARCADE HIGH-CONTRAST PLAY BUTTON (White circular with black icon) */}
               <motion.button
                 onClick={togglePlay}
                 aria-label={isPlaying ? "Tạm dừng" : "Phát"}
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-white via-neutral-100 to-fuchsia-100 shadow-[0_0_28px_rgba(255,255,255,0.6),0_0_15px_rgba(168,85,247,0.4)] transition-transform"
+                className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-white text-black shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_12px_rgba(168,85,247,0.5)] border-2 border-white transition-transform"
                 whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.85 }}
+                whileTap={{ scale: 0.88 }}
               >
                 {isPlaying ? (
                   <Pause className="w-5 h-5 fill-black text-black" />
@@ -649,7 +644,7 @@ export default function Player() {
 
               <motion.button
                 onClick={() => handleSkip("next")}
-                className="text-white/60 hover:text-white transition-all cursor-pointer"
+                className="text-white/70 hover:text-white transition-all cursor-pointer"
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -681,38 +676,28 @@ export default function Player() {
               </motion.button>
             </div>
 
-            {/* NEON TUBE TIMELINE SEEK-BAR */}
-            <div className="flex items-center gap-3 w-full text-[10px] font-mono text-white/55">
-              <span>{formatTime(displayTime)}</span>
-              <div className="flex-1 relative flex items-center group py-2.5">
-                <input
-                  type="range"
-                  min="0"
-                  max={duration || 100}
-                  step="0.1"
-                  value={displayTime}
-                  onInput={handleSeekInput}
-                  onChange={handleSeekChange}
-                  className="absolute w-full h-3 opacity-0 z-20 cursor-pointer"
-                />
-                {/* Neon Tube Grooved Track */}
-                <div className="h-2 w-full bg-black/60 rounded-full overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)] border border-white/10">
-                  {/* Neon Radiant Progress — scaleX on a full-width layer avoids reflow. */}
-                  <div
-                    className="relative h-full origin-left rounded-full bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 shadow-[0_0_14px_rgba(168,85,247,0.9),0_0_24px_rgba(6,182,212,0.6)] will-change-transform"
-                    style={{ transform: `translate3d(0, 0, 0) scaleX(${progressPercent / 100})` }}
-                  />
-                </div>
-                {/* Neon Tube Glowing Bead */}
-                <div
-                  className="w-4 h-4 bg-white rounded-full absolute top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-[0_0_14px_rgba(255,255,255,1),0_0_22px_rgba(168,85,247,0.9)] ring-2 ring-violet-400 will-change-transform"
-                  style={{ left: `${progressPercent}%` }}
+            {/* BLOCKY PIXELATED WAVEFORM SEEK-BAR */}
+            <div className="flex items-center gap-3 w-full font-arcade text-xs text-white/80">
+              <span className="w-10 text-right font-arcade text-[11px] text-white/70">{formatTime(displayTime)}</span>
+              <div className="flex-1 relative">
+                <BlockyWaveform
+                  currentTime={displayTime}
+                  duration={duration}
+                  isPlaying={isPlaying}
+                  onSeek={(time) => {
+                    if (audioRef.current && Number.isFinite(time)) {
+                      audioRef.current.currentTime = time;
+                      setCurrentTime(time);
+                    }
+                  }}
+                  barCount={36}
+                  glowColor="white"
                 />
               </div>
-              <span>{formatTime(duration)}</span>
+              <span className="w-10 text-left font-arcade text-[11px] text-white/70">{formatTime(duration)}</span>
             </div>
             {playbackStatus === "error" ? (
-              <span className="mt-1 text-[10px] text-rose-300">
+              <span className="mt-1 font-arcade text-[10px] text-rose-300">
                 {playbackError || "Lỗi phát nhạc"}
               </span>
             ) : null}
@@ -749,8 +734,8 @@ export default function Player() {
             </motion.button>
 
             {/* Bitrate Badge as shown in reference */}
-            <span className="hidden xl:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider text-white/70 bg-white/5 border border-white/10 select-none">
-              {AuraicAudioAdapter.isEngineTrackId(currentTrack.id) || currentTrack.isEngineTrack ? "Sound Engine" : "Local audio"}
+            <span className="hidden xl:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-arcade font-bold tracking-wider text-white/80 bg-white/10 border border-white/20 select-none">
+              {AuraicAudioAdapter.isEngineTrackId(currentTrack.id) || currentTrack.isEngineTrack ? "SOUND ENGINE" : "HI-FI 24B"}
             </span>
 
             <div className="flex items-center gap-2.5 group">
@@ -776,7 +761,7 @@ export default function Player() {
                   onChange={handleVolumeChange}
                   className="absolute w-full h-2 opacity-0 z-10 cursor-pointer"
                 />
-                <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden shadow-inner border border-white/5">
+                <div className="h-2 w-full bg-black/60 rounded-full overflow-hidden shadow-inner border border-white/15">
                   <div
                     className="h-full origin-left bg-gradient-to-r from-violet-400 to-cyan-300 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.6)] will-change-transform"
                     style={{ transform: `translate3d(0, 0, 0) scaleX(${volume})` }}
