@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   motion,
-  AnimatePresence,
 } from "framer-motion";
 import {
   Heart,
@@ -318,8 +317,13 @@ export default function LibraryPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="relative overflow-hidden rounded-[32px] border border-white/20 bg-gradient-to-br from-violet-950/40 via-purple-950/20 to-black/60 p-6 sm:p-9 lg:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.65),inset_0_1px_0_0_rgba(255,255,255,0.22)] "
+          className="relative overflow-hidden rounded-[32px] border-2 border-white/20 bg-[#0d0f1b]/95 p-6 sm:p-9 lg:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.22)]"
         >
+          <div className="retro-screw absolute top-4 left-4" />
+          <div className="retro-screw absolute top-4 right-4" />
+          <div className="retro-screw absolute bottom-4 left-4" />
+          <div className="retro-screw absolute bottom-4 right-4" />
+
           {/* Ambient Artwork Backdrop */}
           <div className="pointer-events-none absolute -right-10 -top-10 h-80 w-80 rounded-full bg-violet-600/25 blur-[90px]" />
           <div className="pointer-events-none absolute -bottom-10 left-1/3 h-72 w-72 rounded-full bg-cyan-500/20 blur-[85px]" />
@@ -331,47 +335,46 @@ export default function LibraryPage() {
 
           <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div className="space-y-3.5 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1 text-xs font-semibold ">
-                <Bookmark className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
-                <span className="text-white/90">Audiophile Collection & Vault</span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-purple-400/40 bg-purple-950/40 px-3.5 py-1 font-arcade text-xs font-bold text-purple-300">
+                <Bookmark className="h-3.5 w-3.5 text-purple-300 animate-pulse" />
+                <span>ARCADE VAULT & COLLECTION</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
+              <h1 className="font-pixel text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
                 Thư Viện <br />
                 <span className="bg-gradient-to-r from-white via-violet-200 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(168,85,247,0.3)]">
                   Cá Nhân Hóa.
                 </span>
               </h1>
 
-              <p className="text-sm text-white/65 leading-relaxed max-w-xl">
-                Không gian lưu trữ giai điệu riêng biệt của bạn. Đồng bộ danh sách phát, bài hát yêu thích và lịch sử thưởng âm với chuẩn phòng thu.
+              <p className="font-arcade text-xs sm:text-sm text-white/60 leading-relaxed max-w-xl tracking-wider">
+                Kho lưu trữ giai điệu riêng biệt của bạn. Đồng bộ danh sách phát, bài hát yêu thích và lịch sử thưởng âm chuẩn Arcade Hi-Fi.
               </p>
 
               {/* Spatial Collection Badges */}
-              <div className="flex items-center flex-wrap gap-2.5 pt-2 font-mono text-xs">
-                <span className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-white/85">
-                  <span className="font-bold text-cyan-300">{sourceTracks.length}</span> Bài hát
+              <div className="flex items-center flex-wrap gap-2.5 pt-2 font-arcade text-xs">
+                <span className="rounded-full border border-white/20 bg-white/[0.06] px-3.5 py-1 text-white/90">
+                  <span className="font-bold text-cyan-300">{sourceTracks.length}</span> BÀI HÁT
                 </span>
-                <span className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-white/85">
-                  <span className="font-bold text-fuchsia-300">{playlists.length}</span> Danh sách phát
+                <span className="rounded-full border border-white/20 bg-white/[0.06] px-3.5 py-1 text-white/90">
+                  <span className="font-bold text-fuchsia-300">{playlists.length}</span> PLAYLISTS
                 </span>
-                <span className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-white/85">
-                  <span className="font-bold text-rose-300">{likedSongsList.length}</span> Đã thích
+                <span className="rounded-full border border-white/20 bg-white/[0.06] px-3.5 py-1 text-white/90">
+                  <span className="font-bold text-rose-300">{likedSongsList.length}</span> ĐÃ THÍCH
                 </span>
               </div>
             </div>
 
             {likedSongsList.length > 0 && (
               <div className="flex items-center gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
+                  type="button"
                   onClick={() => handlePlaySong(likedSongsList[0], likedSongsList, "Bài hát đã thích")}
-                  className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 px-6 py-3.5 text-xs font-bold text-white shadow-[0_0_25px_rgba(99,102,241,0.5)] transition hover:brightness-110 cursor-pointer"
+                  className="flex items-center gap-2.5 rounded-full border-2 border-white bg-white px-6 py-3 font-pixel text-xs font-bold text-black shadow-[0_0_20px_rgba(255,255,255,0.7)] hover:scale-105 transition-all cursor-pointer"
                 >
-                  <Play className="h-4 w-4 fill-white" />
-                  <span>Phát nhanh mục yêu thích</span>
-                </motion.button>
+                  <Play className="h-4 w-4 fill-black text-black ml-0.5" />
+                  <span>Phát Nhanh Yêu Thích</span>
+                </button>
               </div>
             )}
           </div>
@@ -382,64 +385,55 @@ export default function LibraryPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col sm:flex-row sm:items-center gap-3"
+          className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
         >
-          <div className="relative flex items-center bg-white/5 p-1 rounded-2xl border border-white/10 ">
-            <AnimatePresence mode="popLayout">
-              {FILTER_TABS.map((tab) => (
-                <motion.button
+          <div className="flex flex-wrap items-center gap-2">
+            {FILTER_TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              const count =
+                tab.key === "liked"
+                  ? likedSongsList.length
+                  : tab.key === "playlists"
+                  ? playlists.length
+                  : tab.key === "history"
+                  ? listeningHistory.length
+                  : undefined;
+
+              return (
+                <button
                   key={tab.key}
-                  layoutId="active-library-tab"
+                  type="button"
                   onClick={() => setActiveTab(tab.key)}
-                  className={`relative px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    activeTab === tab.key ? "text-white" : "text-white/60 hover:text-white"
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-pixel text-xs tracking-wide transition-all cursor-pointer whitespace-nowrap select-none ${
+                    isActive
+                      ? "border-2 border-white bg-white text-black font-bold shadow-md scale-105"
+                      : "border border-white/20 bg-white/[0.04] text-white/70 hover:border-white/40 hover:text-white"
                   }`}
                 >
-                  {activeTab === tab.key && (
-                    <motion.div
-                      layoutId="library-tab-pill"
-                      className="absolute inset-0 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-500/30"
-                      transition={{ type: "spring", damping: 24, stiffness: 180 }}
-                    />
+                  <tab.icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                  {count !== undefined && count > 0 && (
+                    <span
+                      className={`text-[10px] font-arcade px-1.5 py-0.2 rounded-full ${
+                        isActive ? "bg-black/20 text-black font-bold" : "bg-white/10 text-white/60"
+                      }`}
+                    >
+                      {count}
+                    </span>
                   )}
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    <tab.icon className="w-3.5 h-3.5" />
-                    {tab.label}
-                    {tab.key === "liked" && likedSongsList.length > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                        activeTab === "liked" ? "bg-white/20 text-white" : "bg-white/10 text-white/60"
-                      }`}>
-                        {likedSongsList.length}
-                      </span>
-                    )}
-                    {tab.key === "playlists" && playlists.length > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                        activeTab === "playlists" ? "bg-white/20 text-white" : "bg-white/10 text-white/60"
-                      }`}>
-                        {playlists.length}
-                      </span>
-                    )}
-                    {tab.key === "history" && listeningHistory.length > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                        activeTab === "history" ? "bg-white/20 text-white" : "bg-white/10 text-white/60"
-                      }`}>
-                        {listeningHistory.length}
-                      </span>
-                    )}
-                  </span>
-                </motion.button>
-              ))}
-            </AnimatePresence>
+                </button>
+              );
+            })}
           </div>
 
           <div className="relative w-full sm:w-64">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
             <input
               type="text"
-              placeholder="Tìm trong thư viện..."
+              placeholder="Search library..."
               value={librarySearch}
               onChange={(e) => setLibrarySearch(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-full pl-10 pr-4 py-2.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-indigo-500 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all"
+              className="w-full bg-white/[0.06] border-2 border-white/20 rounded-full pl-10 pr-4 py-2 font-pixel text-xs text-white placeholder-white/40 focus:outline-none focus:border-white focus:bg-white/[0.1] focus:shadow-[0_0_15px_rgba(255,255,255,0.25)] transition-all"
             />
           </div>
         </motion.div>
@@ -933,100 +927,83 @@ export default function LibraryPage() {
 
         {/* Liked Songs Hero Tile */}
 
-      {/* Liked Songs Hero Tile */}
+      {/* 1. "Bài hát đã thích" Hero Card (MUSIC2D Reference Style) */}
       {(activeTab === "all" || activeTab === "liked") && (
-        <motion.div
-          layout
-          className="px-6 sm:px-8 mb-8"
-        >
-          <div className="relative group">
-            {/* Gradient Aura Glow */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-[2rem] opacity-30 blur-2xl group-hover:opacity-50 transition-all duration-700" />
-            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-[2rem] opacity-20 blur-xl group-hover:opacity-30 transition-all duration-500" />
+        <motion.div layout className="px-5 sm:px-8 mb-8">
+          <div className="relative overflow-hidden rounded-[32px] border-2 border-white/20 bg-[#0e101c]/95 p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.2)]">
+            <div className="retro-screw absolute top-3.5 left-3.5" />
+            <div className="retro-screw absolute top-3.5 right-3.5" />
+            <div className="retro-screw absolute bottom-3.5 left-3.5" />
+            <div className="retro-screw absolute bottom-3.5 right-3.5" />
 
-            <div className="relative bg-gradient-to-br from-[#1a0b2e] via-[#0f172a] to-[#0c1220] border border-white/10 rounded-[1.8rem] p-6 sm:p-8 overflow-hidden">
-              {/* Animated shimmer overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[2s] ease-in-out" />
+            {/* Ambient neon back glow */}
+            <div className="pointer-events-none absolute -left-12 -top-12 h-64 w-64 rounded-full bg-rose-600/20 blur-[80px]" />
 
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 relative z-10">
-                {/* 3D Heart Icon */}
+            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
+                {/* Large Rounded Heart Badge */}
                 <div className="relative shrink-0">
-                  <div className="absolute -inset-4 bg-pink-500/30 rounded-full blur-2xl animate-pulse-glow" />
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-[0_0_40px_rgba(236,72,153,0.5)] border border-pink-400/30">
-                    <Heart className="w-10 h-10 sm:w-12 sm:h-12 fill-white text-white drop-shadow-lg" />
+                  <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-[26px] border-2 border-rose-400/50 bg-gradient-to-br from-rose-500/25 to-pink-600/10 flex items-center justify-center shadow-[0_0_30px_rgba(244,63,94,0.35)]">
+                    <Heart className="w-10 h-10 sm:w-12 sm:h-12 fill-rose-500 text-rose-500 drop-shadow-md animate-pulse" />
                   </div>
                 </div>
 
-                <div className="flex-1 text-center sm:text-left space-y-3">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest bg-pink-500/20 text-pink-400 border border-pink-500/30 px-3 py-1 rounded-full ">
-                      Đã thích
+                    <span className="font-pixel text-[11px] px-3.5 py-0.5 rounded-full bg-white text-black font-bold uppercase tracking-wider">
+                      Classic
                     </span>
-                    <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                    <span className="font-arcade text-[10px] text-cyan-300 font-bold tracking-widest px-2.5 py-0.5 rounded-full border border-cyan-400/30 bg-cyan-950/40">
+                      LIKED VAULT
+                    </span>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  <h2 className="font-pixel text-2xl sm:text-3xl font-black text-white tracking-tight">
                     Bài hát đã thích
                   </h2>
 
-                  <p className="text-sm text-white/60">
-                    {likedSongsList.length} bài hát trong thư viện của bạn
+                  <p className="font-arcade text-xs text-white/60 tracking-wider">
+                    {likedSongsList.length} songs in this list
                   </p>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-3">
-                  <motion.button
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => likedSongsList.length > 0 && handlePlaySong(likedSongsList[0], likedSongsList, "Bài hát đã thích")}
-                    disabled={likedSongsList.length === 0}
-                    className="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 disabled:opacity-40 text-white flex items-center justify-center shadow-[0_0_25px_rgba(236,72,153,0.5)] transition-all cursor-pointer"
-                  >
-                    <Play className="w-6 h-6 fill-white ml-1" />
-                  </motion.button>
-                </div>
+              {/* Large Circular White Play Button with Black Arrow */}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => likedSongsList.length > 0 && handlePlaySong(likedSongsList[0], likedSongsList, "Bài hát đã thích")}
+                  disabled={likedSongsList.length === 0}
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-[0_0_25px_rgba(255,255,255,0.7),0_0_15px_rgba(244,63,94,0.4)] border-2 border-white hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
+                  title="Phát tất cả bài hát đã thích"
+                >
+                  <Play className="w-6 h-6 fill-black text-black ml-0.5" />
+                </button>
               </div>
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Bento Grid Section: Create Playlist + Personal Playlists */}
+      {/* 2. FAVORITE PLAYLISTS SECTION (Matching MUSIC2D "Favorite Playlists (4)") */}
       {(activeTab === "all" || activeTab === "playlists") && (
-        <motion.section
-          layout
-          className="px-6 sm:px-8 mb-10"
-        >
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Layers className="w-5 h-5 text-indigo-400" /> Danh sách phát cá nhân
+        <motion.section layout className="px-5 sm:px-8 mb-10 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-pixel text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Favorite Playlists ({playlists.length})
             </h2>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
+              type="button"
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-3.5 py-2 rounded-full border border-indigo-500/20 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full border-2 border-white bg-white text-black px-4 py-1.5 font-pixel text-xs font-bold shadow-md hover:scale-105 transition-all cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" /> Tạo Playlist
-            </motion.button>
+              <Plus className="w-3.5 h-3.5" /> Tạo Mới
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {/* Create Playlist Card */}
-            <motion.button
-              whileHover={{ scale: 1.03, y: -4 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setShowCreateModal(true)}
-              className="aspect-square rounded-3xl border-2 border-dashed border-white/15 bg-white/[0.02] hover:bg-white/[0.05] hover:border-indigo-500/40 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all group"
-            >
-              <div className="w-14 h-14 rounded-full bg-white/5 group-hover:bg-indigo-500/20 flex items-center justify-center transition-all border border-white/10 group-hover:border-indigo-500/30 group-hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]">
-                <Plus className="w-7 h-7 text-white/40 group-hover:text-indigo-400 transition-colors" />
-              </div>
-              <span className="text-xs font-bold text-white/50 group-hover:text-white/80 transition-colors">Tạo Playlist</span>
-            </motion.button>
-
-            {/* Playlist Cards */}
-            {filteredPlaylists.map((pl: any, index: number) => {
+          {/* Horizontal Rounded Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {filteredPlaylists.map((pl: any) => {
               const pName = getStringValue(pl.title, "Playlist");
               const pSongCount = pl.tracks ? pl.tracks.length : (pl.songIds ? pl.songIds.length : 0);
               const firstTrackImage = pl.tracks?.[0]?.image as string | undefined;
@@ -1037,60 +1014,70 @@ export default function LibraryPage() {
                 getStringValue(pl.coverImage) ||
                 firstTrackImage ||
                 catalogFirstImage ||
-                "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&auto=format&fit=crop";
-              const pColor = getStringValue(pl.color, "from-indigo-900/80 via-purple-900/50 to-[#0b0c10]");
+                "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=400&auto=format&fit=crop";
 
               return (
-                <motion.div
+                <div
                   key={pl.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -6 }}
                   onClick={() => setSelectedPlaylistId(pl.id)}
-                  className="group relative aspect-square rounded-3xl overflow-hidden border border-white/10 cursor-pointer"
+                  className="group flex items-center justify-between gap-3.5 p-3.5 rounded-3xl border-2 border-white/10 bg-[#0f111e]/90 hover:bg-white/[0.08] hover:border-white/30 transition-all cursor-pointer select-none"
                 >
-                  {/* Artwork background */}
-                  <div className="absolute inset-0">
-                    <Artwork
-                      src={pImage}
-                      alt={pName}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className={`absolute inset-0 bg-gradient-to-br ${pColor} mix-blend-multiply opacity-60`} />
-                    <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-all" />
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 border-white/20 shadow-md">
+                      <Artwork
+                        src={pImage}
+                        alt={pName}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-pixel text-sm font-bold text-white truncate group-hover:text-cyan-300 transition-colors">
+                        {pName}
+                      </h4>
+                      <p className="font-arcade text-[11px] text-white/50 tracking-wider mt-0.5">
+                        {pSongCount} songs in this list
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Hover play button */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      whileHover={{ scale: 1.1 }}
-                      className="w-14 h-14 rounded-full bg-white/20  border border-white/30 flex items-center justify-center shadow-2xl"
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenDeleteModal(pl.id, pName, e)}
+                      className="p-1.5 text-white/30 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Xóa Playlist"
                     >
-                      <Play className="w-6 h-6 fill-white text-white ml-0.5" />
-                    </motion.div>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                    {/* White Circular Play Button with Black Arrow */}
+                    <div className="h-10 w-10 rounded-full border-2 border-white/30 flex items-center justify-center group-hover:border-white group-hover:bg-white group-hover:text-black text-white transition-all shadow-sm">
+                      <Play className="w-4 h-4 fill-current ml-0.5" />
+                    </div>
                   </div>
-
-                  {/* Delete button */}
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => handleOpenDeleteModal(pl.id, pName, e)}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-red-500/80 text-white/60 hover:text-white border border-white/10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 z-10"
-                    title="Xóa Playlist"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </motion.button>
-
-                  {/* Bottom info */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                    <h3 className="text-base font-bold text-white truncate group-hover:text-indigo-200 transition-colors">{pName}</h3>
-                    <p className="text-xs text-white/60 mt-0.5">{pSongCount} bài hát</p>
-                  </div>
-                </motion.div>
+                </div>
               );
             })}
+          </div>
+
+          {/* 3. PERSONAL PLAYLISTS GRID: "Create Playlist" Card */}
+          <div className="pt-4">
+            <h3 className="font-pixel text-base font-bold text-white mb-3">
+              Personal Playlists Grid
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="aspect-square rounded-3xl border-2 border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] hover:border-white flex flex-col items-center justify-center gap-3 cursor-pointer transition-all group select-none"
+              >
+                <div className="h-14 w-14 rounded-full border-2 border-white/30 bg-white/10 group-hover:bg-white group-hover:text-black text-white flex items-center justify-center transition-all shadow-md group-hover:scale-110">
+                  <Plus className="w-7 h-7" />
+                </div>
+                <span className="font-pixel text-xs text-white/70 group-hover:text-white">
+                  Tạo Playlist
+                </span>
+              </button>
+            </div>
           </div>
         </motion.section>
       )}
