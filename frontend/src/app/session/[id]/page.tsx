@@ -17,6 +17,8 @@ import { supabase } from "@/lib/supabase";
 import { usePlayerStore, Track } from "@/store/usePlayerStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import SpinningVinyl from "@/components/player/SpinningVinyl";
+import RetroTurntableDeck from "@/components/ui/RetroTurntableDeck";
+import BlockyWaveform from "@/components/ui/BlockyWaveform";
 import { StreamEngineService, AuraicAudioAdapter } from "@/lib/sound-engine/client";
 import Artwork from "@/components/Artwork";
 
@@ -249,89 +251,103 @@ export default function RealtimeSessionPage({ params }: PageProps) {
         </AnimatePresence>
       </div>
 
-      <div className="w-full flex items-center justify-between py-2 z-20">
+      {/* Top 2D Status Header Bar */}
+      <div className="w-full flex flex-wrap items-center justify-between gap-3 py-2 z-20">
         <Link
           href="/session"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-white/50 transition hover:text-white"
+          className="inline-flex items-center gap-2 font-pixel text-xs text-white/70 hover:text-white transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" /> Rời phòng
+          <ArrowLeft className="h-4 w-4" /> ← Rời phòng
         </Link>
 
-        <div className="flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 ">
+        <div className="flex items-center gap-2.5 rounded-full border-2 border-white/20 bg-white/[0.06] px-4 py-1.5 shadow-md">
           <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
-          <span className="font-mono text-xs font-bold uppercase tracking-wider text-cyan-300">
-            {sessionId}
+          <span className="font-pixel text-xs font-bold uppercase tracking-wider text-cyan-300">
+            ROOM: {sessionId}
           </span>
           <span className="text-white/30">•</span>
-          <div className="flex items-center gap-1 text-xs text-white/70">
+          <div className="flex items-center gap-1 font-arcade text-xs text-white/80">
             <Users className="h-3.5 w-3.5" />
-            <span>{listenersCount} người</span>
+            <span>{listenersCount} NGƯỜI</span>
           </div>
           {isHost && (
-            <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">
-              <Crown className="h-3 w-3" /> Host
+            <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-400/20 border border-amber-400/30 px-2.5 py-0.5 font-arcade text-[10px] font-bold text-amber-300">
+              <Crown className="h-3 w-3" /> HOST
             </span>
           )}
         </div>
 
         <button
           onClick={() => setShowRequestModal(true)}
-          className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3.5 py-2 text-xs font-bold shadow-lg shadow-violet-600/30 transition hover:scale-105"
+          className="flex items-center gap-1.5 rounded-full border-2 border-white bg-white text-black px-4 py-2 font-pixel text-xs font-bold shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
         >
-          <Plus className="h-4 w-4" /> Request bài hát
+          <Plus className="h-4 w-4" /> REQUEST BÀI HÁT
         </button>
       </div>
 
-      <div className="relative my-8 flex flex-col items-center justify-center">
-        <SpinningVinyl
-          isPlaying={isPlaying}
-          coverImage={currentTrack?.image}
-          requesterAvatar={currentRequester.avatar}
-          requesterName={currentRequester.name}
-          size={330}
-        />
+      {/* 2D HARDWARE VINYL DECK HERO SYNC (MUSIC2D REFERENCE) */}
+      <div className="relative my-6 flex flex-col items-center justify-center w-full max-w-xl">
+        <div className="relative w-full max-w-md sm:max-w-lg">
+          <RetroTurntableDeck
+            isPlaying={isPlaying}
+            onTogglePlay={() => {
+              if (isHost) {
+                togglePlay();
+                broadcastPlayback(undefined, !isPlaying);
+              } else {
+                togglePlay();
+              }
+            }}
+            trackTitle={currentTrack?.title || "Realtime Sync Deck"}
+            artistName={
+              typeof currentTrack?.artist === "object"
+                ? currentTrack.artist.name
+                : currentTrack?.artist || "Auraic Sound Engine"
+            }
+            coverImage={currentTrack?.image}
+          />
+        </div>
 
+        {/* Synced Metadata & Blocky Waveform */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-8 text-center space-y-1 max-w-md px-4"
+          className="mt-6 text-center space-y-2 max-w-md px-4 w-full"
         >
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-cyan-300">
+          <div className="inline-flex items-center gap-1.5 font-arcade text-[11px] font-bold text-cyan-300 px-3 py-0.5 rounded-full border border-cyan-400/30 bg-cyan-950/40">
             <Disc3 className="h-3.5 w-3.5 animate-spin" />
-            <span>Đang phát đồng bộ Realtime</span>
+            <span>REALTIME 33⅓ RPM SYNC</span>
           </div>
-          <h2 className="text-2xl font-black tracking-tight truncate">
+
+          <h2 className="font-pixel text-2xl sm:text-3xl font-black text-white tracking-tight truncate drop-shadow-md">
             {currentTrack?.title || "Chưa có bài hát nào phát"}
           </h2>
-          <p className="text-sm text-white/60 truncate">
+
+          <p className="font-arcade text-xs text-white/60 truncate tracking-wider">
             {typeof currentTrack?.artist === "object"
               ? currentTrack.artist.name
               : currentTrack?.artist || "Auraic Stream"}
           </p>
-          <p className="text-xs text-white/40 pt-1">
-            Yêu cầu bởi: <span className="font-semibold text-violet-300">{currentRequester.name}</span>
-          </p>
-        </motion.div>
 
-        {isHost && (
-          <div className="mt-5 flex items-center gap-4">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                togglePlay();
-                broadcastPlayback(undefined, !isPlaying);
-              }}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black shadow-xl"
-            >
-              {isPlaying ? (
-                <Pause className="h-5 w-5 fill-current" />
-              ) : (
-                <Play className="h-5 w-5 fill-current ml-0.5" />
-              )}
-            </motion.button>
+          {/* Blocky Barcode Waveform */}
+          <div className="pt-2 px-6">
+            <BlockyWaveform
+              currentTime={114}
+              duration={215}
+              isPlaying={isPlaying}
+              barCount={28}
+              glowColor="cyan"
+            />
           </div>
-        )}
+
+          <div className="pt-2 flex items-center justify-center gap-2 font-arcade text-xs text-white/50">
+            <span>Yêu cầu bởi:</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-violet-400/30 bg-violet-950/40 text-violet-300 font-pixel text-xs">
+              <span className="h-2 w-2 rounded-full bg-violet-400" />
+              <span>{currentRequester.name}</span>
+            </div>
+          </div>
+        </motion.div>
       </div>
 
       <div className="fixed bottom-24 z-30 flex items-center gap-3 rounded-full border border-white/20 bg-black/60 px-5 py-2.5  shadow-2xl">

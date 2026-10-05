@@ -9,8 +9,9 @@ import {
   Headphones,
   ArrowRight,
   Disc3,
+  Radio,
+  Sparkles,
 } from "lucide-react";
-import TiltCard from "@/components/ui/TiltCard";
 import Artwork from "@/components/Artwork";
 
 interface PublicSession {
@@ -29,13 +30,13 @@ const FEATURED_SESSIONS: PublicSession[] = [
   {
     id: "audiophile-lounge",
     title: "Audiophile Lounge • 24bit Hi-Res",
-    hostName: "Minh Quân (Host)",
+    hostName: "Minh Quân",
     hostAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop",
     listenersCount: 42,
-    currentTrackTitle: "Ethereal Echoes",
-    currentTrackArtist: "Auraic Symphony",
-    coverImage: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=600&auto=format&fit=crop",
-    tags: ["Audiophile", "FLAC", "Chill"],
+    currentTrackTitle: "The Suffering",
+    currentTrackArtist: "Coheed and Cambria",
+    coverImage: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop",
+    tags: ["Audiophile", "FLAC", "Classic"],
   },
   {
     id: "midnight-vibes",
@@ -46,7 +47,7 @@ const FEATURED_SESSIONS: PublicSession[] = [
     currentTrackTitle: "Tokyo Rainy Night",
     currentTrackArtist: "Lofi Beats Collective",
     coverImage: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=600&auto=format&fit=crop",
-    tags: ["Lofi", "Rain", "Study"],
+    tags: ["Lofi", "Rain", "Chill"],
   },
   {
     id: "cyber-synth-pulse",
@@ -57,7 +58,7 @@ const FEATURED_SESSIONS: PublicSession[] = [
     currentTrackTitle: "Neon Highway 1984",
     currentTrackArtist: "Cyber Runner",
     coverImage: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=600&auto=format&fit=crop",
-    tags: ["Synthwave", "Cyberpunk", "Bass"],
+    tags: ["Synthwave", "Cyberpunk", "8-Bit"],
   },
 ];
 
@@ -66,151 +67,164 @@ export default function SessionLobbyPage() {
   const [customRoomId, setCustomRoomId] = useState("");
 
   const handleJoinOrCreate = (roomId: string) => {
-    const target = roomId.trim().toLowerCase().replace(/[^a-z0-9-_]/g, "-") || "main-stage";
+    const target = roomId.trim().toLowerCase().replace(/[^a-z0-9-_]/g, "-") || "audiophile-lounge";
     router.push(`/session/${target}`);
   };
 
   return (
-    <div className="min-h-full px-5 pb-36 pt-4 text-white sm:px-8 lg:px-12 space-y-10">
-      {/* Header Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-[36px] border border-white/15 bg-gradient-to-br from-violet-950/40 via-purple-950/20 to-black/60 p-6 sm:p-10  shadow-2xl"
-      >
-        <div className="absolute -left-16 -top-16 h-72 w-72 rounded-full bg-violet-600/25 blur-[100px] pointer-events-none" />
-        <div className="absolute -bottom-16 right-0 h-72 w-72 rounded-full bg-cyan-500/20 blur-[100px] pointer-events-none" />
+    <div className="min-h-full px-4 pb-36 pt-4 text-white sm:px-8 lg:px-12 space-y-12">
+      {/* 2D HARDWARE CONSOLE HEADER */}
+      <section className="relative overflow-hidden rounded-[36px] border-2 border-white/15 bg-[#0d0f1b]/95 p-6 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.2)]">
+        <div className="retro-screw absolute top-4 left-4" />
+        <div className="retro-screw absolute top-4 right-4" />
+        <div className="retro-screw absolute bottom-4 left-4" />
+        <div className="retro-screw absolute bottom-4 right-4" />
 
-        <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1 text-xs font-semibold ">
+        {/* Ambient Glows */}
+        <div className="pointer-events-none absolute -left-16 -top-16 h-72 w-72 rounded-full bg-violet-600/25 blur-[90px]" />
+        <div className="pointer-events-none absolute -bottom-16 right-0 h-72 w-72 rounded-full bg-cyan-500/20 blur-[90px]" />
+
+        <div className="relative z-10 max-w-3xl space-y-4">
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3.5 py-1 text-xs font-arcade font-bold text-cyan-300">
             <Users className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
-            <span>Supabase Realtime Audio Sync</span>
+            <span>REALTIME SOUND SYNC CONSOLE</span>
           </div>
 
-          <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
+          <h1 className="font-pixel text-3xl sm:text-5xl font-black tracking-tight text-white">
             Phòng Nghe Chung Realtime
           </h1>
 
-          <p className="text-sm text-white/65 leading-relaxed">
-            Thưởng thức âm nhạc đồng bộ từng mili-giây cùng bạn bè. Đĩa than quay 3D
-            trung tâm hiển thị Avatar người Request, cùng hiệu ứng thả reaction nảy
-            theo nhịp điệu.
+          <p className="font-arcade text-xs sm:text-sm text-white/60 tracking-wider leading-relaxed">
+            Thưởng thức âm nhạc đồng bộ từng mili-giây cùng bạn bè qua giao diện 2D Hardware Deck. Đĩa than quay hiển thị Avatar người Request và reaction nảy theo nhịp điệu.
           </p>
 
-          {/* Quick Create / Join Input */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2 max-w-md">
+          {/* Quick Create / Join Capsule Input */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2 max-w-lg">
             <input
               type="text"
               value={customRoomId}
               onChange={(e) => setCustomRoomId(e.target.value)}
               placeholder="Nhập mã phòng hoặc tên phòng..."
               onKeyDown={(e) => e.key === "Enter" && handleJoinOrCreate(customRoomId)}
-              className="flex-1 rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-xs text-white placeholder:text-white/40 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+              className="flex-1 rounded-full border-2 border-white/20 bg-white/[0.06] px-5 py-3 font-pixel text-xs text-white placeholder:text-white/40 focus:border-white focus:bg-white/[0.1] focus:shadow-[0_0_20px_rgba(255,255,255,0.25)] focus:outline-none transition-all tracking-wide"
             />
             <button
               onClick={() => handleJoinOrCreate(customRoomId)}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-6 py-3 text-xs font-bold text-white shadow-lg shadow-violet-600/30 transition hover:brightness-110"
+              className="flex items-center justify-center gap-2 rounded-full bg-white text-black px-6 py-3 font-pixel text-xs font-bold shadow-[0_0_20px_rgba(255,255,255,0.5)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
-              <Plus className="h-4 w-4" /> Tạo / Tham gia
+              <Plus className="h-4 w-4" /> VÀO PHÒNG
             </button>
           </div>
         </div>
-      </motion.div>
+      </section>
 
-      {/* Featured Public Sessions */}
-      <section className="space-y-4">
+      {/* FEATURED ACTIVE ROOMS (2D CARTOON HARDWARE CONSOLE CARDS) */}
+      <section className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold tracking-tight">Phòng Nghe Đang Hoạt Động</h2>
-            <p className="text-xs text-white/50">Tham gia ngay với một chạm</p>
+            <h2 className="font-pixel text-xl sm:text-2xl font-bold tracking-tight text-white">
+              Active Listening Rooms
+            </h2>
+            <p className="font-arcade text-xs text-white/50 tracking-wider">
+              Chọn phòng phát sóng trực tiếp hoặc tạo phòng riêng
+            </p>
           </div>
+          <span className="font-arcade text-xs text-cyan-300">
+            2D Hardware Consoles
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURED_SESSIONS.map((session) => (
-            <TiltCard
+            <div
               key={session.id}
-              onClick={() => handleJoinOrCreate(session.id)}
-              glowColor="rgba(139, 92, 246, 0.5)"
-              depthZ={16}
-              className="group p-5"
+              className="relative overflow-hidden rounded-[32px] border-2 border-white/15 bg-[#0e101c]/95 p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.2)] hover:border-purple-500/50 hover:shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_25px_rgba(168,85,247,0.25)] transition-all duration-300 flex flex-col justify-between space-y-5"
             >
-              <div className="space-y-4">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
+              {/* Corner Screws on each Hardware Console */}
+              <div className="retro-screw absolute top-3.5 left-3.5 pointer-events-none" />
+              <div className="retro-screw absolute top-3.5 right-3.5 pointer-events-none" />
+              <div className="retro-screw absolute bottom-3.5 left-3.5 pointer-events-none" />
+              <div className="retro-screw absolute bottom-3.5 right-3.5 pointer-events-none" />
+
+              {/* Console Top Header: Host avatar with retro outline frame & Listeners Badge */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-11 w-11 rounded-2xl border-2 border-cyan-400/50 overflow-hidden bg-black/60 shadow-md">
                     <Artwork
                       src={session.hostAvatar}
                       alt={session.hostName}
-                      width={36}
-                      height={36}
-                      className="h-9 w-9 rounded-full object-cover border border-cyan-400/40 shadow-sm"
+                      className="h-full w-full object-cover"
                     />
-                    <div>
-                      <p className="text-xs font-semibold text-white/90">{session.hostName}</p>
-                      <span className="flex items-center gap-1 font-mono text-[10px] text-cyan-300">
-                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
-                        Host
-                      </span>
-                    </div>
                   </div>
-
-                  <div className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80 border border-white/10">
-                    <Headphones className="h-3 w-3 text-cyan-300" />
-                    <span>{session.listenersCount}</span>
-                  </div>
-                </div>
-
-                {/* Cover & Track Title with 3D elevation */}
-                <div
-                  style={{ transform: "translateZ(14px)" }}
-                  className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/15 shadow-[0_8px_25px_rgba(0,0,0,0.6)]"
-                >
-                  <Artwork
-                    src={session.coverImage}
-                    alt={session.title}
-                    width={640}
-                    height={360}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1">
-                      <Disc3 className="h-3 w-3 animate-spin" /> Đang phát
+                  <div>
+                    <p className="font-pixel text-xs font-bold text-white tracking-wide">
+                      {session.hostName}
                     </p>
-                    <p className="truncate text-sm font-bold text-white">{session.currentTrackTitle}</p>
-                    <p className="truncate text-xs text-white/60">{session.currentTrackArtist}</p>
+                    <span className="flex items-center gap-1 font-arcade text-[10px] text-cyan-300 uppercase tracking-wider">
+                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
+                      ROOM HOST
+                    </span>
                   </div>
                 </div>
 
-                {/* Title & Tags */}
-                <div>
-                  <h3 className="font-bold text-base group-hover:text-cyan-300 transition">
-                    {session.title}
-                  </h3>
-                  <div className="mt-2.5 flex flex-wrap gap-1.5">
-                    {session.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-lg bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] text-white/60"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Join button */}
-                <div className="pt-2 flex items-center justify-between text-xs font-semibold text-cyan-300 group-hover:translate-x-1 transition">
-                  <span>Vào phòng ngay</span>
-                  <ArrowRight className="h-4 w-4" />
+                <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.06] px-3 py-1 font-arcade text-xs text-white/80">
+                  <Headphones className="h-3.5 w-3.5 text-cyan-300" />
+                  <span>{session.listenersCount} ONLINE</span>
                 </div>
               </div>
-            </TiltCard>
+
+              {/* 2D Artwork Frame with Rounded Corners & Current Track Overlay */}
+              <div className="relative aspect-video w-full overflow-hidden rounded-[24px] border-2 border-white/15 shadow-xl group">
+                <Artwork
+                  src={session.coverImage}
+                  alt={session.title}
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                
+                <div className="absolute bottom-3 left-4 right-4">
+                  <p className="font-arcade text-[10px] font-bold uppercase tracking-widest text-cyan-300 flex items-center gap-1">
+                    <Disc3 className="h-3 w-3 animate-spin" /> ĐANG PHÁT HI-FI
+                  </p>
+                  <p className="truncate font-pixel text-sm font-bold text-white mt-0.5">
+                    {session.currentTrackTitle}
+                  </p>
+                  <p className="truncate font-arcade text-xs text-white/60">
+                    by {session.currentTrackArtist}
+                  </p>
+                </div>
+              </div>
+
+              {/* Room Title & Capsule Tags */}
+              <div className="space-y-2">
+                <h3 className="font-pixel text-base font-bold text-white tracking-tight truncate">
+                  {session.title}
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {session.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-white/20 bg-white/[0.04] px-3 py-0.5 font-arcade text-[10px] text-white/70"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* PROMINENT "PRESS TO JOIN" CAPSULE BUTTON */}
+              <button
+                type="button"
+                onClick={() => handleJoinOrCreate(session.id)}
+                className="w-full rounded-full border-2 border-white bg-white text-black py-3 font-pixel text-xs font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:bg-white/90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>PRESS TO JOIN</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
           ))}
         </div>
       </section>
     </div>
   );
 }
-
