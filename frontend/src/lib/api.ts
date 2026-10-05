@@ -25,13 +25,6 @@ export const resolveMediaUrl = (url: string) => {
 
 export const proxyImageUrl = (url: string) => {
   if (!url) return url;
-  if (/^https?:\/\//i.test(url)) {
-    const encoded = encodeURIComponent(url);
-    if (typeof window !== "undefined") {
-      return `${getApiOrigin()}/api/images/proxy?url=${encoded}`;
-    }
-    return `/api/images/proxy?url=${encoded}`;
-  }
   return url;
 };
 
