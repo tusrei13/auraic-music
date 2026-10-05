@@ -81,30 +81,8 @@ export default function ExplorePage() {
   }, [query, activeTab, doSearch]);
 
   const handlePlaySong = (song: any, pool: any[]) => {
-    const artwork = song.artwork?.["480x480"] || song.artwork?.["150x150"] || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop";
-    const playerTrack = {
-      id: `youtube:${song.id}`,
-      title: song.title,
-      artist: { id: song.id, name: song.artist || "Unknown Artist", avatar: artwork },
-      image: artwork,
-      audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(song.id)}&source=youtube`,
-      duration: song.duration || 0,
-      genre: "Electronic",
-      isEngineTrack: true,
-    };
-    const playerPool = pool.map((s: any) => {
-      const a = s.artwork?.["480x480"] || s.artwork?.["150x150"] || artwork;
-      return {
-        id: `youtube:${s.id}`,
-        title: s.title,
-        artist: { id: s.id, name: s.artist || "Unknown Artist", avatar: a },
-        image: a,
-        audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(s.id)}&source=youtube`,
-        duration: s.duration || 0,
-        genre: "Electronic",
-        isEngineTrack: true,
-      };
-    });
+    const playerTrack = AuraicAudioAdapter.toPlayerTrack(song);
+    const playerPool = pool.map((s: any) => AuraicAudioAdapter.toPlayerTrack(s));
     playTrack(playerTrack, playerPool, `Search: ${query}`);
   };
 
@@ -189,8 +167,8 @@ export default function ExplorePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {results.songs.map((song) => {
               const artwork = song.artwork?.["480x480"] || song.artwork?.["150x150"] || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop";
-              const isCurrent = String(currentTrack?.id) === `youtube:${song.id}`;
-              const isLiked = likedIds.some((id) => String(id) === `youtube:${song.id}`);
+              const isCurrent = String(currentTrack?.id) === String(song.id);
+              const isLiked = likedIds.some((id) => String(id) === String(song.id));
 
               return (
                 <TiltCard

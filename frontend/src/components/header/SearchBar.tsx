@@ -25,7 +25,8 @@ function artworkFor(track: EngineTrack): string {
   return track.artwork?.["480x480"] || track.artwork?.["150x150"] || fallbackArtwork;
 }
 
-function artistName(artist: EngineArtist): string {
+function artistName(artist?: EngineArtist | null): string {
+  if (!artist) return "Nghệ sĩ";
   return artist.name || artist.handle || "Nghệ sĩ";
 }
 

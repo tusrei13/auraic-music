@@ -160,7 +160,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-sm font-medium text-white/75 sm:text-base leading-relaxed">
-              {timeTheme.greeting}. Khám phá và nghe các bài hát được tìm thấy trên YouTube Music.
+              {timeTheme.greeting}. Khám phá và nghe các bài hát qua Sound Engine.
             </p>
 
             {/* Quick CTAs */}
@@ -191,17 +191,17 @@ export default function HomePage() {
               </div>
               <div className="text-left">
                 <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-300">
-                  YouTube Music
+                  Sound Engine
                 </div>
                 <div className="text-[10px] text-white/50">
-                  Tìm kiếm và phát nhạc qua YouTube
+                  Tìm kiếm và phát nhạc chất lượng cao
                 </div>
               </div>
             </div>
 
             <div className="inline-flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-1 text-[11px] font-mono text-cyan-200">
               <Headphones className="w-3.5 h-3.5 text-cyan-400" />
-              <span>YouTube Music streams</span>
+              <span>Sound Engine streams</span>
             </div>
           </div>
         </div>
@@ -273,7 +273,7 @@ export default function HomePage() {
 
                     {/* Provider badge */}
                     <div className="absolute top-4 right-4 z-20 px-2 py-0.5 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-[9px] font-mono font-bold text-emerald-300 backdrop-blur-md">
-                      YouTube Music
+                      Sound Engine
                     </div>
 
                     {/* Artwork with 3D Pop */}
@@ -317,7 +317,7 @@ export default function HomePage() {
 
                       {/* Provider and library action */}
                       <div className="flex items-center justify-between text-[11px] text-white/40 pt-2 border-t border-white/10 font-mono">
-                        <span>YouTube Music</span>
+                        <span>Sound Engine</span>
                         <button
                           type="button"
                           onClick={(e) => {

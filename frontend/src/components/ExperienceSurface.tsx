@@ -102,7 +102,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
             <div className="relative z-10 grid grid-cols-3 gap-3 pt-4 border-t border-white/10">
               <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-center">
                 <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-400">Music source</p>
-                <p className="mt-1 text-base font-black text-white">YouTube Music</p>
+                <p className="mt-1 text-base font-black text-white">Sound Engine</p>
               </div>
               <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-center">
                 <p className="text-[10px] font-mono uppercase tracking-wider text-fuchsia-400">Stream quality</p>
@@ -202,7 +202,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
             <div className="rounded-2xl border border-white/8 bg-black/25 p-3.5 space-y-2">
               <div className="flex justify-between text-xs text-white/70">
                 <span>Nguồn bên ngoài:</span>
-                <span className="font-mono font-bold text-cyan-300">YouTube Music</span>
+                <span className="font-mono font-bold text-cyan-300">Sound Engine</span>
               </div>
               <div className="flex justify-between text-xs text-white/70">
                 <span>Chọn bitrate thủ công:</span>
@@ -357,7 +357,7 @@ export default function ExperienceSurface({ kind }: { kind: ExperienceKind }) {
           <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.05] p-6 sm:p-7 ">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200">Playback source</p>
             <h2 className="mt-2 text-xl font-bold">
-              {currentTrack?.streamSource === "youtube" ? "YouTube Music" : "Auraic library"}
+              {currentTrack?.streamSource === "engine" || currentTrack?.isEngineTrack ? "Sound Engine" : "Auraic library"}
             </h2>
             <p className="mt-4 text-sm leading-6 text-white/60">
               Source availability and usage terms are determined by the original provider and content owner.

@@ -23,6 +23,8 @@ interface AlbumTrack {
   title: string;
   duration: number;
   play_count?: number;
+  streamUrl?: string;
+  genre?: string;
   artwork?: { "150x150"?: string; "480x480"?: string; "1000x1000"?: string } | null;
   user: {
     id: string;
@@ -117,13 +119,13 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
       const avatar = t.user?.profile_picture?.["480x480"] || t.user?.profile_picture?.["150x150"] || coverImage;
 
       return {
-        id: `youtube:${t.id}`,
+        id: t.id,
         title: t.title,
         artist: { id: t.user?.id || "", name: t.user?.name || t.user?.handle || "Unknown Artist", avatar },
         image: artwork,
-        audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(t.id)}`,
+        audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(t.id)}${t.streamUrl ? `&url=${encodeURIComponent(t.streamUrl)}` : ""}`,
         duration: t.duration,
-        genre: "Electronic",
+        genre: t.genre || "Electronic",
         isEngineTrack: true,
         rawEngineTrack: t as any,
       } as any;
@@ -137,13 +139,13 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
     const avatar = track.user?.profile_picture?.["480x480"] || track.user?.profile_picture?.["150x150"] || coverImage;
 
     const playerTrack = {
-      id: `youtube:${track.id}`,
+      id: track.id,
       title: track.title,
       artist: { id: track.user?.id || "", name: track.user?.name || track.user?.handle || "Unknown Artist", avatar },
       image: artwork,
-      audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(track.id)}`,
+      audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(track.id)}${track.streamUrl ? `&url=${encodeURIComponent(track.streamUrl)}` : ""}`,
       duration: track.duration,
-      genre: "Electronic",
+      genre: track.genre || "Electronic",
       isEngineTrack: true,
       rawEngineTrack: track as any,
     } as any;
@@ -152,13 +154,13 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
       const a = t.artwork?.["1000x1000"] || t.artwork?.["480x480"] || t.artwork?.["150x150"] || coverImage;
       const av = t.user?.profile_picture?.["480x480"] || t.user?.profile_picture?.["150x150"] || coverImage;
       return {
-        id: `youtube:${t.id}`,
+        id: t.id,
         title: t.title,
         artist: { id: t.user?.id || "", name: t.user?.name || t.user?.handle || "Unknown Artist", avatar: av },
         image: a,
-        audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(t.id)}`,
+        audioUrl: `/api/sound-engine/stream?id=${encodeURIComponent(t.id)}${t.streamUrl ? `&url=${encodeURIComponent(t.streamUrl)}` : ""}`,
         duration: t.duration,
-        genre: "Electronic",
+        genre: t.genre || "Electronic",
         isEngineTrack: true,
         rawEngineTrack: t as any,
       } as any;

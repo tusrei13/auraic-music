@@ -363,13 +363,13 @@ export default function ArtistDetailPage({ params }: { params: Promise<{ id: str
                 return (
                   <Link
                     key={album.id}
-                    href={`/album/${encodeURIComponent(album.id)}?name=${encodeURIComponent(album.playlist_name)}`}
+                    href={`/album/${encodeURIComponent(album.id)}?name=${encodeURIComponent(album.playlist_name || album.title || "")}`}
                     className="group rounded-3xl p-4 border border-white/10 bg-white/[0.04] hover:border-purple-500/30 transition-all cursor-pointer flex flex-col justify-between"
                   >
                     <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-lg border border-white/10 mb-3">
                       <Artwork
                         src={artworkUrl}
-                        alt={album.playlist_name}
+                        alt={album.playlist_name || album.title || "Album"}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                       <div className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-black/60 border border-white/20 text-[10px] font-mono text-white backdrop-blur-md">

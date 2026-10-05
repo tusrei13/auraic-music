@@ -50,7 +50,7 @@ export default function TrackDetailPage({ params }: { params: Promise<{ id: stri
       <div className="flex items-center justify-center min-h-[70vh] text-white/50">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" />
-          <span className="text-xs font-mono text-cyan-300">Đang tải thông tin từ YouTube Music...</span>
+          <span className="text-xs font-mono text-cyan-300">Đang tải thông tin từ Sound Engine...</span>
         </div>
       </div>
     );
@@ -59,7 +59,7 @@ export default function TrackDetailPage({ params }: { params: Promise<{ id: stri
   if (!track) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-white/70 space-y-4">
-        <p className="text-lg font-bold">Không tìm thấy bài hát trên YouTube Music</p>
+        <p className="text-lg font-bold">Không tìm thấy bài hát trên Sound Engine</p>
         <Link
           href="/"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold"
@@ -106,15 +106,15 @@ export default function TrackDetailPage({ params }: { params: Promise<{ id: stri
               alt={track.title}
               className="h-full w-full object-cover"
             />
-            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-xl bg-black/60 border border-red-500/40 text-[10px] font-mono font-bold text-red-200 backdrop-blur-md">
-              YouTube Music
+            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-xl bg-black/60 border border-cyan-500/40 text-[10px] font-mono font-bold text-cyan-200 backdrop-blur-md">
+              Sound Engine
             </div>
           </TiltCard>
 
           {/* Metadata info */}
           <div className="flex-1 space-y-4 text-center md:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[11px] font-mono text-cyan-300">
-              <span>NOW PLAYING ON YOUTUBE MUSIC</span>
+              <span>NOW PLAYING ON SOUND ENGINE</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">

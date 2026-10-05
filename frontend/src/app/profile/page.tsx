@@ -285,7 +285,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="flex flex-wrap gap-2 pt-2 border-t border-white/8">
-            {["#Synthwave", "#AmbientLoFi", "#YouTubeMusic", "#DeepFocus"].map((tag) => (
+            {["#Synthwave", "#AmbientLoFi", "#SoundEngine", "#DeepFocus"].map((tag) => (
               <span key={tag} className="text-[11px] font-mono font-semibold text-white/60 bg-white/5 border border-white/8 px-2.5 py-1 rounded-lg">
                 {tag}
               </span>

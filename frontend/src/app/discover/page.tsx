@@ -173,12 +173,15 @@ export default function DiscoverPage() {
       setSongs(playerTracks);
       const artistMap = new Map<string, any>();
       for (const t of engineTracks) {
-        if (!artistMap.has(t.user.id)) {
-          artistMap.set(t.user.id, {
-            id: t.user.id,
-            name: t.user.name || t.user.handle,
-            avatar: t.user.profile_picture?.["480x480"] || t.user.profile_picture?.["150x150"] || "",
-            image: t.user.profile_picture?.["480x480"] || t.user.profile_picture?.["150x150"] || "",
+        const artistId = t.user?.id || t.id;
+        if (artistId && !artistMap.has(artistId)) {
+          const artistName = t.user?.name || t.user?.handle || t.artistName || "Unknown Artist";
+          const avatar = t.user?.avatarUrl || t.user?.profile_picture?.["480x480"] || t.user?.profile_picture?.["150x150"] || t.artworkUrl || "";
+          artistMap.set(artistId, {
+            id: artistId,
+            name: artistName,
+            avatar,
+            image: avatar,
           });
         }
       }
