@@ -1,34 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getArtistProfile } from "@/lib/sound-engine/metadata";
+import { SoundEngineServer } from "@/lib/sound-engine/server-engine";
+import { sanitizeTrackId } from "@/lib/sound-engine/track-id";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
   const rawId = decodeURIComponent(id);
-  const artistName = request.nextUrl.searchParams.get("name") || undefined;
+  const cleanId = sanitizeTrackId(rawId);
 
   try {
-    const { artist, topTracks, albums, singles, relatedArtists } = await getArtistProfile(rawId, artistName);
+    const result = await SoundEngineServer.getArtistById(cleanId);
+
+    if (!result || !result.artist) {
+      return NextResponse.json({ error: "Artist not found" }, { status: 404 });
+    }
 
     return NextResponse.json(
       {
-        artist,
-        tracks: topTracks,
-        topTracks,
-        albums,
-        singles,
-        relatedArtists,
+        artist: result.artist,
+        tracks: result.topTracks,
+        topTracks: result.topTracks,
+        albums: result.albums,
+        singles: [],
+        relatedArtists: result.relatedArtists,
       },
       {
-        headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate=600" },
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+          "Access-Control-Allow-Origin": "*",
+        },
       }
     );
   } catch (err) {
-    console.error(`[SoundEngine] Failed to fetch artist ${rawId}:`, err);
-    return NextResponse.json({ error: "Artist not found" }, { status: 404 });
+    console.error(`[SoundEngine] Failed to fetch artist ${cleanId}:`, err);
+    return NextResponse.json({ error: "Artist not found" }, { status: 502 });
   }
 }
