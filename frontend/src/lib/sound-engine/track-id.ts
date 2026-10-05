@@ -1,7 +1,12 @@
-export const YOUTUBE_TRACK_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
+/**
+ * Sound Engine - Track ID Utilities
+ * Provides sanitized ID normalization and validation.
+ */
+
+export const ENGINE_TRACK_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
 export function sanitizeStreamRequestTrackId(rawId: string): string {
-  let cleanId = rawId.trim();
+  let cleanId = String(rawId || "").trim();
 
   for (let decodeCount = 0; decodeCount < 2; decodeCount += 1) {
     try {
@@ -14,32 +19,25 @@ export function sanitizeStreamRequestTrackId(rawId: string): string {
   }
 
   cleanId = cleanId
-    .replace(/^(?:engine|youtube):/i, "")
+    .replace(/^engine:/i, "")
     .split(/[?&#]/, 1)[0]
     .trim();
-
-  if (
-    cleanId.length === 12 &&
-    cleanId.startsWith("-") &&
-    YOUTUBE_TRACK_ID_PATTERN.test(cleanId.slice(1))
-  ) {
-    return cleanId.slice(1);
-  }
 
   return cleanId;
 }
 
 export function sanitizeTrackId(
   id: string | number,
-  source?: "youtube"
+  _source?: string
 ): string {
-  if (source === "youtube") {
-    return sanitizeStreamRequestTrackId(String(id));
-  }
+  return sanitizeStreamRequestTrackId(String(id));
+}
 
-  return String(id)
-    .replace(/^engine:/i, "")
-    .replace(/^youtube:/i, "")
-    .split(/[?&#]/, 1)[0]
-    .trim();
+export function isValidTrackId(id: string | number): boolean {
+  const clean = sanitizeTrackId(id);
+  return clean.length > 0 && ENGINE_TRACK_ID_PATTERN.test(clean);
+}
+
+export function isEngineTrackId(id: string | number): boolean {
+  return String(id).startsWith("engine:") || isValidTrackId(id);
 }

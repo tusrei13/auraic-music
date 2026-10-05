@@ -1,15 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { AuraicAudioAdapter, isValidTrackId } from "./client";
+import { AuraicAudioAdapter, isValidTrackId, normalizeTrackTitle } from "./client";
 import { EngineTrack } from "@/types/sound-engine";
 import { normalizeTrack } from "@/store/usePlayerStore";
 import { sanitizeStreamRequestTrackId, sanitizeTrackId } from "./track-id";
 
-describe("AuraicAudioAdapter", () => {
+describe("Sound Engine Adapter & Utilities", () => {
   const mockEngineTrack: EngineTrack = {
-    id: "dQw4w9WgXcQ",
+    id: "987654",
     title: "Cyber Horizon",
+    artistName: "Neon Driver",
+    artworkUrl: "https://example.com/art-hd.jpg",
+    streamUrl: "https://example.com/stream-987654.mp3",
     duration: 210,
     genre: "Synthwave",
+    license: "https://creativecommons.org/licenses/by-nc/3.0/",
     is_streamable: true,
     user: {
       id: "artist_123",
@@ -27,50 +31,77 @@ describe("AuraicAudioAdapter", () => {
     play_count: 54200,
   };
 
-  it("correctly identifies YouTube Music track IDs", () => {
-    expect(AuraicAudioAdapter.isYouTubeTrackId("youtube:dQw4w9WgXcQ")).toBe(true);
-    expect(AuraicAudioAdapter.isYouTubeTrackId("dQw4w9WgXcQ")).toBe(false);
-    expect(AuraicAudioAdapter.isYouTubeTrackId(12345)).toBe(false);
+  it("identifies Engine track IDs", () => {
+    expect(AuraicAudioAdapter.isEngineTrackId("engine:987654")).toBe(true);
+    expect(AuraicAudioAdapter.isEngineTrackId("987654")).toBe(true);
+    expect(AuraicAudioAdapter.isEngineTrackId(12345)).toBe(true);
+    expect(AuraicAudioAdapter.isEngineTrackId("")).toBe(false);
   });
 
   describe("stream track ID sanitization", () => {
-    it("removes a stray leading hyphen from an overlong YouTube ID", () => {
-      expect(sanitizeStreamRequestTrackId("-7IID5YLPg7w")).toBe("7IID5YLPg7w");
+    it("sanitizes compound engine IDs cleanly", () => {
+      expect(sanitizeStreamRequestTrackId("engine:987654")).toBe("987654");
     });
 
-    it("preserves a valid 11-character YouTube ID that starts with a hyphen", () => {
-      expect(sanitizeStreamRequestTrackId("-abcdefg123")).toBe("-abcdefg123");
+    it("decodes encoded URI parameters", () => {
+      expect(sanitizeStreamRequestTrackId("engine%3A987654%3Fsource%3Dengine")).toBe("987654");
     });
 
-    it("decodes the ID and removes source query pollution", () => {
-      expect(sanitizeStreamRequestTrackId("youtube%3A7IID5YLPg7w%3Fsource%3Dengine"))
-        .toBe("7IID5YLPg7w");
-    });
-
-    it("only applies the stray-hyphen correction to explicit YouTube tracks", () => {
-      expect(sanitizeTrackId("-7IID5YLPg7w")).toBe("-7IID5YLPg7w");
-      expect(sanitizeTrackId("-7IID5YLPg7w", "youtube")).toBe("7IID5YLPg7w");
+    it("sanitizes track ID with sanitizeTrackId helper", () => {
+      expect(sanitizeTrackId("engine:987654")).toBe("987654");
+      expect(sanitizeTrackId("987654")).toBe("987654");
     });
   });
 
-  it("only accepts valid YouTube video IDs", () => {
-    expect(isValidTrackId("dQw4w9WgXcQ")).toBe(true);
-    expect(isValidTrackId("youtube:dQw4w9WgXcQ")).toBe(true);
-    expect(isValidTrackId("xkQaGx")).toBe(false);
+  describe("normalizeTrackTitle helper", () => {
+    it("splits 'Artist - Track' cleanly into separate properties", () => {
+      const res = normalizeTrackTitle("Alan Walker - Faded");
+      expect(res.artistName).toBe("Alan Walker");
+      expect(res.title).toBe("Faded");
+    });
+
+    it("splits 'Artist : Track' with colon delimiter", () => {
+      const res = normalizeTrackTitle("Hans Zimmer : Time");
+      expect(res.artistName).toBe("Hans Zimmer");
+      expect(res.title).toBe("Time");
+    });
+
+    it("strips common noise tags from track titles", () => {
+      const res = normalizeTrackTitle("Artist - Beautiful Day [Official Audio]");
+      expect(res.artistName).toBe("Artist");
+      expect(res.title).toBe("Beautiful Day");
+    });
+
+    it("extracts featured artist from 'Track (feat. Artist)'", () => {
+      const res = normalizeTrackTitle("Good Life (feat. OneRepublic)");
+      expect(res.artistName).toContain("OneRepublic");
+      expect(res.title).toBe("Good Life");
+    });
+
+    it("falls back to default artist if no delimiter exists", () => {
+      const res = normalizeTrackTitle("Midnight City", "M83");
+      expect(res.artistName).toBe("M83");
+      expect(res.title).toBe("Midnight City");
+    });
+  });
+
+  it("validates track IDs", () => {
+    expect(isValidTrackId("987654")).toBe(true);
+    expect(isValidTrackId("track_abc_123")).toBe(true);
     expect(isValidTrackId("")).toBe(false);
   });
 
   it("extracts raw ID cleanly from compound ID", () => {
-    expect(AuraicAudioAdapter.extractRawId("engine:dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-    expect(AuraicAudioAdapter.extractRawId("dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
+    expect(AuraicAudioAdapter.extractRawId("engine:987654")).toBe("987654");
+    expect(AuraicAudioAdapter.extractRawId("987654")).toBe("987654");
   });
 
-  it("adapts YouTube Music data to the player stream proxy URL", () => {
+  it("adapts EngineTrack data to the player track structure", () => {
     const playerTrack = AuraicAudioAdapter.toPlayerTrack(mockEngineTrack);
 
-    expect(playerTrack.id).toBe("youtube:dQw4w9WgXcQ");
+    expect(playerTrack.id).toBe("987654");
     expect(playerTrack.title).toBe("Cyber Horizon");
-    expect(playerTrack.audioUrl).toBe("/api/sound-engine/stream?id=dQw4w9WgXcQ&source=youtube");
+    expect(playerTrack.audioUrl).toBe("https://example.com/stream-987654.mp3");
     expect(playerTrack.image).toBe("https://example.com/art-hd.jpg");
     expect(playerTrack.duration).toBe(210);
     expect(playerTrack.genre).toBe("Synthwave");
@@ -78,24 +109,12 @@ describe("AuraicAudioAdapter", () => {
     expect((playerTrack.artist as any).name).toBe("Neon Driver");
   });
 
-  it("removes a stray leading hyphen from YouTube track IDs", () => {
-    const playerTrack = AuraicAudioAdapter.toPlayerTrack({
-      ...mockEngineTrack,
-      id: "-7IID5YLPg7w",
-      streamSource: "youtube",
-    });
-
-    expect(playerTrack.id).toBe("youtube:7IID5YLPg7w");
-    expect(playerTrack.audioUrl).toBe(
-      "/api/sound-engine/stream?id=7IID5YLPg7w&source=youtube"
-    );
-  });
-
   it("normalizes EngineTrack in usePlayerStore helper", () => {
     const normalized = normalizeTrack(mockEngineTrack);
 
     expect(normalized.isEngineTrack).toBe(true);
-    expect(normalized.id).toBe("youtube:dQw4w9WgXcQ");
+    expect(normalized.id).toBe("987654");
     expect(normalized.rawEngineTrack).toBe(mockEngineTrack);
+    expect(normalized.audioUrl).toBe("https://example.com/stream-987654.mp3");
   });
 });

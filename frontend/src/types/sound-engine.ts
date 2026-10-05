@@ -1,6 +1,6 @@
 /**
  * Auraic Sound Engine - Unified Type Definitions
- * Normalized data models returned by YouTube Music integrations.
+ * Normalized data models for the Sound Engine abstraction layer.
  */
 
 export interface EngineArtwork {
@@ -17,12 +17,13 @@ export interface EngineCoverPhoto {
 export interface EngineArtist {
   id: string;
   name: string;
-  handle: string;
+  handle?: string;
+  avatarUrl?: string;
   bio?: string | null;
   location?: string | null;
   profile_picture?: EngineArtwork | null;
   cover_photo?: EngineCoverPhoto | null;
-  is_verified: boolean;
+  is_verified?: boolean;
   follower_count?: number;
   followee_count?: number;
   track_count?: number;
@@ -32,38 +33,48 @@ export interface EngineArtist {
 
 export interface EngineTrack {
   id: string;
-  streamSource?: "youtube";
   title: string;
-  artist?: string;
-  description?: string | null;
-  genre?: string | null;
-  mood?: string | null;
+  artistName: string;
+  artworkUrl: string;
+  streamUrl: string;
   duration: number; // in seconds
-  play_count?: number;
-  favorite_count?: number;
-  artwork?: EngineArtwork | null;
-  user: EngineArtist;
+  genre: string;
+  license?: string | null;
+  albumName?: string;
+  albumId?: string;
+  releaseDate?: string | null;
   bpm?: number | null;
   tags?: string | null;
-  is_streamable: boolean;
-  release_date?: string | null;
+  is_streamable?: boolean;
+  play_count?: number;
+  favorite_count?: number;
+  // UI compatibility aliases
+  artist?: string;
+  artwork?: EngineArtwork | null;
+  user?: EngineArtist;
+  streamSource?: "engine";
 }
 
 export interface EnginePlaylist {
   id: string;
-  playlist_name: string;
+  name?: string;
+  playlist_name?: string;
+  title?: string;
   description?: string | null;
-  is_album: boolean;
-  track_count: number;
+  artworkUrl?: string;
   artwork?: EngineArtwork | null;
-  user: EngineArtist;
+  user?: EngineArtist;
+  track_count: number;
+  tracks?: EngineTrack[];
+  is_album?: boolean;
   total_play_count?: number;
   favorite_count?: number;
-  tracks?: EngineTrack[];
 }
 
 export interface EngineAlbum extends EnginePlaylist {
   is_album: true;
-  release_year?: number;
+  artistId?: string;
+  artistName?: string;
+  releaseYear?: number;
   total_duration?: number;
 }
