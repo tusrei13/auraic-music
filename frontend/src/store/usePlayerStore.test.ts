@@ -45,15 +45,14 @@ describe("playback stream errors", () => {
 });
 
 describe("normalizeTrack stream URLs", () => {
-  it("infers YouTube source and corrects an extra leading hyphen", () => {
+  it("infers engine source and builds stream URL for engine tracks", () => {
     const normalized = normalizeTrack({
-      ...track("-7IID5YLPg7w"),
+      ...track("12345"),
       isEngineTrack: true,
     });
 
-    expect(normalized.streamSource).toBe("youtube");
-    expect(normalized.audioUrl).toBe(
-      "/api/sound-engine/stream?id=7IID5YLPg7w&source=youtube"
-    );
+    expect(normalized.streamSource).toBe("engine");
+    expect(normalized.audioUrl).toBe("/api/sound-engine/stream?id=12345");
   });
 });
+

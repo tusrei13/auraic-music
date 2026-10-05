@@ -12,10 +12,13 @@ function getApiOrigin(): string {
 
 export const resolveMediaUrl = (url: string) => {
   if (!url) return url;
-  if (/^https?:\/\//i.test(url)) return url;
-  if (typeof window !== "undefined" && url.startsWith("/api/sound-engine/")) {
-    return new URL(url, window.location.origin).toString();
+  if (url.startsWith("/api/sound-engine/")) {
+    if (typeof window !== "undefined") {
+      return new URL(url, window.location.origin).toString();
+    }
+    return url;
   }
+  if (/^https?:\/\//i.test(url)) return url;
   const apiUrl = new URL(API_BASE_URL, typeof window !== "undefined" ? window.location.origin : "http://localhost");
   return new URL(url, `${apiUrl.origin}/`).toString();
 };

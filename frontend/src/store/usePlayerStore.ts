@@ -4,7 +4,7 @@ import { useToastStore } from "./useToastStore";
 import { getLikedSongs, recordListening, toggleLikeSong } from "../lib/api";
 import { useAuthStore } from "./useAuthStore";
 import { EngineTrack } from "@/types/sound-engine";
-import { AuraicAudioAdapter, isValidTrackId, sanitizeTrackId, PROXY_BASE } from "@/lib/sound-engine/client";
+import { AuraicAudioAdapter, isValidTrackId, sanitizeTrackId, isTrackStreamable, PROXY_BASE } from "@/lib/sound-engine/client";
 
 export interface Track {
   id: number | string;
@@ -17,12 +17,12 @@ export interface Track {
   lyrics?: string | { time: number; text: string }[];
   isEngineTrack?: boolean;
   rawEngineTrack?: EngineTrack;
-  streamSource?: "youtube";
+  streamSource?: "engine";
 }
 
 export function normalizeTrack(track: Track | EngineTrack): Track {
   if (!track) return track as Track;
-  if ("is_streamable" in track && "user" in track) {
+  if ("streamUrl" in track || ("is_streamable" in track && "artistName" in track) || ("user" in track && "is_streamable" in track)) {
     const converted = AuraicAudioAdapter.toPlayerTrack(track as EngineTrack);
     return {
       ...converted,
@@ -31,15 +31,20 @@ export function normalizeTrack(track: Track | EngineTrack): Track {
     };
   }
   const normalized = track as Track;
-  if (normalized.isEngineTrack || normalized.rawEngineTrack) {
-    const streamSource = "youtube";
-    const cleanId = sanitizeTrackId(normalized.id, "youtube");
+  if (normalized.isEngineTrack || normalized.rawEngineTrack || (normalized.id ? AuraicAudioAdapter.isEngineTrackId(normalized.id) : false)) {
+    const streamSource = "engine";
+    const cleanId = sanitizeTrackId(normalized.id);
+    const directStreamUrl = normalized.rawEngineTrack?.streamUrl;
+    const hasProxyUrl = normalized.audioUrl && normalized.audioUrl.startsWith(`${PROXY_BASE}/stream`);
     return {
       ...normalized,
       streamSource,
-      audioUrl: isValidTrackId(cleanId)
-        ? `${PROXY_BASE}/stream?id=${encodeURIComponent(cleanId)}&source=${streamSource}`
-        : "",
+      isEngineTrack: true,
+      audioUrl: hasProxyUrl
+        ? normalized.audioUrl
+        : isValidTrackId(cleanId)
+        ? `${PROXY_BASE}/stream?id=${encodeURIComponent(cleanId)}${directStreamUrl && directStreamUrl.startsWith("http") ? `&url=${encodeURIComponent(directStreamUrl)}` : ""}`
+        : normalized.audioUrl,
     };
   }
   return normalized;
@@ -107,8 +112,12 @@ export const removeDuplicateTracks = (tracks: Track[]): Track[] => {
   });
 };
 
-const isPlayableTrack = (track: Track): boolean =>
-  !(track.isEngineTrack || track.rawEngineTrack) || isValidTrackId(track.id);
+const isPlayableTrack = (track: Track): boolean => {
+  if (!track) return false;
+  const cleanId = sanitizeTrackId(track.id);
+  if (!isTrackStreamable(cleanId)) return false;
+  return !(track.isEngineTrack || track.rawEngineTrack) || isValidTrackId(cleanId);
+};
 
 const shuffleArray = <T>(array: T[]): T[] => {
   const arr = [...array];
@@ -201,14 +210,6 @@ export const usePlayerStore = create<PlayerState>()(
 
       playTrack: (track, pageQueue, title) => {
         const normalizedItem = normalizeTrack(track);
-        if (normalizedItem.isEngineTrack || normalizedItem.rawEngineTrack) {
-          const streamSource = "youtube";
-          const cleanId = sanitizeTrackId(normalizedItem.id, "youtube");
-          normalizedItem.streamSource = streamSource;
-          normalizedItem.audioUrl = isValidTrackId(cleanId)
-            ? `${PROXY_BASE}/stream?id=${encodeURIComponent(cleanId)}&source=${streamSource}`
-            : "";
-        }
         const currentList = pageQueue && pageQueue.length > 0
           ? pageQueue.map(normalizeTrack)
           : [normalizedItem];
@@ -349,44 +350,14 @@ export const usePlayerStore = create<PlayerState>()(
 
       handlePlaybackError: (errorDetails?: string | unknown) => {
         const state = get();
-        const current = state.currentTrack;
         if (state.playbackStatus === "error") return;
-
-        console.warn(
-          `[PlayerStore] Playback error on track "${current?.title}" (ID: ${current?.id}):`,
-          errorDetails
-        );
 
         const errorMsg =
           typeof errorDetails === "string"
             ? errorDetails
             : "Không thể phát bài hát này.";
 
-        set({
-          playbackStatus: "error",
-          playbackError: errorMsg,
-          isPlaying: false,
-        });
-
-        useToastStore
-          .getState()
-          .addToast(
-            `Không thể tải "${current?.title || "bài hát"}". Chuyển bài tiếp theo...`,
-            "error"
-          );
-
-        // Auto-advance to the next available track after a short delay
-        setTimeout(() => {
-          const latestState = get();
-          // Only skip if the errored track is still the current one
-          if (
-            latestState.playbackStatus === "error" &&
-            latestState.currentTrack &&
-            String(latestState.currentTrack.id) === String(current?.id)
-          ) {
-            latestState.nextTrack();
-          }
-        }, 1500);
+        get().setPlaybackStatus("error", errorMsg);
       },
 
       setPlaybackStatus: (playbackStatus, playbackError = null) => {
@@ -431,7 +402,7 @@ export const usePlayerStore = create<PlayerState>()(
 
       recordListening: async (songId) => {
         if (typeof window === "undefined" || !localStorage.getItem("token")) return;
-        if (AuraicAudioAdapter.isYouTubeTrackId(songId)) {
+        if (AuraicAudioAdapter.isEngineTrackId(songId)) {
           // Record provider track play to local history
           const userId = useAuthStore.getState().user?.id;
           if (userId && get().currentTrack) {

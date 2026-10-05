@@ -94,12 +94,27 @@ export default function Player() {
   const hlsReadyRef = useRef(false);
   const isPlayingRef = useRef(isPlaying);
   const rawMediaUrl = currentTrack?.audioUrl || "";
-  const streamId = currentTrack?.isEngineTrack || currentTrack?.rawEngineTrack
-    ? sanitizeTrackId(currentTrack.id, "youtube")
+  const streamId = currentTrack?.isEngineTrack || currentTrack?.rawEngineTrack || (currentTrack?.id ? AuraicAudioAdapter.isEngineTrackId(currentTrack.id) : false)
+    ? sanitizeTrackId(currentTrack!.id)
     : null;
   const hasValidStreamId = !streamId || isValidTrackId(streamId);
-  const mediaUrl = hasValidStreamId ? resolveMediaUrl(rawMediaUrl) : "";
+
+  // Guarantee Sound Engine tracks stream through /api/sound-engine/stream proxy
+  // to avoid browser CORS / Range 206 failures with crossOrigin="anonymous".
+  let targetUrl = rawMediaUrl;
+  if (streamId && isValidTrackId(streamId)) {
+    if (!targetUrl.includes("/api/sound-engine/stream")) {
+      const directParam = targetUrl.startsWith("http") && !targetUrl.includes("localhost")
+        ? `&url=${encodeURIComponent(targetUrl)}`
+        : "";
+      targetUrl = `/api/sound-engine/stream?id=${encodeURIComponent(streamId)}${directParam}`;
+    }
+  }
+
+  const mediaUrl = hasValidStreamId ? resolveMediaUrl(targetUrl) : "";
   const isHlsSource = /\.m3u8(?:\?|$)/i.test(mediaUrl);
+  const isSameOriginOrProxied = !mediaUrl.startsWith("http") || (typeof window !== "undefined" && mediaUrl.startsWith(window.location.origin));
+  const crossOriginProp = isSameOriginOrProxied ? "anonymous" : undefined;
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
@@ -210,10 +225,8 @@ export default function Player() {
       setPlaybackStatus("loading");
       if (isPlaying && (!isHlsSource || hlsReadyRef.current)) {
         audioRef.current.play().catch((err) => {
-          // "NotAllowedError" means the browser blocked autoplay — this is not a stream
-          // failure. The onerror event on <audio> handles real decode/network errors.
-          if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
-            setPlaybackStatus("error", "Không thể phát bài hát này");
+          if (err?.name === "NotAllowedError") {
+            setPlaybackStatus("paused");
           }
         });
       } else if (!isPlaying) {
@@ -320,7 +333,7 @@ export default function Player() {
         recordedTrackIdRef.current !== currentTrack.id
       ) {
         recordedTrackIdRef.current = currentTrack.id;
-        if (AuraicAudioAdapter.isYouTubeTrackId(currentTrack.id) || currentTrack.isEngineTrack) {
+        if (AuraicAudioAdapter.isEngineTrackId(currentTrack.id) || currentTrack.isEngineTrack) {
           const userId = useAuthStore.getState().user?.id;
           if (userId) {
             const storageKey = `auraic-history-${userId}`;
@@ -380,6 +393,7 @@ export default function Player() {
     if (mediaErr?.code === MediaError.MEDIA_ERR_ABORTED) {
       return;
     }
+
     const errorDetails = mediaErr
       ? `MediaError code ${mediaErr.code}: ${mediaErr.message || "playback error"}`
       : "Không thể phát luồng âm thanh";
@@ -393,7 +407,7 @@ export default function Player() {
       completedTrackIdRef.current = currentTrack.id;
       recordPlaybackEvent("TRACK_COMPLETED");
     }
-    if (repeatMode === "one" && audioRef.current) {
+    if (repeatMode === "one" && audioRef.current && (audioRef.current.duration > 1)) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => { });
     } else {
@@ -494,7 +508,7 @@ export default function Player() {
           <audio
             ref={audioRef}
             src={isHlsSource || !mediaUrl ? undefined : mediaUrl}
-            crossOrigin="anonymous"
+            crossOrigin={crossOriginProp}
             preload="metadata"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
@@ -736,7 +750,7 @@ export default function Player() {
 
             {/* Bitrate Badge as shown in reference */}
             <span className="hidden xl:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider text-white/70 bg-white/5 border border-white/10 select-none">
-              {AuraicAudioAdapter.isYouTubeTrackId(currentTrack.id) || currentTrack.isEngineTrack ? "YouTube Music" : "Local audio"}
+              {AuraicAudioAdapter.isEngineTrackId(currentTrack.id) || currentTrack.isEngineTrack ? "Sound Engine" : "Local audio"}
             </span>
 
             <div className="flex items-center gap-2.5 group">
