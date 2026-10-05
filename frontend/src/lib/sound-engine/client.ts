@@ -94,7 +94,7 @@ export class SoundEngineService {
       const rawTracks = Array.isArray(json.results) ? json.results : Array.isArray(json) ? json : [];
       return rawTracks
         .map(normalizeRawTrack)
-        .filter((t) => t.is_streamable && isTrackStreamable(t.id));
+        .filter((t: EngineTrack) => Boolean(t.is_streamable && isTrackStreamable(t.id)));
     } catch (err) {
       console.warn("[SoundEngineService] fetchTrendingTracks failed:", err);
       return [];
@@ -119,7 +119,7 @@ export class SoundEngineService {
       const rawTracks = Array.isArray(json.results) ? json.results : Array.isArray(json) ? json : [];
       return rawTracks
         .map(normalizeRawTrack)
-        .filter((t) => t.is_streamable && isTrackStreamable(t.id));
+        .filter((t: EngineTrack) => Boolean(t.is_streamable && isTrackStreamable(t.id)));
     } catch (err) {
       console.warn("[SoundEngineService] fetchFeaturedTracks failed:", err);
       return [];

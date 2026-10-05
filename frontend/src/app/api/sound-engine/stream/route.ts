@@ -12,6 +12,12 @@ const STREAM_HEADERS: Record<string, string> = {
   "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
 };
 
+// Minimal silent MP3 frame buffer
+const SILENT_MP3 = Buffer.from(
+  "//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA////////////////////////////////////////////////////////////////",
+  "base64"
+);
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const idParam = searchParams.get("id");
