@@ -3,7 +3,7 @@ CREATE TYPE "IngestionStatus" AS ENUM ('RUNNING', 'SUCCEEDED', 'FAILED');
 CREATE TABLE "IngestionJob" (
   "id" TEXT NOT NULL,
   "status" "IngestionStatus" NOT NULL,
-  "source" TEXT NOT NULL DEFAULT 'jamendo',
+  "source" TEXT NOT NULL DEFAULT 'engine',
   "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "finishedAt" TIMESTAMP(3),
   "imported" INTEGER NOT NULL DEFAULT 0,
