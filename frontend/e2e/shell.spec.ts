@@ -7,6 +7,13 @@ test('home exposes the listening shell and empty player state', async ({ page })
   await expect(page.getByRole('combobox', { name: 'Tìm kiếm nhạc' })).toBeVisible();
 });
 
+test('explore uses the home page and redirects the old explore URL', async ({ page }) => {
+  await page.goto('/explore');
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { name: 'Music Categories' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Khám phá' })).toHaveAttribute('href', '/');
+});
+
 test('search input is keyboard accessible', async ({ page }) => {
   await page.goto('/');
   const search = page.getByRole('combobox', { name: 'Tìm kiếm nhạc' });

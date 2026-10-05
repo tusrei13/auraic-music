@@ -3,12 +3,11 @@
 import Artwork from "@/components/Artwork";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Radio, Library, Users, BarChart3, Compass } from "lucide-react";
+import { Radio, Library, Users, BarChart3, Compass } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
-  { name: "Trang chủ", href: "/", icon: Home },
-  { name: "Khám phá (Matrix)", href: "/explore", icon: Compass },
+  { name: "Khám phá", href: "/", icon: Compass },
   { name: "Stations & Ambient", href: "/stations", icon: Radio },
   { name: "Thư viện", href: "/library", icon: Library },
   { name: "Phòng nghe chung", href: "/session", icon: Users },
@@ -20,7 +19,7 @@ export default function Sidebar() {
   const { status, openAuthModal } = useAuthStore();
 
   return (
-    <aside className="group/sidebar flex h-full w-[68px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.035] p-3 transition-[width] duration-300 hover:w-64 sm:w-[76px] sm:p-4 shadow-[0_8px_32px_rgba(0,0,0,0.37)] backdrop-blur-xl">
+    <aside className="group/sidebar flex h-full w-[68px] shrink-0 flex-col overflow-hidden rounded-[28px] border-2 border-white/15 bg-[#0d0f1a]/90 p-3 transition-[width] duration-300 hover:w-64 sm:w-[76px] sm:p-4 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl">
       <div className="space-y-8">
         {/* LOGO */}
         <Link href="/" className="flex items-center gap-3 px-1">
@@ -29,14 +28,14 @@ export default function Sidebar() {
             alt="Auraic"
             priority
             loading="eager"
-            className="h-10 w-10 shrink-0 object-cover mix-blend-screen drop-shadow-[0_0_16px_rgba(192,100,255,0.6)] transition-transform duration-300 group-hover/sidebar:scale-105"
+            className="h-10 w-10 shrink-0 object-cover mix-blend-screen drop-shadow-[0_0_16px_rgba(192,100,255,0.7)] transition-transform duration-300 group-hover/sidebar:scale-105"
           />
-          <span className="whitespace-nowrap bg-gradient-to-r from-fuchsia-300 via-violet-300 to-cyan-300 bg-clip-text text-lg font-black tracking-[0.2em] text-transparent opacity-0 drop-shadow-[0_0_10px_rgba(192,100,255,0.35)] transition-opacity duration-300 group-hover/sidebar:opacity-100">
+          <span className="whitespace-nowrap font-pixel text-xl font-bold tracking-widest text-white opacity-0 drop-shadow-[0_0_12px_rgba(192,100,255,0.6)] transition-opacity duration-300 group-hover/sidebar:opacity-100">
             AURAIC
           </span>
         </Link>
 
-        {/* NAVIGATION LINKS (Chỉ bao gồm 5 mục theo yêu cầu) */}
+        {/* NAVIGATION LINKS */}
         <nav className="space-y-2.5">
           {navItems.map((item) => {
             const isActive =
@@ -54,10 +53,10 @@ export default function Sidebar() {
                     openAuthModal();
                   }
                 }}
-                className={`group/item flex min-h-12 items-center gap-4 rounded-2xl px-3 text-xs font-semibold transition-all duration-300 ${
+                className={`group/item flex min-h-12 items-center gap-4 rounded-2xl px-3 font-pixel text-sm tracking-wide transition-all duration-300 ${
                   isActive
-                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-[0_0_24px_rgba(124,58,237,0.55)] border border-violet-400/30"
-                    : "text-white/50 hover:text-white hover:bg-white/[0.06] hover:border hover:border-white/10"
+                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-[0_0_24px_rgba(124,58,237,0.55)] border-2 border-violet-400/40"
+                    : "text-white/60 hover:text-white hover:bg-white/[0.08] hover:border hover:border-white/20"
                 }`}
                 title={item.name}
               >
@@ -75,14 +74,14 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Subtle audiophile footer indicator */}
-      <div className="mt-auto px-2 opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100">
-        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-2.5 text-[10px] text-white/40">
-          <div className="flex items-center gap-1.5 font-mono text-cyan-300/80">
+      {/* Subtle audiophile arcade indicator */}
+      <div className="mt-auto px-1 opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100">
+        <div className="rounded-2xl border-2 border-white/10 bg-black/40 p-2.5 text-[10px] text-white/50">
+          <div className="flex items-center gap-1.5 font-arcade text-cyan-300">
             <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
-            <span>24-bit • 96kHz</span>
+            <span>24-BIT • 96KHZ</span>
           </div>
-          <p className="mt-1 truncate">Audiophile Glass Engine</p>
+          <p className="mt-1 font-pixel text-xs text-white/40 truncate">ARCADE HI-FI DECK</p>
         </div>
       </div>
     </aside>
