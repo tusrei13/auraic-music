@@ -6,12 +6,15 @@ import {
   Activity,
   Download,
   Sparkles,
+  Cpu,
+  BarChart3,
+  Award,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useToastStore } from "@/store/useToastStore";
 
 // =========================================================
-// 1. SOUND RADAR DATA & COMPONENT
+// 1. SOUND RADAR CHART (THICK VECTOR OUTLINES & PIXEL LABELS)
 // =========================================================
 interface RadarAxis {
   label: string;
@@ -19,18 +22,18 @@ interface RadarAxis {
 }
 
 const RADAR_AXES: RadarAxis[] = [
-  { label: "Acoustic", value: 85 },
-  { label: "Chill", value: 92 },
-  { label: "Instrumental", value: 78 },
-  { label: "Energetic", value: 64 },
-  { label: "Electronic", value: 70 },
-  { label: "Vocal", value: 88 },
+  { label: "VOCAL", value: 88 },
+  { label: "CHILL", value: 94 },
+  { label: "LOFI", value: 82 },
+  { label: "ACOUSTIC", value: 75 },
+  { label: "ELECTRONIC", value: 80 },
+  { label: "ENERGETIC", value: 65 },
 ];
 
 function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
-  const size = 300;
+  const size = 320;
   const center = size / 2;
-  const radius = size * 0.38;
+  const radius = size * 0.36;
   const total = axes.length;
 
   const getCoordinates = (index: number, val: number) => {
@@ -50,26 +53,24 @@ function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
     .join(" ");
 
   return (
-    <div className="relative flex flex-col items-center justify-center py-2">
+    <div className="relative flex flex-col items-center justify-center py-4 select-none">
       <svg width={size} height={size} className="overflow-visible">
         <defs>
-          <radialGradient id="radarGlowGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#a855f7" stopOpacity="0.45" />
-            <stop offset="60%" stopColor="#06b6d4" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#ec4899" stopOpacity="0.05" />
+          <radialGradient id="radar2DGlowGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#c084fc" stopOpacity="0.5" />
+            <stop offset="70%" stopColor="#06b6d4" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#a855f7" stopOpacity="0.1" />
           </radialGradient>
-          <filter id="radarNeonGlow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="4" result="blur1" />
-            <feGaussianBlur stdDeviation="12" result="blur2" />
+          <filter id="vectorNeonGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
             <feMerge>
-              <feMergeNode in="blur2" />
-              <feMergeNode in="blur1" />
+              <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
         </defs>
 
-        {/* Background polygon webs */}
+        {/* Thick Vector Web Polygons */}
         {[0.25, 0.5, 0.75, 1].map((level) => {
           const webPoints = axes
             .map((_, i) => {
@@ -83,8 +84,8 @@ function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
               key={level}
               points={webPoints}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.1)"
-              strokeWidth={level === 1 ? 1.5 : 1}
+              stroke={level === 1 ? "rgba(255, 255, 255, 0.35)" : "rgba(255, 255, 255, 0.12)"}
+              strokeWidth={level === 1 ? 2.5 : 1.5}
             />
           );
         })}
@@ -99,25 +100,26 @@ function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
               y1={center}
               x2={x}
               y2={y}
-              stroke="rgba(255, 255, 255, 0.15)"
-              strokeDasharray="2 2"
+              stroke="rgba(255, 255, 255, 0.25)"
+              strokeWidth={1.5}
+              strokeDasharray="3 3"
             />
           );
         })}
 
-        {/* Data polygon filled with neon 3D glow */}
+        {/* Data polygon with thick 2D vector outline & neon glow */}
         <motion.polygon
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           points={points}
-          fill="url(#radarGlowGrad)"
-          stroke="#c084fc"
-          strokeWidth={3}
-          filter="url(#radarNeonGlow)"
+          fill="url(#radar2DGlowGrad)"
+          stroke="#06b6d4"
+          strokeWidth={3.5}
+          filter="url(#vectorNeonGlow)"
         />
 
-        {/* Vertex dots with outer pulse glow ring */}
+        {/* Glowing Neon Nodes (Crisp Circles) */}
         {axes.map((axis, i) => {
           const { x, y } = getCoordinates(i, axis.value);
           return (
@@ -126,35 +128,31 @@ function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
                 cx={x}
                 cy={y}
                 r={7}
-                fill="none"
-                stroke="#06b6d4"
-                strokeWidth={1.5}
-                opacity={0.6}
-                className="animate-ping"
+                fill="#ffffff"
+                stroke="#c084fc"
+                strokeWidth={2.5}
+                className="filter drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
               />
               <circle
                 cx={x}
                 cy={y}
-                r={4.5}
-                fill="#ffffff"
-                stroke="#06b6d4"
-                strokeWidth={2}
-                className="filter drop-shadow-[0_0_8px_#06b6d4]"
+                r={3}
+                fill="#000000"
               />
             </g>
           );
         })}
 
-        {/* Axis labels */}
+        {/* Bold Pixel Attribute Labels (VOCAL, CHILL, LOFI...) */}
         {axes.map((axis, i) => {
-          const { x, y } = getCoordinates(i, 118);
+          const { x, y } = getCoordinates(i, 122);
           return (
             <text
               key={i}
               x={x}
               y={y + 4}
               textAnchor="middle"
-              className="fill-white/80 text-[10px] font-mono font-bold tracking-wider"
+              className="fill-white font-pixel text-xs font-bold tracking-wider drop-shadow-md"
             >
               {axis.label}
             </text>
@@ -166,10 +164,10 @@ function SoundRadarChart({ axes = RADAR_AXES }: { axes?: RadarAxis[] }) {
 }
 
 // =========================================================
-// 2. LISTENING HEATMAP (NEON GITHUB STYLE)
+// 2. LISTENING HEATMAP (CRISP SQUARE PIXEL BLOCKS & NEON)
 // =========================================================
 function ListeningHeatmap() {
-  const weeks = 20;
+  const weeks = 22;
   const days = 7;
   const [hoveredCell, setHoveredCell] = useState<{
     day: number;
@@ -177,7 +175,6 @@ function ListeningHeatmap() {
     minutes: number;
   } | null>(null);
 
-  // Generate deterministic activity levels for demo
   const getActivity = (w: number, d: number) => {
     const val = (Math.sin(w * 1.5 + d) * 1000) % 5;
     const level = Math.floor(Math.abs(val));
@@ -188,30 +185,30 @@ function ListeningHeatmap() {
   const getCellColor = (level: number) => {
     switch (level) {
       case 1:
-        return "bg-cyan-950/60 border border-cyan-800/40";
+        return "bg-purple-950 border border-purple-800/60";
       case 2:
-        return "bg-cyan-700/70 border border-cyan-500/50 shadow-[0_0_8px_rgba(6,182,212,0.3)]";
+        return "bg-purple-600 border border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.4)]";
       case 3:
-        return "bg-violet-600 border border-violet-400 shadow-[0_0_10px_rgba(168,85,247,0.5)]";
+        return "bg-cyan-400 border border-cyan-200 shadow-[0_0_10px_rgba(6,182,212,0.6)]";
       case 4:
-        return "bg-fuchsia-400 border border-white shadow-[0_0_12px_rgba(236,72,153,0.8)]";
+        return "bg-white border-2 border-cyan-300 shadow-[0_0_14px_rgba(255,255,255,0.9)]";
       default:
-        return "bg-white/[0.04] border border-white/[0.05]";
+        return "bg-white/[0.04] border border-white/[0.08]";
     }
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between text-xs text-white/50">
-        <span>Cường độ nghe nhạc (Listening Activity)</span>
-        <div className="flex items-center gap-1.5 text-[10px]">
-          <span>Ít</span>
-          <span className="h-2.5 w-2.5 rounded-xs bg-white/[0.04]" />
-          <span className="h-2.5 w-2.5 rounded-xs bg-cyan-950" />
-          <span className="h-2.5 w-2.5 rounded-xs bg-cyan-700" />
-          <span className="h-2.5 w-2.5 rounded-xs bg-violet-600" />
-          <span className="h-2.5 w-2.5 rounded-xs bg-fuchsia-400" />
-          <span>Nhiều</span>
+    <div className="space-y-4 select-none">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <span className="font-pixel text-white/80">ACTIVITY MATRIX: DAILY STREAM LOGS</span>
+        <div className="flex items-center gap-1.5 font-arcade text-[10px] text-white/60">
+          <span>ÍT</span>
+          <span className="h-3 w-3 rounded-xs bg-white/[0.04] border border-white/10" />
+          <span className="h-3 w-3 rounded-xs bg-purple-950 border border-purple-800" />
+          <span className="h-3 w-3 rounded-xs bg-purple-600 border border-purple-400" />
+          <span className="h-3 w-3 rounded-xs bg-cyan-400 border border-cyan-200" />
+          <span className="h-3 w-3 rounded-xs bg-white border border-cyan-300" />
+          <span>NHIỀU</span>
         </div>
       </div>
 
@@ -228,7 +225,7 @@ function ListeningHeatmap() {
                 whileHover={{ scale: 1.35 }}
                 onMouseEnter={() => setHoveredCell({ day: d, week: w, minutes })}
                 onMouseLeave={() => setHoveredCell(null)}
-                className={`h-3.5 w-3.5 cursor-pointer rounded-xs transition-colors duration-200 ${getCellColor(
+                className={`h-4 w-4 cursor-pointer rounded-xs transition-colors duration-150 ${getCellColor(
                   level
                 )}`}
               />
@@ -238,13 +235,13 @@ function ListeningHeatmap() {
       </div>
 
       {hoveredCell ? (
-        <p className="text-xs text-cyan-300 font-mono">
+        <p className="font-arcade text-xs text-cyan-300">
           Tuần {hoveredCell.week + 1}, Ngày {hoveredCell.day + 1}:{" "}
-          <span className="font-bold">{hoveredCell.minutes} phút nghe nhạc</span>
+          <span className="font-bold text-white">{hoveredCell.minutes} phút nghe nhạc</span>
         </p>
       ) : (
-        <p className="text-xs text-white/40">
-          Rê chuột lên từng ô để xem chi tiết thời lượng
+        <p className="font-arcade text-xs text-white/40">
+          Rê chuột lên các pixel block để xem chi tiết thời lượng
         </p>
       )}
     </div>
@@ -252,7 +249,7 @@ function ListeningHeatmap() {
 }
 
 // =========================================================
-// 3. 3D HOLOGRAPHIC PASSPORT WITH EXPORT TO PNG
+// 3. 2D RETRO ARCADE PASS CARD (PLAYER PASSPORT)
 // =========================================================
 export default function StatsPage() {
   const currentUser = useAuthStore((s) => s.user);
@@ -260,7 +257,7 @@ export default function StatsPage() {
 
   const [exporting, setExporting] = useState(false);
 
-  // 3D Tilt for Holographic Passport
+  // 3D Tilt for Arcade Passport Card
   const cardRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -269,11 +266,8 @@ export default function StatsPage() {
   const mouseXSpring = useSpring(x, spring);
   const mouseYSpring = useSpring(y, spring);
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [16, -16]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-16, 16]);
-
-  const holoX = useTransform(mouseXSpring, [-0.5, 0.5], ["10%", "90%"]);
-  const holoY = useTransform(mouseYSpring, [-0.5, 0.5], ["10%", "90%"]);
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [12, -12]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-12, 12]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -289,7 +283,6 @@ export default function StatsPage() {
     y.set(0);
   };
 
-  // Export Passport as PNG via HTML5 Canvas
   const handleExportPNG = async () => {
     setExporting(true);
     try {
@@ -301,81 +294,67 @@ export default function StatsPage() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Draw Gradient Background
-      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-      bgGrad.addColorStop(0, "#130924");
-      bgGrad.addColorStop(0.5, "#0b0c1b");
-      bgGrad.addColorStop(1, "#031526");
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, width, height);
-
-      // Draw Holographic diagonal foil streak
-      const foilGrad = ctx.createLinearGradient(0, 0, width, 0);
-      foilGrad.addColorStop(0, "rgba(236, 72, 153, 0.15)");
-      foilGrad.addColorStop(0.3, "rgba(168, 85, 247, 0.25)");
-      foilGrad.addColorStop(0.7, "rgba(6, 182, 212, 0.2)");
-      foilGrad.addColorStop(1, "rgba(234, 179, 8, 0.15)");
-      ctx.fillStyle = foilGrad;
+      // Dark Chassis Background
+      ctx.fillStyle = "#0c0d16";
       ctx.fillRect(0, 0, width, height);
 
       // Card border
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(10, 10, width - 20, height - 20);
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(12, 12, width - 24, height - 24);
 
-      // Passport Title
+      // Header Tag
       ctx.fillStyle = "#a855f7";
-      ctx.font = "bold 13px monospace";
-      ctx.fillText("AURAIC AUDIOPHILE PASSPORT", 35, 45);
+      ctx.font = "bold 14px monospace";
+      ctx.fillText("AURAIC RETRO ARCADE PASS", 40, 50);
 
-      // Name & Level
       const name = currentUser?.name || currentUser?.email?.split("@")[0] || "Auraic Explorer";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 28px sans-serif";
-      ctx.fillText(name, 35, 95);
+      ctx.font = "900 26px monospace";
+      ctx.fillText(name, 40, 95);
 
-      ctx.fillStyle = "#06b6d4";
-      ctx.font = "bold 14px sans-serif";
-      ctx.fillText("Level: Master Audiophile (96kHz / 24-Bit)", 35, 125);
-
-      // Chip simulator
+      // Golden microchip
       ctx.fillStyle = "#eab308";
-      ctx.fillRect(35, 145, 50, 36);
+      ctx.fillRect(40, 115, 60, 44);
       ctx.strokeStyle = "#ca8a04";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(35, 145, 50, 36);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(40, 115, 60, 44);
 
-      // Stats Columns
+      // Status text
+      ctx.fillStyle = "#06b6d4";
+      ctx.font = "bold 16px monospace";
+      ctx.fillText("RANK: AUDIOPHILE S-CLASS", 120, 145);
+
+      // Stats
       ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-      ctx.font = "12px sans-serif";
-      ctx.fillText("Gu nhạc chính", 35, 220);
-      ctx.fillText("Thời lượng nghe", 220, 220);
-      ctx.fillText("Độ chuẩn xác dải âm", 420, 220);
+      ctx.font = "12px monospace";
+      ctx.fillText("Gu nhạc chính", 40, 210);
+      ctx.fillText("Thời lượng nghe", 240, 210);
+      ctx.fillText("Chuẩn xác", 440, 210);
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 18px sans-serif";
-      ctx.fillText("Lofi • Ambient • Chill", 35, 245);
-      ctx.fillText("148.5 Giờ", 220, 245);
-      ctx.fillText("99.4% Hi-Res", 420, 245);
+      ctx.font = "bold 18px monospace";
+      ctx.fillText("Lofi • Chill • Synth", 40, 240);
+      ctx.fillText("148.5 Giờ", 240, 240);
+      ctx.fillText("99.4% Hi-Res", 440, 240);
 
-      // Barcode lines at bottom
-      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-      for (let i = 35; i < width - 35; i += 6) {
-        const barW = (i % 12 === 0) ? 3 : 1.5;
-        ctx.fillRect(i, 320, barW, 40);
+      // Barcode
+      ctx.fillStyle = "#ffffff";
+      for (let i = 40; i < width - 40; i += 6) {
+        const barW = (i % 12 === 0) ? 3.5 : 1.5;
+        ctx.fillRect(i, 300, barW, 40);
       }
 
       ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-      ctx.font = "10px monospace";
-      ctx.fillText("AUR-9948-HIRES-PRO-PASS", 35, 380);
+      ctx.font = "11px monospace";
+      ctx.fillText("AUR-9948-ARCADE-S-CLASS", 40, 365);
 
-      // Download
       const link = document.createElement("a");
-      link.download = `auraic-passport-${name.toLowerCase().replace(/\s+/g, "-")}.png`;
+      link.download = `auraic-arcade-pass-${name.toLowerCase().replace(/\s+/g, "-")}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
 
-      addToast("Đã xuất thẻ Passport PNG thành công!", "success");
+      addToast("Đã xuất thẻ Retro Arcade Pass thành công!", "success");
     } catch {
       addToast("Lỗi khi tạo ảnh Passport", "error");
     } finally {
@@ -383,180 +362,183 @@ export default function StatsPage() {
     }
   };
 
-  return (
-    <div className="min-h-full px-5 pb-36 pt-4 text-white sm:px-8 lg:px-12 space-y-12">
-      {/* Header */}
-      <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1 text-xs font-semibold ">
-          <Activity className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
-          <span>Audio Analytics & Taste DNA</span>
-        </div>
-        <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
-          Thống Kê Gu Nhạc
-        </h1>
-        <p className="mt-1 text-sm text-white/60">
-          Phân tích đa chiều về tần số âm thanh, chu kỳ thưởng thức và thẻ danh tính
-          Holographic độc bản.
-        </p>
-      </div>
+  const userName = currentUser?.name || currentUser?.email?.split("@")[0] || "Auraic Explorer";
 
+  return (
+    <div className="min-h-full px-4 pb-36 pt-4 text-white sm:px-8 lg:px-12 space-y-12">
+      {/* 2D HARDWARE CONSOLE HEADER */}
+      <section className="relative overflow-hidden rounded-[36px] border-2 border-white/15 bg-[#0d0f1b]/95 p-6 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.2)]">
+        <div className="retro-screw absolute top-4 left-4" />
+        <div className="retro-screw absolute top-4 right-4" />
+        <div className="retro-screw absolute bottom-4 left-4" />
+        <div className="retro-screw absolute bottom-4 right-4" />
+
+        <div className="relative z-10 max-w-3xl space-y-4">
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3.5 py-1 text-xs font-arcade font-bold text-cyan-300">
+            <Activity className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
+            <span>2D VECTOR AUDIO ANALYTICS & TASTE DNA</span>
+          </div>
+
+          <h1 className="font-pixel text-3xl sm:text-5xl font-black tracking-tight text-white">
+            Thống Kê Gu Nhạc
+          </h1>
+
+          <p className="font-arcade text-xs sm:text-sm text-white/60 tracking-wider leading-relaxed">
+            Phân tích 6 trục thẩm mỹ âm nhạc qua biểu đồ Vector Radar dày, nhật ký hoạt động pixel blocks và thẻ định danh Retro Arcade Pass Card.
+          </p>
+        </div>
+      </section>
+
+      {/* TWO COLUMN GRID: RADAR CHART + RETRO ARCADE PASS CARD */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 items-start">
-        {/* ========================================================= */}
-        {/* 1. SOUND RADAR CHART                                      */}
-        {/* ========================================================= */}
-        <section className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-8  shadow-xl space-y-6">
+        {/* ================= 1. SOUND RADAR CHART ================= */}
+        <section className="relative overflow-hidden rounded-[32px] border-2 border-white/15 bg-[#0e101c]/95 p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.2)] space-y-6">
+          <div className="retro-screw absolute top-3.5 left-3.5" />
+          <div className="retro-screw absolute top-3.5 right-3.5" />
+          <div className="retro-screw absolute bottom-3.5 left-3.5" />
+          <div className="retro-screw absolute bottom-3.5 right-3.5" />
+
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold">Sound Radar Chart</h2>
-              <p className="text-xs text-white/50">
-                Biểu đồ đa giác phân bố 6 trục thẩm mỹ âm nhạc
+              <h2 className="font-pixel text-xl sm:text-2xl font-bold tracking-tight text-white">
+                Sound Radar Chart
+              </h2>
+              <p className="font-arcade text-xs text-white/50 tracking-wider">
+                Đồ thị vector 6 trục thẩm mỹ dải âm
               </p>
             </div>
-            <span className="rounded-xl bg-violet-500/20 px-3 py-1 text-xs font-bold text-violet-300">
-              Chillout Dominant
+            <span className="rounded-full border border-white bg-white text-black font-pixel font-bold px-3 py-1 text-xs shadow-md">
+              CHILLOUT 94%
             </span>
           </div>
 
           <SoundRadarChart />
 
           <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-center">
-              <span className="text-[10px] text-white/40 uppercase font-mono">Top Genre</span>
-              <p className="font-bold text-sm text-cyan-300 mt-0.5">Chill / Lofi</p>
+            <div className="rounded-2xl border-2 border-white/10 bg-black/40 p-3 text-center">
+              <span className="font-arcade text-[10px] text-white/40 uppercase tracking-wider">TOP GENRE</span>
+              <p className="font-pixel font-bold text-sm text-cyan-300 mt-1">Chill / Lofi</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-center">
-              <span className="text-[10px] text-white/40 uppercase font-mono">BPM Range</span>
-              <p className="font-bold text-sm text-fuchsia-300 mt-0.5">75 - 90 BPM</p>
+            <div className="rounded-2xl border-2 border-white/10 bg-black/40 p-3 text-center">
+              <span className="font-arcade text-[10px] text-white/40 uppercase tracking-wider">BPM RANGE</span>
+              <p className="font-pixel font-bold text-sm text-purple-300 mt-1">75 - 90 BPM</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-center">
-              <span className="text-[10px] text-white/40 uppercase font-mono">Hi-Res Affinity</span>
-              <p className="font-bold text-sm text-amber-300 mt-0.5">94.2%</p>
+            <div className="rounded-2xl border-2 border-white/10 bg-black/40 p-3 text-center">
+              <span className="font-arcade text-[10px] text-white/40 uppercase tracking-wider">HI-FI LEVEL</span>
+              <p className="font-pixel font-bold text-sm text-amber-300 mt-1">94.2% FLAC</p>
             </div>
           </div>
         </section>
 
-        {/* ========================================================= */}
-        {/* 2. 3D HOLOGRAPHIC PASSPORT                                */}
-        {/* ========================================================= */}
+        {/* ================= 2. RETRO ARCADE PASS CARD ================= */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold">Holographic Passport 3D</h2>
-              <p className="text-xs text-white/50">
-                Thẻ định danh âm nhạc phản quang góc nhìn tương tác chuột
+              <h2 className="font-pixel text-xl sm:text-2xl font-bold tracking-tight text-white">
+                Player Passport Card
+              </h2>
+              <p className="font-arcade text-xs text-white/50 tracking-wider">
+                Thẻ định danh phong cách Arcade 2D Vector
               </p>
             </div>
             <button
               onClick={handleExportPNG}
               disabled={exporting}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-violet-600/25 transition hover:scale-105 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full border-2 border-white bg-white text-black px-4 py-2 font-pixel text-xs font-bold shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
             >
-              <Download className="h-3.5 w-3.5" />
-              <span>{exporting ? "Đang xuất..." : "Xuất file ảnh PNG"}</span>
+              <Download className="w-3.5 h-3.5" />
+              <span>{exporting ? "ĐANG XUẤT..." : "TẢI PNG"}</span>
             </button>
           </div>
 
-          {/* Holographic 3D Interactive Card */}
-          <div className="perspective-1000 flex justify-center py-4">
+          <div
+            className="perspective-1000 select-none py-2"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+          >
             <motion.div
               ref={cardRef}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
               style={{
                 rotateX,
                 rotateY,
                 transformStyle: "preserve-3d",
               }}
-              whileHover={{ scale: 1.04 }}
-              className="relative w-full max-w-md aspect-[1.58/1] rounded-3xl border-2 border-white/30 bg-gradient-to-br from-[#0c0d18] via-[#141026] to-[#08121f] p-6 shadow-[0_25px_65px_rgba(0,0,0,0.85),0_0_40px_rgba(168,85,247,0.4),inset_0_1px_0_0_rgba(255,255,255,0.4)] overflow-hidden cursor-pointer  group"
+              className="relative overflow-hidden rounded-[32px] border-2 border-white/20 bg-gradient-to-br from-[#1a1728] via-[#0f111e] to-[#070912] p-7 sm:p-9 shadow-[0_30px_70px_rgba(0,0,0,0.9),inset_0_2px_4px_rgba(255,255,255,0.3)] transition-shadow duration-300"
             >
-              {/* Dynamic Conic-Gradient Rainbow Prism Foil */}
-              <motion.div
-                className="pointer-events-none absolute -inset-10 opacity-55 mix-blend-color-dodge transition-opacity duration-300 group-hover:opacity-85"
-                style={{
-                  background: `conic-gradient(from 45deg at ${holoX} ${holoY}, #ec4899, #a855f7, #3b82f6, #06b6d4, #10b981, #eab308, #ec4899)`,
-                  filter: "blur(18px)",
-                }}
-              />
+              {/* Corner Screws on the Passport Card */}
+              <div className="retro-screw absolute top-3.5 left-3.5" />
+              <div className="retro-screw absolute top-3.5 right-3.5" />
+              <div className="retro-screw absolute bottom-3.5 left-3.5" />
+              <div className="retro-screw absolute bottom-3.5 right-3.5" />
 
-              {/* Holographic Micro-Grating Diffraction Texture */}
-              <div
-                className="pointer-events-none absolute inset-0 opacity-20 mix-blend-screen"
-                style={{
-                  backgroundImage: "repeating-linear-gradient(115deg, transparent, transparent 3px, rgba(255,255,255,0.12) 3px, rgba(255,255,255,0.12) 5px)",
-                }}
-              />
+              {/* Holographic Sheen Layer */}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-purple-500/10 via-cyan-400/10 to-transparent mix-blend-screen opacity-70" />
 
-              {/* Specular Glare overlay */}
-              <motion.div
-                className="pointer-events-none absolute inset-0 opacity-40 mix-blend-overlay"
-                style={{
-                  background: `radial-gradient(circle at ${holoX} ${holoY}, rgba(255, 255, 255, 0.85) 0%, transparent 55%)`,
-                }}
-              />
-
-              <div
-                style={{ transform: "translateZ(35px)", transformStyle: "preserve-3d" }}
-                className="relative z-10 flex h-full flex-col justify-between"
-              >
-                {/* Header */}
+              <div className="relative z-10 space-y-6">
+                {/* Header Tag & Issuer */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] font-black uppercase tracking-[0.25em] text-cyan-300 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">
-                      AURAIC HI-RES PASSPORT
+                    <span className="font-arcade text-[11px] font-bold text-cyan-300 tracking-widest uppercase">
+                      AURAIC MUSIC ARCHIVE
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-amber-300 font-bold bg-amber-400/15 px-2.5 py-0.5 rounded-full border border-amber-400/30 shadow-[0_0_12px_rgba(234,179,8,0.4)]">
-                    <Sparkles className="h-3 w-3 animate-spin-slow" /> MASTER 24-BIT
-                  </div>
+                  <span className="font-pixel text-xs text-white/50 tracking-wider">
+                    NO. 2026-HI-RES
+                  </span>
                 </div>
 
-                {/* 3D Audiophile Microchip & User Info */}
-                <div className="flex items-center justify-between gap-4 my-auto">
+                {/* User Name & Golden Microchip */}
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-                      {currentUser?.name || currentUser?.email?.split("@")[0] || "Auraic Explorer"}
+                    <h3 className="font-pixel text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-md">
+                      {userName}
                     </h3>
-                    <p className="text-xs text-white/70 mt-1 font-mono flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Certified Audiophile • 96kHz</span>
-                    </p>
+                    {/* Pixel Status Text: RANK: AUDIOPHILE S-CLASS */}
+                    <div className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-cyan-400/40 bg-cyan-950/60 text-cyan-300 font-pixel text-xs font-bold tracking-wide">
+                      <Award className="w-3.5 h-3.5 text-cyan-300" />
+                      <span>RANK: AUDIOPHILE S-CLASS</span>
+                    </div>
                   </div>
 
-                  {/* 3D Gold / Hi-Res Metallic Microchip */}
-                  <div
-                    style={{ transform: "translateZ(25px)" }}
-                    className="relative h-11 w-14 rounded-lg bg-gradient-to-br from-amber-200 via-amber-400 to-yellow-600 p-1 shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.7)] border border-yellow-300/80 flex flex-col justify-between shrink-0"
-                  >
-                    <div className="h-0.5 w-full bg-yellow-800/40 rounded-full" />
-                    <div className="flex justify-between items-center h-full px-1">
-                      <div className="w-2.5 h-4 border-r border-yellow-800/40" />
-                      <span className="text-[7px] font-mono font-black text-yellow-900/80 tracking-tighter">HI-RES</span>
-                      <div className="w-2.5 h-4 border-l border-yellow-800/40" />
+                  {/* Golden Microchip Icon */}
+                  <div className="relative h-12 w-16 shrink-0 rounded-lg border-2 border-amber-400/80 bg-gradient-to-br from-amber-300 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(234,179,8,0.5)] p-1 flex items-center justify-center">
+                    <div className="h-full w-full rounded border border-amber-900/60 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 flex items-center justify-center">
+                      <Cpu className="w-6 h-6 text-amber-950" />
                     </div>
-                    <div className="h-0.5 w-full bg-yellow-800/40 rounded-full" />
                   </div>
                 </div>
 
-                {/* Footer details & Barcode */}
-                <div className="flex items-end justify-between border-t border-white/15 pt-3">
+                {/* Passport Key Attributes */}
+                <div className="grid grid-cols-3 gap-3 pt-1 border-t-2 border-white/10 font-arcade">
                   <div>
-                    <span className="text-[9px] uppercase font-mono text-white/45">Gu Âm Nhạc</span>
-                    <p className="text-xs font-bold text-violet-300">Chillout • Ambient</p>
+                    <span className="text-[10px] text-white/40 uppercase tracking-wider block">GU NHẠC</span>
+                    <span className="font-pixel text-xs font-bold text-white mt-1 block">Chill • Lofi</span>
                   </div>
                   <div>
-                    <span className="text-[9px] uppercase font-mono text-white/45">Thời Lượng</span>
-                    <p className="text-xs font-bold text-cyan-300">148.5h Hi-Res</p>
+                    <span className="text-[10px] text-white/40 uppercase tracking-wider block">TỔNG GIỜ</span>
+                    <span className="font-pixel text-xs font-bold text-white mt-1 block">148.5H</span>
                   </div>
-                  <div className="text-right">
-                    {/* Visual Barcode */}
-                    <div className="flex gap-0.5 justify-end h-5 mb-1 opacity-70">
-                      {[2, 1, 3, 1, 2, 4, 1, 3, 2, 1, 3, 2, 1, 4].map((w, idx) => (
-                        <span key={idx} className="bg-white rounded-xs h-full" style={{ width: `${w}px` }} />
-                      ))}
-                    </div>
-                    <p className="font-mono text-[9px] text-white/50">AUR-9948-PRO</p>
+                  <div>
+                    <span className="text-[10px] text-white/40 uppercase tracking-wider block">HI-RES</span>
+                    <span className="font-pixel text-xs font-bold text-cyan-300 mt-1 block">99.4% S-RANK</span>
                   </div>
+                </div>
+
+                {/* Bottom Barcode */}
+                <div className="pt-2">
+                  <div className="flex items-center gap-1 h-8 w-full opacity-80">
+                    {Array.from({ length: 48 }).map((_, i) => (
+                      <span
+                        key={i}
+                        className={`bg-white rounded-xs ${
+                          i % 3 === 0 ? "w-1.5 h-8" : i % 2 === 0 ? "w-0.5 h-6" : "w-1 h-7"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="font-arcade text-[9px] text-white/40 tracking-[0.2em] mt-1">
+                    AUR-9948-ARCADE-S-CLASS-PASS
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -564,13 +546,29 @@ export default function StatsPage() {
         </section>
       </div>
 
-      {/* ========================================================= */}
-      {/* 3. LISTENING HEATMAP SECTION                              */}
-      {/* ========================================================= */}
-      <section className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-8  shadow-xl">
+      {/* ================= 3. LISTENING HEATMAP MATRIX ================= */}
+      <section className="relative overflow-hidden rounded-[32px] border-2 border-white/15 bg-[#0e101c]/95 p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.2)] space-y-4">
+        <div className="retro-screw absolute top-3.5 left-3.5" />
+        <div className="retro-screw absolute top-3.5 right-3.5" />
+        <div className="retro-screw absolute bottom-3.5 left-3.5" />
+        <div className="retro-screw absolute bottom-3.5 right-3.5" />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-pixel text-xl sm:text-2xl font-bold tracking-tight text-white">
+              Activity Heatmap Matrix
+            </h2>
+            <p className="font-arcade text-xs text-white/50 tracking-wider">
+              Lưới pixel thể hiện cường độ nghe nhạc qua các tuần
+            </p>
+          </div>
+          <span className="font-arcade text-xs text-cyan-300">
+            Pixel Block Grid
+          </span>
+        </div>
+
         <ListeningHeatmap />
       </section>
     </div>
   );
 }
-
